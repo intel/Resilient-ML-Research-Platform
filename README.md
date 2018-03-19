@@ -6,19 +6,18 @@ It has machine learning (ML) pipeline to analyze data and also be a portal for b
 It can demo adversarial ML and its countermeasures.
 
 ## Getting Started
+### Prerequisites
 
 * Install Hadoop
 * Install Spark
-* Install Django and then copy files
+* Install Django 
 * Install ML realted Python packages
-
-### Prerequisites
-
-TBD
 
 ### Installing
 
-TBD
+* Create Django website 'myml' and project 'atdml'
+* Copy files from git folder to Django website folder
+* Modify app.config, myml/settings.py, atdml/setttings.py
 
 ## License
 This project is licensed under the Apache 2.0 License 
