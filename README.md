@@ -15,7 +15,7 @@ It can demo adversarial ML and its countermeasures.
 
 ### Installing
 
-* Create Django website 'myml' and project 'atdml'
+* Create Django project 'myml' and app 'atdml'
 * Copy files from git folder to Django website folder
 * Modify app.config, myml/settings.py, atdml/setttings.py
 
