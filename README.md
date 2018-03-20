@@ -21,6 +21,8 @@ It demos adversarial ML and countermeasures.
 ## License
 This project is licensed under the Apache 2.0 
 
+![arch](../master/atdml/static/atdml/img/mlaas_arch_gpu.png)
+
 ## Acknowledgements
 * TBD
 
