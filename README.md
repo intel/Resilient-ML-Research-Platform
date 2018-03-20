@@ -13,7 +13,7 @@ It demos adversarial ML and countermeasures.
 * Django & SQLite
 
 ### Installing
-* Please follow the [Setup_Guide_CentOS7.pdf]("../master/Setup_Guide_CentOS7.pdf") for installation
+* Please follow the [Setup_Guide_CentOS7.pdf](Setup_Guide_CentOS7.pdf) for installation
 * Create Django project 'myml' and application 'atdml'
 * Copy git folder tree to Django website folder 'myml'
 * Modify app.config, myml/settings.py, atdml/settings.py for Hadoop/Spark/web/MongoDB hostnames
