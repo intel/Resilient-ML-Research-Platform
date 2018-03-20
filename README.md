@@ -7,20 +7,18 @@ It demos adversarial ML and countermeasures.
 
 ## Getting Started
 ### Prerequisites
-* Hadoop & Spark
+* Apache Hadoop & Spark
 * MongoDB
-* Scikit-Learn, Numpy, Keras and realted Python packages
+* Scikit-Learn, Numpy, Keras and related Python packages
 * Django & SQLite
 
 ### Installing
 * Please follow the [Setup_Guide_CentOS7.pdf](Setup_Guide_CentOS7.pdf) for installation
-* Create Django project 'myml' and application 'atdml'
-* Copy git folder tree to Django website folder 'myml'
-* Modify app.config, myml/settings.py, atdml/settings.py for Hadoop/Spark/web/MongoDB hostnames
+* Modify web files app.config, myml/settings.py, atdml/settings.py for Hadoop/Spark/web/MongoDB hostnames
 
-## Design Diagrams:
+## Design Diagrams
 ### Architecture:
-<img src="../master/atdml/static/atdml/img/mlaas_arch_gpu.png" height="300">
+<img src="../master/atdml/static/atdml/img/mlaas_arch_gpu.png" height="320">
 
 ### Software Stack:
 <img src="../master/atdml/static/atdml/img/sw_stack.png" height="200">
