@@ -20,7 +20,7 @@ It demos adversarial ML and countermeasures.
 
 ## Design Diagrams:
 ### Architecture:
-![arch](../master/atdml/static/atdml/img/mlaas_arch_gpu.png | width=250)
+<img src="../master/atdml/static/atdml/img/mlaas_arch_gpu.png" height="250">
 ### Software Stack:
 <img src="../master/atdml/static/atdml/img/sw_stack.png" height="200">
 
