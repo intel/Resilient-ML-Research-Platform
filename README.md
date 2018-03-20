@@ -21,6 +21,7 @@ It demos adversarial ML and countermeasures.
 ## Design Diagrams:
 ### Architecture:
 <img src="../master/atdml/static/atdml/img/mlaas_arch_gpu.png" height="300">
+
 ### Software Stack:
 <img src="../master/atdml/static/atdml/img/sw_stack.png" height="200">
 
