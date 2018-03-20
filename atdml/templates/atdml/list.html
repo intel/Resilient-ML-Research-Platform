@@ -1,0 +1,1759 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load extra_tags %}
+
+
+{% block title %}
+    Machine Learning DataSet List
+{% endblock title %}
+
+{% block styling_extra %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/dataTables.bootstrap.min.css' %}" ></link>
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/select.jqueryui.min.css' %}" ></link>
+<link rel="stylesheet" type="text/css" href="{% static 'css/pipeline.css' %}" />
+
+<style>
+
+</style>
+{% endblock styling_extra %}
+
+
+{% block content %}    
+
+        <div class="container">
+            <div class="row" id="_site_info"> 
+                <div class="col-md-10">
+                <div class="jumbotron" style="padding: 5px 20px 5px 20px; margin: 0px 0px 5px 0px;">
+                <button type="button" class="close" onclick="$('#_site_info').hide();">x</button>
+                  
+                    <h4>This website provides the Machine Learning as a Service (MLaaS). It demos a scalable Machine Learning classifier 
+                    for malware dynamic and static data by <a href="https://spark.apache.org/docs/latest/index.html">Apache Spark</a> and <a href="https://hadoop.apache.org/">Hadoop</a>
+                  <a class="btn btn-default btn-xs" href="/about_mlaas" role="button">Learn More</a>
+                    </h4>
+                    			</button>
+
+                </div>
+                </div>
+
+            </div><!--row-->  
+        </div>
+ 
+        {% if perm > '1' %}
+
+
+<div class="container-fluid " >  
+
+    <div class="panel panel-default" >
+    <div class="panel-heading panel_heading_packed">
+    <div class="panel-title">
+    <h4 class="h4_packed"><strong>Summary and Pipeline:</strong> 
+        <button type="button" class="close" data-toggle="collapse" data-target="#collapseWT">
+        <span class="chevron_toggleable  glyphicon glyphicon-chevron-up" /></button>
+    </h4>
+    </div></div>
+    <div class="panel-body in" id="collapseWT" style="padding: 5px 10px 0px 10px"> 
+    <table class="table table-condensed mlhide" 
+                id="_working_tb"  style="margin-bottom:5px;"
+                data-toggle="tooltip"  title="Click Pipeline Stage Tabs below and then Action Button(s)" 
+            >
+
+            <tr>
+                <th class="col-md-1">Target Dataset Id</th>
+                <th class="col-md-1">Name</th>
+                <th class="col-md-1">Type</th>
+                <th class="col-md-1">Status</th>
+                <th class="col-md-1">N-gram</th>
+                <th class="col-md-1">ML Library</th>
+                <th class="col-md-1">ML Algorithm</th>
+            </tr>
+            <tbody>
+            <tr class="row_bgc" style="font-weight: bold;">
+                <td  >
+                    <img id="_img_w" class="img_warning" src="{% static 'img/checked_grey.png' %}"
+                        style="max-height:22px; max-width:22px; " />
+                    <span id="_w_id">Please Select a DataSet from List below 
+                    </span></td>
+                <td id="_w_name" >or Click <img
+                        src="{% static 'img/plus.png' %}"  style="max-height:25px; max-width:25px; "
+                    /> to Upload a New DataSet</td>
+                <td id="_w_filetype"></td>
+                <td id="_w_status"></td>
+                <td id="_w_n_gram"></td>
+                <td id="_w_ml_lib"></td>
+                <td id="_w_ml_alg"></td>
+            </tr></tbody>
+            </table>                
+       
+<div class="panel panel-default" style="padding: 0px 10px 0px 10px; margin-bottom:0px;">
+  <!--div class="panel-heading">
+    <h3 class="panel-title"><strong>Machine Learning Pipeline: </strong></h3>
+  </div-->
+<div class="panel-body" style="padding: 5px 5px 5px 5px">  
+
+<div class="tabbable boxed parentTabs ">
+    <ul class="nav nav-tabs " id="_ul_pipe" >
+        <li class="active  pull-right pline_plus_highlight" code="0" data-toggle="tooltip" id="_l_upload"
+            title="Upload a data file">
+            <a id="_la_upload" href="#_t_upload" data-toggle="tab"  
+			>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Create New DataSet or Ensemble Entry
+            </a></li>
+        <li class="pline_bgc_grey _not4format_ _not4atd_ _not4pattern_ _not4ensemble_" code="100"  data-toggle="tooltip" id="_l_retrieve"
+            title="Stage: Retrieve data from source database">
+            <a id="_la_retrieve" href="#_t_retrieve" data-toggle="tab"  
+			>Retrieve Data
+            </a></li>
+        <li class="pline_bgc_grey _not4format_ _not4ensemble_"  code="400" data-toggle="tooltip"  id="_l_feature" 
+            title="Stage: Set parameter(s) and extract features">
+            <a id="_la_feature" href="#_t_next" data-toggle="tab" 
+			>Extract Feature
+			</a></li>
+        <li class="pline_bgc_grey _not4ensemble_"  code="500" data-toggle="tooltip"  id="_l_train"
+            title="Stage: Set parameter(s) and train a model and predict test dataset">
+            <a id="_la_train" href="#_t_next" data-toggle="tab"  
+			>Train Model
+			</a></li>
+        <li class="pline_bgc_grey _not4format_ _not4atd_ _not4pattern_ _4ensemble_" code="-101" data-toggle="tooltip"  id="_l_feature_importance"
+            title="Edit ensemble classifier">
+            <a id="_la_ensemble" href="#_t_ensemble" data-toggle="tab"  
+			>Ensemble Classifier
+			</a></li>
+        <li class="pline_bgc_grey _not4ensemble_" code="100" data-toggle="tooltip"  id="_l_result"
+            title="Stage: View results or job logs">
+            <a id="_la_result" href="#_t_next" data-toggle="tab"  
+			>View Results & Logs
+			</a></li>
+        <li class="pline_bgc_grey _not4format_ _not4ensemble_" code="990" data-toggle="tooltip"  id="_l_feature_importance"
+            title="Calculate feature importance">
+            <a id="_la_feature_importance" href="#_t_next" data-toggle="tab"  
+			>Feature Importance
+			</a></li>
+
+
+    </ul>
+            
+    <div id="tc_all" class="tab-content" >
+          
+        <div id="_t_upload" class="tab-pane active">
+        
+         <!--  form.  -->
+		<form 
+            id="uploadForm"  action="{% url 'list' %}"
+            method="post" enctype="multipart/form-data" class="form-inline"
+        >
+			{% csrf_token %}
+
+            <input type="hidden" id="hf_query" name="action" value="" />
+            <input type="hidden" id="hf_querytype" name="hf_querytype" value="Query in-dynamic" />
+            <input type="hidden" id="hf_uploadtype" name="hf_uploadtype" value="Libsvm Format"></input>
+            <input type="hidden" id="hf_customtype" name="hf_customtype" value="dnn_text"></input>
+            <!--input type="hidden" id="h_uploadsubtype" name="h_uploadsubtype" value="gotsub?"></input-->
+            
+          <div class="tabbable" style="padding: 5px 5px 5px 0px;">
+            <ul class="nav nav-tabs" >
+                <li class="active tab_bgc">
+                    <a href="#_upload"  data-toggle="tab" class="tab_packed_bold">Create/Upload DataSet</a></li>
+                <li class="tab_bgc">
+                    <a href="#_query" data-toggle="tab" class="tab_packed_bold">Query MongoDB</a></li>
+            </ul>
+            
+            <div id="ulqr" class="tab-content">
+                <div id="_query" class="tab-pane" >
+                    <div class="row"> 
+                        <div class="col-md-12" data-toggle="tooltip"  
+                        title="for data retrieval from MongoDB in next pipleline step">
+                            <span><h4><strong>Create a dataset entry: </strong></h4></span>
+                               
+                        </div>
+                    </div>
+
+                    
+                    <div class="row"> 
+                    <div class="col-md-8"  style="margin-bottom: 3px;">
+                    <div class="input-group"> 
+                        <span class="input-group-addon" style="min-width: 110px;text-align:right;">
+                            <strong>Type:</strong>
+                        </span>  
+                        <button class="btn btn-default dropdown-toggle form-control _query_act" type="button" 
+                                 title="
+IN-dynamic: IN behavior log format 
+IN-static: IN static data format  
+"
+                             data-toggle="dropdown" aria-expanded="true" value="IN-dynamic">
+                            <span id="_querytype">Query IN-dynamic</span>
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" id="_querytype_dropdown" role="menu" aria-labelledby="dropdownMenu2">
+                            <li role="presentation" pj='{% get_settings_value "MONGO_IN_DY_PJ" %}'
+                                fl='{% get_settings_value "MONGO_IN_DY_FL" %}'
+                            >
+                                <a role="menuitem" tabindex="-1" href="#">Query IN-dynamic</a></li>
+                            <li role="presentation" pj='{% get_settings_value "MONGO_IN_ST_PJ" %}'
+                                fl='{% get_settings_value "MONGO_IN_ST_FL" %}'
+                            >
+                                <a role="menuitem" tabindex="-1" href="#">Query IN-static</a></li>
+
+                        </ul>
+                    </div>
+                    </div></div>
+                    
+
+                    <input type="hidden" id="hf_desc" name="hf_desc" value="" />
+
+                    <div class="row"> 
+
+                        <div class="col-md-6"  style="margin-top: 3px;">
+                            <div class="input-group"> 
+                                <span class="input-group-addon"  style="min-width: 110px;text-align:right;">
+                                    <strong>Description:</strong>
+                                </span>  
+                                <textarea type="text" class="form-control _query_act" rows="1" id="_descq"  name="_descq"
+                                    style="min-width: 500px;font-family: 'Lucida Console'; " placeholder="description for this dataset"
+                                    data-placement="bottom" data-toggle="tooltip"
+                                    title="description for dataset. will be shown in RESTful API"
+                                ></textarea>
+                                        
+                            </div>
+                        </div>                        
+                        <div class="col-md-2"> 
+                            <img id="_prg_img_query" class="_progressCircle" 
+                                        src="{% static 'img/progress.gif' %}" style="display:none" />
+                            <!-- button type="submit" value="Upload" -->
+                            <button type="submit" class="btn btn-primary _query_act" id="btn_query"
+                                 onclick="event.preventDefault(); $('#hf_query').val('query');$('#hf_desc').val($('#_descq').val()); 
+                                 create_ds_entry('#uploadForm','#_prg_img_query', '._query_act');"
+                        {{ disabled4reader }} 
+                                data-placement="bottom" data-toggle="tooltip"
+                                title="Click to Create DataSet Entry"
+                                disabledxx
+                            >Create Dataset Entry</button>
+                        <!-- formId, imgId, btnId, rid, initMsg, refreshCallback, logtype -->
+                        </div> 
+                    </div>
+           
+                </div>           
+
+              <div class="tab-pane active" id="_upload">
+                <div class="row"> 
+                    <div class="col-md-7">
+                        <h4 data-toggle="tooltip"  title="Upload a file as raw data, hash list (for query) or featured data"
+                    ><strong>Create/Upload a Dataset or Ensemble Classifier Entry:</strong></h4>
+                        {{ form.docfile.help_text }}
+                    </div>
+                    <div  class="col-md-5">{{ form.non_field_errors }}
+                    </div>
+                </div><!--title row-->
+                <div class="row mlhide"> <!-- hidden for style-->
+                    <div class="col-md-5" id="_upload_btn_div">
+                        {{ form.docfile }} 
+                        <!--input id="id_docfile" name="docfile" type="file" class="_btn_upload_" {{ disabled4reader }}  /--> 
+                        {{ form.docfile.errors }}
+                    </div>
+                </div><!--row upload file-->
+
+                <div class="row">
+				<div class="col-md-3" id="utype" >
+                <div class="input-group"> 
+                    <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                        <strong>Type:</strong>
+                    </span>
+				    <button class="btn btn-default dropdown-toggle form-control " type="button" 
+                     title="
+Type of Data:                     
+Featured format: pre-featured data in LIBSVM format
+N-gram pattern in HDFS: time sequence data for N-gram in text
+N-gram JSON in HDFS: time sequence data for N-gram in JSON
+Custom in HDFS: Custom preprocessing by user defined plug-in module
+Ensemble Classifier: a collection of classifier for ensemble prediction
+IN-dynamic: behaviour log from MongoDB 
+IN-static: static data from MongoDB 
+"
+                     data-toggle="dropdown" aria-expanded="true" >		
+					<span id="uploadtype">Libsvm Format</span>
+					<span class="caret"></span>
+				  </button>
+				  <ul class="dropdown-menu multi-level dropdown-menu-right" id="uploadtype_dropdown" role="menu" aria-labelledby="dropdownMenu1">
+					<li role="presentation" class="drowdown-header"><strong>&nbsp;&nbsp;Featured Data</strong>:(for upload)</li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_upload_">Libsvm Format</a></li>
+					<li role="presentation" class="divider"></li>
+					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;<strong>Raw Data in HDFS:</strong>(preloaded)</li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_ptn_ _hdfs_">N-gram pattern</a></li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_json_ _hdfs_">N-gram JSON</a></li>
+					<li class="dropdown-submenu">
+                      <a href="#" class="_hdfs_ _custom_">Custom</a>                   
+                      <!--submenu didn't work here??-->
+                    </li>
+					<li role="presentation" class="divider"></li>
+					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;<strong>Ensemble Classifier:</strong></li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_ensemble_">Ensemble</a></li>
+					<li role="presentation" class="divider"></li>
+					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;Raw Data:(for upload)</li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_ptn_ _gz_" >N-gram pattern gz</a></li>
+					<li role="presentation" class="divider"></li>
+					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;Hash List:(for data retrieval)</li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_upload_">MD5 List IN-dynamic</a></li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_upload_">MD5 List IN-static</a></li>
+				  </ul>
+				</div> <!--input-group -->
+                </div> <!--col -->
+                <div class="col-md-3 mlhide" id="col_custom_type" >
+                <div class="input-group " > 
+                    <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                        <strong>Custom:</strong>
+                    </span>
+				    <button class="btn btn-default dropdown-toggle form-control " type="button" 
+                     title="help here"
+                     data-toggle="dropdown" aria-expanded="true" >		
+					<span id="customtype">dnn_text</span>
+					<span class="caret"></span>
+				  </button>
+				  <ul class="dropdown-menu dropdown-menu-right" id="ul_custom_type" role="menu" aria-labelledby="dropdownMenu1">
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_dnn_text_">dnn_text</a></li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_dnn_assembly_">dnn_assembly</a></li>
+				  </ul>
+				</div> <!--input-group -->
+                </div> <!--col -->
+                </div> <!--row type dropdown -->
+                
+                <div class="row _4upload_" id="_f_selector" style="margin-top: 3px;">  <!-- fake upload control for style-->  
+				<div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                            <strong>File:</strong>
+                        </span>
+                        <input type="text" class="form-control" id="_out_f"  
+                            style="min-width: 500px; margin-right: 5px;font-weight: bold; cursor: pointer"
+                            placeholder="Click to select a file for upload" readonly
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="Upload hash list, raw data or featured data with libsvm format."
+                        ></input>
+                    </div><!-- /input-group -->    
+                </div>       
+                </div><!--row _f_selector -->
+
+                <div class="row mlhide _4hdfs_" id="_hdfs_path" style="margin-top: 3px;">  
+				<div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                            <strong>HDFS Path:</strong>
+                        </span>
+                        <input type="text" class="form-control" id="hdfs_path" name="hdfs_path" 
+                            style="min-width: 500px; margin-right: 5px; "
+                            placeholder="HDFS folder name at project root folder" 
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="Partial path name after project root path './data_retrieved/'" />
+                    </div><!--input-group-->    
+                </div>       
+                </div><!--row _hdfs_path-->                
+
+                <div class="row mlhide _4ptn_" style="margin-top: 3px;" id="_div_ptn_re">  
+				<div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                            <strong>R.E. Pattern:</strong>
+                        </span>
+                        <input type="text" class="form-control" id="_ptn_str" name="ptn_str" 
+                            style="min-width: 500px; margin-right: 5px; "
+                            placeholder="Regular expression pattern" 
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="Regular expression pattern to extract n-gram time series data" />
+                    </div><!-- /input-group -->    
+                </div>       
+                </div><!--row pattern --> 
+
+                <div class="row mlhide _4json_" style="margin-top: 3px;" id="_div_jkey">  
+				<div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                            <strong>JSON Key List:</strong>
+                        </span>
+                        <input type="text" class="form-control" id="_json_keys_arr" name="json_keys_arr" 
+                            style="min-width: 500px; margin-right: 5px; "
+                            placeholder='["class","method"]' 
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="JSON keys for feature extraction" />
+                    </div><!-- /input-group -->    
+                </div>       
+                </div><!--row json key list --> 
+                
+                
+                <div class="row mlhide _4label_" style="margin-top: 3px;" id="_div_lbl">  
+				<div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                            <strong>Label List:</strong>
+                        </span>
+                        <input type="text" class="form-control" id="_label_arr" name="label_arr" 
+                            style="min-width: 500px; margin-right: 5px; "
+                            placeholder="Label list for data verification: e.g. ['clean','dirty']" 
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="Label list for data verification: e.g. ['clean','dirty']" />
+                    </div><!-- /input-group -->    
+                </div>       
+                </div><!--row label list--> 
+                <div class="row mlhide _4ensemble_" style="margin-top: 3px;" id="_div_name">  
+				<div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                            <strong>Name:</strong>
+                        </span>
+                        <input type="text" class="form-control _validate_ensemble_" id="_es_name" name="_es_name" 
+                            style="min-width: 500px; margin-right: 5px; "
+                            placeholder="Name of ensemble classifier" 
+                            data-placement="bottom" data-toggle="tooltip" validate_rule="nempt"
+                            title="Name of ensemble classifier" />
+                    </div><!-- /input-group -->
+                    <span id="_es_name_error_help_msg" class="help-block mlhide error_msg" >Name is required</span>
+                </div>       
+                </div><!--row id list-->                  
+                <div class="row mlhide _4ensemble_" style="margin-top: 3px;" id="_div_list">  
+				<div class="col-md-10">
+                    <div class="input-group">
+                        <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                            <strong>DataSet IDs:</strong>
+                        </span>
+                        <input type="text" class="form-control _validate_ensemble_" id="_es_list" name="_es_list" 
+                            style="min-width: 500px; margin-right: 5px; "
+                            placeholder="Dataset ID list for ensemble classifier: e.g. 1,2,3"  validate_rule="nempt list_i"
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="DataSet ID list for ensemble classifier: e.g. 1,2,3" />
+                    </div><!-- /input-group -->    
+                    <button type="button" class="btn btn-default" onclick="select_ids4ensemble('create');" >
+                        <span class="glyphicon glyphicon-search" /></button>
+                    <span id="_es_list_error_help_msg" class="help-block mlhide error_msg" >Integer id(s) is required</span>
+                </div>       
+                </div><!--row id list-->                 
+                <div class="row"> 
+                <div class="col-md-8"  style="margin-top: 3px;">
+                    <div class="input-group"> 
+                        <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                            <strong>Description:</strong>
+                        </span>  
+                        <textarea type="text" class="form-control _query_act" rows="1" id="_desc"  name="_desc"
+                            style="min-width: 505px;font-family: 'Lucida Console'; " placeholder="description for this entry"
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="description for dataset. will be shown in RESTful API"
+                        ></textarea>      
+                    </div>
+                </div>
+                </div> <!--row-->
+                <div class="row"> 
+                  {% if 'Y' in use_recaptcha %}
+                  <div class="col-md-3 " style="padding: 3px 5px 0px 15px;">
+                
+                    <script src="{% get_settings_value 'GOOGLE_RECAPTCHA_JS' %}"></script>
+                    <div class="g-recaptcha" data-sitekey="{% get_settings_value 'GOOGLE_RECAPTCHA_SITE_KEY' %}"></div>
+                  </div>
+                  {% endif %}                
+			    <div class="col-md-3 _4upload_ _not4ensemble_" style="margin-top: 3px;"> 
+                    <img id="prg_img_upload" class="_progressCircle" 
+                                src="{% static 'img/progress.gif' %}" style="display:none" />
+                    <!-- button type="submit" value="Upload" -->
+                    <button type="button" class="btn btn-primary _btn_upload_" id="btn_upload"
+                        onclick="event.preventDefault(); $('#hf_desc').val($('#_desc').val());
+                        submit_upload('#uploadForm','#prg_img_upload','#id_docfile','._btn_upload_');" 
+                        data-placement="bottom" data-toggle="tooltip"
+                        title="Upload a log files for data analysis. Based on selected Type in .zip or .gz format"
+                    >Upload File</button>
+                </div>
+                <div class="col-md-3 _4hdfs_ mlhide" style="margin-top: 3px;"> 
+                    <img id="_prg_img_cds" class="_progressCircle" 
+                                src="{% static 'img/progress.gif' %}" style="display:none" />
+                    <button type="submit" class="btn btn-primary _btn_upload_" id="btn_hdfs"
+                         onclick="event.preventDefault(); $('#hf_query').val('hdfs');$('#hf_desc').val($('#_desc').val()); 
+                         create_ds_entry('#uploadForm','#_prg_img_cds', '._btn_upload_');"
+                    {{ disabled4reader }} 
+                        data-placement="bottom" data-toggle="tooltip"
+                        title="Click to Create DataSet Entry"
+                    >Create Dataset Entry</button>
+                    <!-- formId, imgId, btnId, rid, initMsg, refreshCallback, logtype -->
+                </div> 
+                <div class="col-md-3 _4ensemble_ mlhide" style="margin-top: 3px;"> 
+                    <img id="_prg_img_cds" class="_progressCircle" 
+                                src="{% static 'img/progress.gif' %}" style="display:none" />
+                    <button type="submit" class="btn btn-primary _btn_upload_" id="_btn_crt_es"
+                         onclick="event.preventDefault(); $('#hf_query').val('ensemble');$('#hf_desc').val($('#_desc').val()); 
+                         create_ds_entry('#uploadForm','#_prg_img_cds', '._btn_upload_');"
+                    {{ disabled4reader }} 
+                        data-placement="bottom" data-toggle="tooltip"
+                        title="Click to Create Ensemble Entry"
+                    >Create Ensemble Entry</button>
+                    <!-- formId, imgId, btnId, rid, initMsg, refreshCallback, logtype -->
+                </div> 
+                </div> <!--row submit btn-->
+              </div> <!--_upload tpane-->
+            </div> <!--ulqr tc-->
+            </div><!--_t_upload tabbable-->
+        </form><!-- upload form -->
+        </div><!--id=_t_upload tab-pane ############################################################  -->
+
+
+        
+        <div id="_t_retrieve" class="tab-pane ">
+        <form id="_workingtbl_"  class="form-inline"
+             method="post" action="/atdml/wwww/ffff/mlearning/"                 
+        >
+			{% csrf_token %}
+            <input type="hidden" id="hf_w_id" name="hf_w_id" value="{{ new_id }}"></input>
+            <input type="hidden" id="hf_w_action" name="action" value="" /> 
+            <input type="hidden" id="hf_w_sts_cde" name="hf_w_sts_cde" value="-1"></input>
+            <input type="hidden" id="hf_w_filename" name="hf_w_filename" value="" /> 
+            <!--input type="hidden" id="_w_filetype" name="_w_filetype" value="" /--> 
+            <input type="hidden" id="hf_w_class_numb" name="hf_w_class_numb" value="" /> 
+            <input type="hidden" id="hf_w_ml_n_gram" name="hf_w_ml_n_gram" value="" /> 
+            <input type="hidden" id="hf_w_ml_lib" name="hf_w_ml_lib" value="" /> 
+            <input type="hidden" id="hf_w_ml_opts" name="hf_w_ml_opts" value="" /> 
+            <input type="hidden" id="hf_w_ds_list" name="hf_w_ds_list" value="" /> 
+            <!--input type="hidden" id="hf_w_lb_field" name="hf_w_lb_field" value="" /--> 
+            <!--input type="hidden" id="hf_w_lb_mapping" name="hf_w_lb_mapping" value="" /--> 
+         
+        <!--retrieve pan ============== -->    
+        <div class="row"> 
+        <div class="col-md-8"  style="margin-bottom: 3px;">
+        <div class="input-group" > 
+            <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                <strong>Host:</strong>
+            </span> 
+            <input type="text" id="_w_host" name="_w_host" class="form-control" value="{% get_settings_value 'MONGO_DNS' %}"
+                            default_val='{% get_settings_value "MONGO_DNS" %}'
+            ></input>
+        </div>
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;;text-align:right;">
+                <strong>Port:</strong>
+            </span>  
+            <input type="text" id="_w_port" name="_w_port" class="form-control" value="{% get_settings_value 'MONGO_PORT' %}"
+                                default_val='{% get_settings_value "MONGO_PORT" %}'
+            ></input>
+        </div>
+        </div></div>
+        <div class="row"> 
+        <div class="col-md-8" style="margin-bottom: 3px;">
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;">
+                <strong>Database:</strong>
+            </span>  
+            <input type="text" id="_w_db" name="_w_db" class="form-control" value="{% get_settings_value 'MONGO_DB' %}"
+                            default_val='{% get_settings_value "MONGO_DB" %}'
+            ></input>
+        </div>
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;">
+                <strong>Collection:</strong>
+            </span>  
+            <input type="text" id="_w_tbl"  name="_w_tbl" class="form-control" value="{% get_settings_value 'MONGO_TBL' %}"
+                default_val='{% get_settings_value "MONGO_TBL" %}'
+            ></input>
+        </div>
+        </div></div> 
+        <div class="row"> 
+        <div class="col-md-8" style="margin-bottom: 3px;">
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;">
+                <strong>Username:</strong>
+            </span>
+            <input type="text" id="_w_username" name="_w_username" class="form-control" 
+                    placeholder="optional"        
+            ></input>
+        </div>
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;">
+                <strong>Password:</strong>
+            </span> 
+            <input type="password" id="_w_password"  name="_w_password" class="form-control" 
+                placeholder="optional" 
+            ></input>
+        </div>
+        </div></div> 
+        <div class="row"> 
+        <div class="col-md-8" style="margin-bottom: 3px;">
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;">
+                <strong>Source Id:</strong>
+            </span>
+            <input type="text" id="_w_ds_id" name="_w_ds_id" class="form-control" 
+                data-placement="bottom" data-toggle="tooltip" title="Input dataset id to retrieve data from existing dataset"
+                    placeholder="optional"        
+            ></input>
+        </div>
+        <div class="input-group">
+            <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;" 
+                id="_w_ds_id_fname"><strong>Optional dataset id to retrieve data from existing dataset
+            </strong></span></div>
+        </div></div> 
+        <div class="row"> 
+        <div class="col-md-10"  style="margin-bottom: 3px;">
+            <div class="input-group"> 
+                <span class="input-group-addon" align="right" style="min-width: 100px;text-align:right;">
+                    <strong>Projection:</strong>
+                </span>  
+                <textarea type="text" class="form-control " rows="3" id="_w_proj" name="_w_proj" 
+                    style="min-width: 700px;font-family: 'Lucida Console'; "  default_val='{% get_settings_value "MONGO_IN_DY_PJ" %}'
+                >{% get_settings_value "MONGO_IN_DY_PJ" %}</textarea>  
+            </div>
+        </div> </div>
+        <div class="row"> 
+        <div class="col-md-10"  style="margin-bottom: 3px;">
+            <div class="input-group"> 
+                <span class="input-group-addon" align="right" style="min-width: 100px;text-align:right;">
+                    <strong>Filter:</strong>
+                </span>  
+                <textarea  type="text" class="form-control " rows="2" id="_w_filter" name="_w_filter"
+                    style="min-width: 700px;font-family: 'Lucida Console'; "  default_val='{% get_settings_value "MONGO_IN_DY_FL" %}'
+                >{% get_settings_value "MONGO_IN_DY_FL" %}</textarea>   
+            </div>
+        </div> 
+        </div>                
+        <div class="row _query_only"> 
+        <div class="col-md-8"  style="margin-bottom: 3px;">
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 150px;;text-align:right;">
+                <strong>Label Field:</strong>
+            </span>  
+            <input type="text" id="_w_lb_field" name="_w_lb_field" class="form-control" value=""              
+                style="min-width: 650px;font-family: 'Lucida Console';" default_val='RAM.data.Ctype'
+                placeholder='Classification.ctype'
+                data-placement="bottom" data-toggle="tooltip"
+                title='Expect a string as JSON field name. Should also exist in projection string.'
+            ></input>
+        </div>
+        </div></div>
+        <div class="row _query_only"> 
+        <div class="col-md-10"  style="margin-bottom: 3px;">
+            <div class="input-group"> 
+                <span class="input-group-addon" align="right" style="min-width: 150px;text-align:right;">
+                    <strong>Label Mapping:</strong>
+                </span>  
+                <textarea  type="text" class="form-control " rows="2" id="_w_lb_mapping" name="_w_lb_mapping"
+                    style="min-width: 650px;font-family: 'Lucida Console'; "  
+                    default_val='{"dirty":["TROJAN","VIRUS","PUP"],"clean":["assumed_clean","known_clean","analysed_clean"]}'
+                    value='{"dirty":["TROJAN","VIRUS","PUP"],"clean":["assumed_clean","known_clean","analysed_clean"]}'
+                    data-placement="bottom" data-toggle="tooltip"
+                    title='Expect JSON string. eg. {"label_1":"raw string from db",...}'
+                ></textarea>   
+            </div>
+        </div> 
+        </div>         
+            <div class="row"> 
+            <div class="col-md-3" style="margin-top: 5px;margin-bottom: 5px;"> 
+            <!-- function submit_job(formId, imgId, btnId, rid, initMsg, refreshCallback, logtype) -->
+            <!--retrieve button ============== -->
+            <img id="prg_img_retr_w" class="_progressCircle"  
+                    src="{% static 'img/progress.gif' %}" style="display:none" />
+            <button type="submit" class="btn btn-primary btn-sm  _w_ sts_btn _btn_not4format_ _btn_not4atd_ _btn_not4pattern_" 
+                id="btn_retr_w" name="action"  value="retrieve" code="0"
+                data-placement="bottom" data-toggle="tooltip"
+                title="Retrieve data from MongoDB by MD5 list."
+                onclick=" event.preventDefault(); $('#hf_download_flag').val('Y'); $('#hf_w_action').val('retrieve'); 
+                    $('#_workingtbl_').attr('action','/atdml/'+$('#hf_w_id').val()+'/'+$('#hf_w_filename').val()+'/mlearning/');
+                    submit_job('#_workingtbl_','#prg_img_retr_w', '._w_', $('#hf_w_id').val()
+                ,'Retrieving data. Id='+$('#hf_w_id').val()+'...', postupdate_file_record, 'retrieve'); "
+                disabled
+            >Retrieve Data & Create Parquet</button>
+            </div>
+            <input type="hidden" id="hf_download_flag" name="hf_download_flag" value="Y"></input>
+            <div class="col-md-3" style="margin-top: 5px;margin-bottom: 5px;"> 
+            <!-- function submit_job(formId, imgId, btnId, rid, initMsg, refreshCallback, logtype) -->
+            <!--retrieve button ============== -->
+            <img id="prg_img_recreatep_w" class="_progressCircle"  
+                    src="{% static 'img/progress.gif' %}" style="display:none" />
+            <button type="submit" class="btn btn-primary btn-sm  _w_ sts_btn _btn_not4format_ _btn_not4atd_ _btn_not4pattern_" 
+                id="btn_recreatep_w" name="action"  value="reparquet" code="10"
+                data-placement="bottom" data-toggle="tooltip"
+                title="Recreate parequet file from existing data in HDFS"
+                onclick=" event.preventDefault(); $('#hf_download_flag').val('N'); $('#hf_w_action').val('retrieve'); 
+                    $('#_workingtbl_').attr('action','/atdml/'+$('#hf_w_id').val()+'/'+$('#hf_w_filename').val()+'/mlearning/');
+                    submit_job('#_workingtbl_','#prg_img_retr_w', '._w_', $('#hf_w_id').val()
+                ,'Retrieving data. Id='+$('#hf_w_id').val()+'...', postupdate_file_record, 'retrieve'); "
+                disabled
+            >Re-create Parquet Only</button>
+            </div>
+            </div><!--row-->
+
+        </div><!--end retrieve -->
+             
+        <!--feature pan ============== -->
+        <!--train pan ============== -->
+        <!--feature_importance pan ======================================================== -->        
+        <!--result pan ============== -->                  
+        <!-- Next to training option ============== -->
+        <div id="_t_next" class="tab-pane ">
+            <div class="col-xs-12 _not4ensemble_"  style="margin-top: 5px;margin-bottom: 5px;"> 
+                <h4>Go to Pipeline page for analysis: 
+                <a id="btn_next_w" class="btn btn-default btn-md sts_btn" code="100"
+                    base_url="{% url 'list' %}"
+                    href="" data-placement="bottom" data-toggle="tooltip" title="Go to ML Pipeline page"
+                    disabled
+                >ML Pipeline Training page...</a>                  
+                <!--button type="submit" class="btn btn-default btn-md sts_btn " 
+                            id="btn_next_w"   code="100"
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="Go to ML Pipeline page"
+                    onclick=" event.preventDefault(); $('#hf_w_action').val('next'); 
+                    window.location.href='{% url 'list' %}'+$('#hf_w_id').val()+'/';    "
+                    disabled
+                >ML Pipeline page...</button-->
+            </h4>
+            </div>
+            <div class="tabbable boxed parentTabs _4ensemble_ mlhide">
+                <div id="_t_ensemble" class="tab-pane _4ensemble_">
+                    <div class="row">
+                    <h4>
+                    <div class="col-xs-4"  style="margin-top: 5px;margin-bottom: 5px;"> 
+                        Edit DataSet IDs: 
+                        <img id="prg_img_edit_es_w" class="_progressCircle"  
+                            src="{% static 'img/progress.gif' %}" style="display:none" />
+                        <button id="_btn_edit_ids_" class="btn btn-default btn-md "  
+                            >Edit Datasets...</button>
+                    </div>
+                    <div class="col-xs-2"  style="margin-top: 5px;margin-bottom: 5px;"> 
+                        <a id="btn_log_w" class="btn btn-default btn-md " 
+                            base_url="{% url 'job_logs4oid' %}"
+                            href="" data-placement="bottom" data-toggle="tooltip" title="Go to log page"
+                        >Go to Log page...</a>
+                    </div> 
+                    <div class="col-xs-2"  style="margin-top: 5px;"> 
+                        <a id="btn_pred_w" class="btn btn-default btn-md " 
+                            base_url="{% url 'predict4oid' %}"
+                            href="abc" data-placement="bottom" data-toggle="tooltip" title="Go to Prediction page"
+                        >Go to Prediction page...</a>
+                    </div>
+                    </h4>
+                    </div><!--row-->
+                </div><!--tab pane-->
+            </div>
+        </div><!--end 2 pipeline-->
+        <!-- Select id for ensemble ============== -->
+
+        </form><!-- retrieve form-->
+    </div> <!--tc_all-->
+
+           
+</div><!--tabbable boxed parentTabs whole pipeline-->
+
+
+
+</div><!--panel-body-->
+</div><!--panel panel-default PIPELINE -->
+</div></div> 
+</div><!--container-fluid-->
+        
+       
+        {% endif %} <!-- perm > 1 ################################################################ -->
+
+        <div class="container-fluid">
+        <h3 class="h3_packed"><strong>DataSet/Classifier List:</strong></h3>
+        <table class="table table-striped table-bordered table-hover table-condensed table-scrollable" 
+            id="_ds_tbl" 
+        >
+
+        <thead><tr data-placement="bottom" data-toggle="tooltip"
+            title="Select a DataSet and Click Action Button(s) in Pipeline Stage Tabs above"
+            >
+            <!--th class="col-xs-1">Select</th-->
+            <th class="col-xs-1">*</th>
+            <th class="col-xs-1">Id</th>
+            <th class="col-xs-1">Name</th>
+            <th class="col-xs-1">Type</th>
+            <th class="col-xs-1">Status</th>
+            <th class="col-xs-1">Performance</th>
+            <th class="col-xs-1">Processed Date</th>
+            <th class="col-xs-1">By</th>
+            <th class="col-xs-1">Description</th>
+            <th class="col-xs-1">Links:</th>
+        </tr></thead>
+        <tbody></tbody>
+
+        </table>
+        </div>
+        
+
+            
+		<!-- dataset selection Modal  ====================================== -->
+		<div class="modal fade" id="_ensemble_popup" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		  <div class="modal-dialog modal-lg" style="width: 95%; height=100%;">
+			<div class="modal-content">
+			  <div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="close" onclick="cancel_ensemble();">
+					<span aria-hidden="true">&times;</span></button>			
+				<h4 class="modal-title" id="_logModalLabel" name="_logModalLabel"> Find Dataset ID for Ensemble Classifier: 
+				</h4>
+			  </div>
+			  <div class="modal-body"  >
+                <table id="_tbl_id_list" class="table table-striped table-bordered table-hover table-condensed table-scrollable" 
+                    cellspacing="0" width="100%">
+                    <thead>
+                        <tr>
+                        <th class="col-xs-1">Select</th>
+                        <th class="col-xs-1">Id</th>
+                        <th class="col-xs-1">Name</th>
+                        <th class="col-xs-1">Type</th>
+                        <th class="col-xs-1">Status</th>
+                        <th class="col-xs-1">Performance</th>
+                        <th class="col-xs-1">By</th>
+                        <th class="col-xs-1">Description</th>
+                        </tr>
+                    </thead>
+                </table>				
+			  </div>
+			  <div class="modal-footer">
+				<button id="_btn_ds_list" type="button" class="btn btn-primary btn-sm" data-dismiss="modal" act_type="" 
+                    onclick="submit_ensemble();">Done</button>
+				<button type="button" class="btn btn-default btn-sm" data-dismiss="modal"  onclick="cancel_ensemble();">Cancel</button>
+			  </div>
+
+			</div>
+		  </div>
+		</div><!--end modal-->            
+            
+            
+        
+        <input type="hidden" id="_4refresh" value="0">
+
+{% endblock content %}
+
+    
+{% block javascript_extra %}
+<script src="{% static 'css/datatables/js/jquery.dataTables.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.bootstrap.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.select.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.buttons.min.js' %}" ></script>
+
+
+    <script>
+    // dataset list
+    var _ds_list=null;
+    // ensemble table
+    var _ensemble_table=null;
+    var img_checked="{% static 'img/checked_blue.png' %}"
+    var img_checked_grey="{% static 'img/checked_grey.png' %}"
+    var retitle=0;
+    //for BACK button to keep dataset row selection, invoked when 1st load or Back button
+    onload=function(){
+        var e=$("#_4refresh");
+        if(e.val()=="0"){
+            e.val("1");
+            $(window).scrollTop(0);
+        }else{
+            location.reload(); //force refresh
+        }
+    }
+    //Handler for radio button in dataset table, load data to working tbl from row's hidden fields ##############
+    //function set_working_tbl(radio){
+    function set_working_tbl(data){
+        //remove previous active class
+
+        // fill out working table and hidden fields
+        var img_checked="{% static 'img/checked_blue.png' %}"
+        var id=data.id  //ctr.find('td:eq(0)').find('span:first').html();
+        var n_gram=data.ml_n_gram
+        var ml_lib=data.ml_lib
+        var ml_opts=data.ml_opts;
+        var ds_list=data.ds_list;
+        var j_ml_opts={};
+        var ml_alg="";
+        // reset init icon
+        $("#_img_w").removeClass("img_warning");
+        $("#_img_w").attr('src',img_checked)
+        // set working table
+        $("#_w_id").text(id);
+        $("#_w_name").text(data.filename);//ctr.find('td:eq(1)').html());
+        $("#_w_filetype").text(data.file_type);   //ctr.find('td:eq(2)').html());
+        $("#_w_status").text(data.status);   //ctr.find('td:eq(3)').html());
+        if (n_gram=="-1")
+            $("#_w_n_gram").text("N/A");
+        else
+            $("#_w_n_gram").text(n_gram);
+        $("#_w_ml_lib").text(ml_lib);
+        if (ml_opts !=null && ml_opts.length>0){
+            j_ml_opts=JSON.parse(data.ml_opts);
+        }
+        if (j_ml_opts.hasOwnProperty('learning_algorithm')){
+            ml_alg=j_ml_opts.learning_algorithm
+        }
+        $("#_w_ml_alg").text(ml_alg);
+        //$("#_w_ml_opts").text($("#hf_"+id+"_ml_opts").val());
+        
+        // set hidden values
+        $("#hf_w_id").val(id);
+        $("#hf_w_filename").val(data.filename);//ctr.find('td:eq(1)').html());
+        $("#hf_w_sts_cde").val(data.status_code);
+        $("#hf_w_class_numb").val(data.class_numb);
+        $("#hf_w_ml_n_gram").val(n_gram); // hidden field	 
+        $("#hf_w_ml_lib").val(ml_lib);
+        $("#hf_w_ml_opts").val(ml_opts);
+        $("#hf_w_ds_list").val(ds_list);
+        //$("#hf_w_ml_has_cv").val($("#hf_"+id+"_ml_has_cv").val());
+
+        // set ml options
+        if (parseInt(n_gram,10)>=0){
+            $("#_n_gram_row").removeClass('mlhide');
+        } else {// hide for static data, n_gram =-1
+            $("#_n_gram_row").addClass('mlhide');
+        }
+        
+        //db params
+        if (data.db_host != null) $("#_w_host").val(data.db_host);
+        //if($("#hf_"+id+"_host").val()!="None") $("#_w_host").val($("#hf_"+id+"_host").val()); 
+                else $("#_w_host").text($("#_w_host").attr('default_val')); 
+        if (data.db_port != null) $("#_w_port").val(data.db_port);
+        //if($("#hf_"+id+"_port").val()!="None") $("#_w_port").val($("#hf_"+id+"_port").val());        
+                else $("#_w_port").text($("#_w_port").attr('default_val')); 
+        if (data.db_db != null) $("#_w_db").val(data.db_db);
+        //if($("#hf_"+id+"_db").val()!="None") $("#_w_db").val($("#hf_"+id+"_db").val());        
+                else $("#_w_db").text($("#_w_db").attr('default_val')); 
+        if (data.db_tbl != null) $("#_w_tbl").val(data.db_tbl);
+        //if($("#hf_"+id+"_tbl").val()!="None") $("#_w_tbl").val($("#hf_"+id+"_tbl").val());        
+                else $("#_w_tbl").text($("#_w_tbl").attr('default_val')); 
+        if (data.db_proj != null) $("#_w_proj").val(data.db_proj);
+        //if($("#hf_"+id+"_proj").val() !="None" ) $("#_w_proj").text($("#hf_"+id+"_proj").val());        
+                else $("#_w_proj").text($("#_w_proj").attr('default_val')); 
+        if (data.db_filter != null) $("#_w_filter").val(data.db_filter);
+        //if($("#hf_"+id+"_filter").val() !="None" ) $("#_w_filter").text($("#hf_"+id+"_filter").val()); 
+                else $("#_w_filter").text($("#_w_filter").attr('default_val')); 
+        if (data.db_lb_field != null) $("#_w_lb_field").val(data.db_lb_field);
+        //if($("#hf_"+id+"_lb_field").val() !="None" ) $("#_w_lb_field").val($("#hf_"+id+"_lb_field").val()); 
+                else $("#_w_lb_field").text($("#_w_lb_field").attr('default_val')); 
+        if (data.db_lb_mapping != null) $("#_w_lb_mapping").val(data.db_lb_mapping);
+        //if($("#hf_"+id+"_lb_mapping").val() !="None" ) $("#_w_lb_mapping").text($("#hf_"+id+"_lb_mapping").val()); 
+                else $("#_w_lb_mapping").text($("#_w_lb_mapping").attr('default_val')); 
+
+      
+        // show working table
+        $("#_working_tb").removeClass('mlhide');        
+
+        //didn't work here?
+        //set_all_tabs(sts_cde);
+        //click_tab_by_sts_cde(sts_cde)
+
+        //save id to URL for BACK button
+        document.location.hash = $("#hf_w_id").val();
+		// scroll to top
+		//$(window).scrollTop(100);
+
+    } 
+    //Handler for table row #######################################
+    function tr_onclick(data){
+        var id=data.id
+        var img_id="_img_"+id
+
+        
+        var active_img=$("._img_ds_r.img_checked");
+        //var active_img=$("._tr_ds_ td").children('img');
+        
+        if ($("._tr_ds_.tr_active")!= undefined)          
+            $("._tr_ds_.tr_active").removeClass("tr_active");
+        if (active_img){ // remove prior checked image
+            active_img.removeClass("img_checked");
+            //active_img.addClass("img_checked_grey"); //set img src in css didn't work for IE/Firefox...
+            active_img.attr("src",img_checked_grey)
+        }
+        // add checked image and active background-color
+        //$("#"+img_id).removeClass("img_checked_grey");
+        $("#"+img_id).addClass("img_checked");//set img src in css didn't work for IE/Firefox...
+        $("#"+img_id).attr("src",img_checked)
+        //tb_row.addClass("tr_active");
+
+        set_working_tbl(data);
+        var sts_cde=$("#hf_w_sts_cde").val();
+ 
+        set_all_tabs(sts_cde);//chg color for tabs
+        click_tab_by_sts_cde(sts_cde); //auto click tab based on status
+        //set_training_options(sts_cde); //load value to all options
+        
+        // set href for ML pipeline button
+        $('#btn_next_w').attr('href', $('#btn_next_w').attr('base_url')+id+'/');   
+        
+        // for Ensemble only
+        $('#btn_pred_w').attr('href', $('#btn_pred_w').attr('base_url')+$('#hf_w_id').val()+'/');
+        $('#btn_log_w').attr('href', $('#btn_log_w').attr('base_url')+$('#hf_w_id').val()+'/');        
+
+    }
+    //Handler for ML pipeline tab #######################################
+    function tab_onclick(target_li){
+        // en-/dis-able tab images
+        var pr_li=$("#_ul_pipe li.active")
+        var sts_cde=parseInt($("#hf_w_sts_cde").val(),10);
+        var for_new_upload=false;
+        var li_cde=parseInt(target_li.attr('code'),10);//sts cde
+        var pr_li_cde=parseInt(pr_li.attr('code'),10);        
+        
+        //new upload
+        if (target_li.attr('code') == '0')
+            for_new_upload=true;
+        //hide working table for new upload
+        if (for_new_upload){
+            //hide table 
+            //$("#_working_tb").css({"display":"none"});                                 
+            $("#_working_tb").addClass('mlhide');                                 
+        } else  {
+            $("#_working_tb").removeClass('mlhide');          
+            //$("#_working_tb").css({"display":"inline"});            
+        }
+        
+        // set inactive for prior li
+        if (pr_li.attr('code') != '0'){
+            // remove highlight
+            pr_li.removeClass("pline_bgc_highlight");  
+            //set class  based on sts cde
+            if (sts_cde >= pr_li_cde){
+                pr_li.removeClass("pline_bgc_grey");           
+                pr_li.addClass("pline_bgc_blue");            
+            }else{
+                pr_li.removeClass("pline_bgc_blue");           
+                pr_li.addClass("pline_bgc_grey");
+            }
+        } else { // for inactive upload
+            pr_li.removeClass("pline_plus_highlight");           
+            pr_li.addClass("pline_plus");  
+        }
+        // set new active tab 
+        if (!for_new_upload){
+            target_li.removeClass("pline_bgc_blue");
+            target_li.removeClass("pline_bgc_grey");
+            target_li.addClass("pline_bgc_highlight");
+        } else {
+            target_li.removeClass("pline_plus");
+            target_li.addClass("pline_plus_highlight");  
+        }
+        
+        var file_type=$("#_w_filetype").text().toLowerCase();
+        // disable tabs for special type
+        if (file_type.indexOf('format')>0){
+            $("._not4format_").removeClass("pline_bgc_blue");   
+            $("._not4format_").addClass("pline_bgc_grey");
+        }
+        //disable for atd
+        else if (file_type.indexOf('atd')==0){
+            $("._not4atd_").removeClass("pline_bgc_blue");   
+            $("._not4atd_").addClass("pline_bgc_grey");
+        }
+        else if (file_type.indexOf('pattern')>0){
+            $("._not4pattern_").removeClass("pline_bgc_blue");   
+            $("._not4pattern_").addClass("pline_bgc_grey");
+        }
+    }
+    // Auto click tab by status; assume sts_cde is int #######################################
+    function click_tab_by_sts_cde(sts_cde){
+        if (sts_cde==null)
+            return true;        
+        var i_sts_cde=parseInt(sts_cde,10);
+        //set tab 
+        if (i_sts_cde<100 && i_sts_cde>0 ){  // retrieve 100
+            $("#_la_retrieve").trigger("click");
+            //$("#_l_retrieve").addClass("active");
+        } else if (i_sts_cde<400  && i_sts_cde>0){  // 
+            $("#_la_feature").trigger("click");
+            //$("#_l_feature").addClass("active");
+        } else if (i_sts_cde==400){ //feature 400
+            $("#_la_train").trigger("click");
+            //$("#_l_train").addClass("active");
+        } else { // result
+            $("#_la_result").trigger("click");
+            //$("#_l_result").addClass("active");
+        }
+    }
+    // Refresh pipeline images; for postUpdate and tr click #################
+    function set_all_tabs(sts_cde){
+        if (sts_cde==null)
+            return true;
+        var i_sts_cde=parseInt(sts_cde,10);
+        // set all tabs
+        $("#_ul_pipe").children('li').each(function(){
+            var li_cde=parseInt($(this).attr('code'),10);
+            if ( i_sts_cde >= li_cde && li_cde !=0){
+                $(this).removeClass("pline_bgc_grey");           
+                $(this).addClass("pline_bgc_blue");            
+            }else if (li_cde !=0){
+                $(this).removeClass("pline_bgc_blue");           
+                $(this).addClass("pline_bgc_grey");
+            }        
+        });
+        var file_type=$("#_w_filetype").text().toLowerCase();
+        // disable tabs for special type
+        if (file_type.indexOf('format')>0){
+            $("._not4format_").removeClass("pline_bgc_blue");   
+            $("._not4format_").addClass("pline_bgc_grey");
+        }
+        //disable for atd
+        else if (file_type.indexOf('atd')==0){
+            $("._not4atd_").removeClass("pline_bgc_blue");   
+            $("._not4atd_").addClass("pline_bgc_grey");
+        }
+        else if (file_type.indexOf('pattern')>0){
+            $("._not4pattern_").removeClass("pline_bgc_blue");   
+            $("._not4pattern_").addClass("pline_bgc_grey");
+        }
+        // for ensemble
+        if (file_type.indexOf('ensemble')>=0){
+            $("._4ensemble_").removeClass("mlhide");   
+            $("._not4ensemble_").addClass("mlhide");
+            $("._not4ensemble_").hide();
+            $("._4ensemble_").show();
+        } else {
+            $("._not4ensemble_").removeClass("mlhide");
+            $("._4ensemble_").addClass("mlhide");
+            $("._not4ensemble_").show();
+            $("._4ensemble_").hide();
+        }
+        // un-/hide label controls based on type
+        if (file_type.indexOf('query')==0)
+            $("._query_only").removeClass('mlhide');//show
+        else    
+            $("._query_only").addClass('mlhide');//hidden
+
+        // set all action buttons
+        set_all_sts_buttons(sts_cde,file_type);
+ 
+        //disable all action buttons if job is running
+        if($("#_w_status").text().indexOf('processing')>=0){
+            $("._w_").attr("disabled","disabled");
+        }
+
+    }
+
+    //En-/dis-able action buttons #######################################
+    function set_all_sts_buttons(sts_cde,file_type){
+        if (sts_cde==null)
+            return true;
+        var i_sts_cde=parseInt(sts_cde,10);
+
+        // set all tabs
+        $(".sts_btn").each(function(){ 
+            var btn_cde=parseInt($(this).attr('code'),10);
+            // retrieve=0  feature extraction=100
+            // train=500
+            // feat_impo=990, feat_impo_result=1000
+            if ( i_sts_cde >= btn_cde ){
+                $(this).removeAttr("disabled"); //enabled 
+            }else if ($("#hf_w_class_numb").val()=="2" //special for IN
+                && i_sts_cde>=500 && btn_cde==990){
+                    $(this).removeAttr("disabled"); //show feat impo button
+            }else {
+                $(this).attr("disabled","disabled");//disabled
+            }        
+        });    
+
+        // disable tabs for special type
+        file_type=file_type.toLowerCase();
+        if (file_type.indexOf('format')>0){
+            $("._btn_not4format_").attr("disabled","disabled");
+        }
+        if (file_type.indexOf('atd')==0){
+            $("._btn_not4atd_").attr("disabled","disabled");
+        }
+        if (file_type.indexOf('pattern')>0){
+            $("._btn_not4pattern_").attr("disabled","disabled");
+        }
+    }
+    // Update table row after Ajax call
+    function postupdate_file_record(data){
+        var sts_cde=data.status_code;
+        //dataset table
+        $("#sts_"+data.id).text(data.status);
+        $("#pdate_"+data.id).text(data.pdate);
+        
+        //hidden fields in dataset table
+        $("#hf_"+data.id+"_sts_cde").val(sts_cde);
+        $("#hf_"+data.id+"_class_numb").val(data.class_numb);
+        
+        // working panel
+        $("#hf_w_sts_cde").val(sts_cde);
+        $("#hf_w_class_numb").val(data.class_numb);
+        $("#_w_filetype").text(data.file_type);
+        
+        // set pipeline images
+        set_all_tabs(sts_cde);
+        click_tab_by_sts_cde(sts_cde);
+ 
+        //enable links
+        if (sts_cde=="100" || sts_cde=="-1"){//retrieved or retrieve failed
+            //$("#_vj_"+data.id).css({"display":"inline"}); // show Log
+            $("#_vj_"+data.id).removeClass('mlhide'); // show Log
+        } else if (sts_cde=="500"){//trained
+            //$("#_vr_"+data.id).css({"display":"inline"});
+            $("#_vr_"+data.id).removeClass('mlhide');
+        } else if (sts_cde=="1000"){
+            //$("#_vf_"+data.id).css({"display":"inline"});
+            $("#_vf_"+data.id).removeClass('mlhide');
+        }
+    }
+    // TBD for file upload only #######################################
+    function submit_upload(formId, imgId, filnameId, btnId){
+        //event.preventDefault(); 
+        if(!validate_highlight(null,filnameId,'#_upload_btn_div',"File name was not selected. Plesae click 'File selection box' to select a file for upload.")) 
+           return false;        
+
+        setMsgPanText("Uploading "+$(filnameId).val()+"... ", "info",0);
+        var form = $(formId);
+
+        setHideShow(imgId,"show");// somehow it works reverse way...?
+        setDisable(btnId,"true");
+        form.submit();
+        //setHideShow(imgId, "show");
+
+    };
+
+    //
+    function create_ds_entry(formId, imgId, btnId){
+        var form = $(formId);
+        setHideShow(imgId,"show");// somehow it works reverse way...?
+        setDisable(btnId,"true");
+        form.submit();
+    }
+
+    // Hook up actions #######################################
+	$(document).ready(function(){
+        _ds_list=$('#_ds_tbl').DataTable( {
+            "ajax": 
+           {
+            "type"   : "GET",
+            "url"    : '{% url "get_dataset_list" %}',
+            "dataSrc": function (json) {
+                  
+                  for(var i=0;i< json.length; i++){
+                    var id=json[i]["id"];
+                    // links for each dataset
+                    var sts_cde=parseInt(json[i]["status_code"]);
+                    var a_tag="";
+                    var del="";
+                    // always show Log
+                    //if (sts_cde>=0){ //log
+                        a_tag='<a id="_vj_'+id+'" href="{% url "job_logs4oid" %}'+id+'/">Log</a>'
+                        del="/&nbsp;"
+                    //}    
+                    if (sts_cde>=100){ //pipeline
+                        a_tag=a_tag+'<a id="_vt_'+id+'" href="{% url "train4oid" %}'+id+'/" >'+del+'Pipeline</a>';
+                        del="/&nbsp;"
+                    } 
+                    if (sts_cde>=500 ){//predict
+                        a_tag=a_tag+'<a id="_vp_'+id+'" href="{% url "predict4oid" %}'+id+'/">'+del+'Predict</a>';
+                        del="/&nbsp;"
+                    }     
+                    if (sts_cde>=1000){ //Feature Impo.
+                        a_tag=a_tag+'<a id="_vp_'+id+'" href="{% url "feature_impo4oid" %}'+id+'/">'+del+'Feature</a>' 
+                        del="/&nbsp;"
+                    }                        
+                    if (sts_cde==-101){//predict
+                        a_tag=a_tag+del+'<a id="_vp_'+id+'" href="{% url "predict4oid" %}'+id+'/">Predict</a>';
+                        del="/&nbsp;"
+                    }
+                    //del link
+                    a_tag=a_tag+del+'<a id="_vd_'+id+'" href="#" data-toggle="modal" data-target="#confModal" data-rid="'+id+'">Delete</a>'
+                    
+                    json[i]["links"]=a_tag
+                    // check icon image
+                    json[i]["*"]='<img id="_img_'+json[i]["id"]+'" class="img_checked_grey _img_ds_r" '
+                      +' style="max-height:25px; max-width:25px;" src="{% static "img/checked_grey.png" %}" />';
+                    // add id attr to table row
+                    json[i]["DT_RowId"]="_tr_"+id;
+                    //perfx
+                    var perf=json[i]["perf_measures"];
+                    if (perf === null || perf==""){
+                        json[i]["perfx"]="n/a";
+                    }else{
+                        try{
+                            perf=perf.replace("NaN","\"NaN\"");
+                            perf=JSON.parse(perf);
+                            var acc=(perf.accuracy*100).toFixed(2);
+                            if ("fp" in perf){
+                                var fp=perf.fp;
+                                var tn=perf.tn;
+                                var fn=perf.fn;
+                                var tp=perf.tp;
+                                var fpr=((fp/(fp+tn))*100).toFixed(2);
+                                json[i]["perfx"]="acc:"+acc+"%,fpr="+fpr+"%,p:"+(tp+fn)+",n:"+(fp+tn);
+                            } else {
+                                json[i]["perfx"]="n/a";                                    
+                            }
+                        } catch (err) {
+                            json[i]["perfx"]="n/a";
+                        }
+                    }                    
+                  }
+                  return json; // return an array
+                }    
+            }
+            ,paging: true
+            // need other package ,select: true
+            ,scrollY: 600
+            ,scrollX: false
+            //,bscrollcollapse : false
+            ,select: 'single'
+            ,bInfo: false
+            ,"iDisplayLength": 50
+            ,"order": [[ 1, "desc" ]]//Initial order (sort) to apply to the table
+            ,"columnDefs": [
+                 { "width": "1%", "targets": [0] }
+                ,{ "width": "1%", "targets": [1] }
+                ,{ "width": "10%", "targets": [2] }
+                ,{ "width": "12%", "targets": [3] }
+                ,{ "width": "10%", "targets": [4] }
+                ,{ "width": "12%", "targets": [5] }
+                ,{ "width": "12%", "targets": [6] }
+                ,{ "width": "1%", "targets": [7] }
+                ,{ "width": "10%", "targets": [8] }
+                ,{ "width": "15%", "targets": [8] }
+            ]
+            ,"columns": [
+                 { "data": "*" }
+                ,{ "data": "id" }
+                ,{ "data": "filename" }
+                ,{ "data": "file_type" }
+                ,{ "data": "status" }
+                ,{ "data": "perfx" }
+                ,{ "data": "local_processed_date" }
+                ,{ "data": "submitted_by" }
+                ,{ "data": "desc" }
+                ,{ "data": "links" }
+            ] 
+        } ); // End datatable  
+	    // dropdown action to set custom type
+	    $("#ul_custom_type li a").click(function(){
+			var sel=$(this).text();
+			$("#customtype").text(sel); //display only
+			$("#hf_customtype").val(sel); // hidden field
+	    });        
+	    // dropdown action to set upload file type
+	    $("#uploadtype_dropdown li a").click(function(){
+			var sel=$(this).text();
+			$("#uploadtype").text(sel); //display only
+			$("#hf_uploadtype").val(sel); // hidden field
+            if (sel=="Custom")
+                $('#col_custom_type').removeClass('mlhide');
+            else
+                $('#col_custom_type').addClass('mlhide');
+               
+            /*
+              _4upload_: file selector
+              _4hdfs_: hdfs 
+              TYPE:
+              libsvm:file sel, desc
+              atd:   file sel, desc
+              md5:   file sel, desc
+              ptn gz:file sel, RE, labels, desc
+              ptn:   hdfs,     RE, labels, desc     
+              json:  hdfs, json,   labels, desc
+              custom:hdfs,         labels, desc
+              ensemble: id list, desc
+            */
+            // 
+            if ($(this).hasClass('_hdfs_')){ // for HDFS
+                $('._4hdfs_').removeClass('mlhide');
+                $('._4upload_').addClass('mlhide');
+                $('._4ensemble_').addClass('mlhide');
+            } else { //for upload
+                $('._4hdfs_').addClass('mlhide');
+                $('._4upload_').removeClass('mlhide'); 
+                $('._4ptn_').addClass('mlhide');                
+                $('._4label_').addClass('mlhide');
+                $('._4json_').addClass('mlhide');
+                $('._4ensemble_').addClass('mlhide');
+            } 
+            // has "RE pattern", "label list"
+            if ($(this).hasClass('_ptn_') || $(this).hasClass('_gz_')){
+                $('._4label_').removeClass('mlhide');
+                $('._4ptn_').removeClass('mlhide');                
+                $('._4json_').addClass('mlhide');
+                $("#_ptn_str").val("") //clean up pattern
+                $("#_label_arr").val("") //clean up 
+            // has "json key", "label list"        
+            } else if ($(this).hasClass('_json_')){   
+                $('._4label_').removeClass('mlhide');
+                $('._4json_').removeClass('mlhide');
+                $('._4ptn_').addClass('mlhide');
+                $("#_json_keys_arr").val("") //clean up 
+                $("#_label_arr").val("") //clean up 
+            } else if ($(this).hasClass('_ensemble_')){ // ensemble
+                $('._4ensemble_').removeClass('mlhide');
+                $('._4hdfs_').addClass('mlhide');
+                $('._4upload_').addClass('mlhide'); 
+            } else if ($(this).hasClass('_custom_')){ // custom
+                $('._4hdfs_').removeClass('mlhide');
+                $('._4label_').removeClass('mlhide');
+                $('._4json_').addClass('mlhide');
+                $('._4ptn_').addClass('mlhide');                
+                $('._4ensemble_').addClass('mlhide');
+                $('._4upload_').addClass('mlhide'); 
+            }           
+
+	    });
+
+        // set hidden field for query type dropdown
+	    $("#_querytype_dropdown li a").click(function(){
+			var sel=$(this).text();
+			$("#_querytype").text(sel); //display only
+			$("#hf_querytype").val(sel); // hidden field		
+			$("#_query_proj").val($(this).parent().attr("pj")); // set projection		
+			$("#_query_filter").val($(this).parent().attr("fl")); // set projection		
+	    });   
+        // tab onclick
+		$("#_ul_pipe li").click(function() {
+            var target_li=$(this);
+            //event.stopPropagation();
+            tab_onclick(target_li);
+		});
+        // table row onclick
+        _ds_list.on('click','tr',function () {
+            var row= _ds_list.row(this);
+            var data = row.data();
+            var idx = row.index();
+             
+
+            tr_onclick(data);
+        } ); 
+        // find fname for dataset id
+        $('#_w_ds_id').on('change', function() {            
+            var data=_ds_list.rows().data();
+            for (var i=0; i< data.length; i++){
+                if (data[i].id == $('#_w_ds_id').val()){
+                    if (data[i].file_type == $('#_w_filetype').text() ) {
+                        $('#_w_ds_id_fname').removeClass('error_msg')
+                        $('#_w_ds_id_fname').text("Dataset: "+data[i].filename);
+                    }else{
+                        $('#_w_ds_id_fname').text("Dataset Type didn't matched!!");
+                        $('#_w_ds_id_fname').addClass('error_msg')
+                        $('#_w_ds_id').val("");
+                    }
+                    return true;
+                } 
+            } //end for
+
+            $('#_w_ds_id_fname').html("Dataset not found!");
+            $('#_w_ds_id_fname').addClass('error_msg')
+            $('#_w_ds_id').val("");
+        });
+        
+        //toggle chevron
+        $('.chevron_toggleable').on('click', function() {
+            $(this).toggleClass('glyphicon-chevron-down glyphicon-chevron-up');
+        });
+        
+        var hash_rid = window.location.hash.substr(1);
+        // click the dataset table row by default, if id was set in hidden field
+        //auto click the row based on URL ===========
+        _ds_list.on('init.dt', function() {
+            click_the_row();
+        });        
+
+        //set file selection for "fake" upload button
+        $('#id_docfile').on('change', function ()
+        {
+            if(this.files[0] != null) {
+                $('#_out_f').val(this.files[0].name);
+            }
+        });
+        // action for "fake" File selection input group
+        $("#_out_f").on('click', function ()
+        {
+            //event.preventDefault(); 
+            $('#id_docfile').click(); //click real file upload control
+        });
+        
+        // load ensemble table model
+        load_ensemble_modal();
+        
+        // action for ensemble popup
+       $("#_btn_edit_ids_").on('click', function (){
+            // avoid submit the form
+            event.preventDefault();
+            list=select_ids4ensemble("edit");
+        });// end on click
+        // user input validation
+        set_input_validation();
+        
+        //confirm modal for deletion
+        $('#confModal').on('show.bs.modal', function(e) {
+            var rid = $(e.relatedTarget).data('rid');
+            $('#confModalId').text(rid);
+        })
+        
+    });// End ready()
+    // ensemble ds id selection
+    function select_ids4ensemble(type){
+        // set action type for Done button
+        $("#_btn_ds_list").attr("act_type", type);
+        // load table if not exist
+        if (_ensemble_table == null){        
+            load_ensemble_modal();//load data 
+        }
+        // current id
+        var id=$("#hf_w_id").val();
+        // for creation
+        if (type=="create")
+            set_ensemble_selection($('#_es_list').val());
+        else // for edit
+            set_ensemble_selection($("#hf_w_ds_list").val());
+            
+        //show modal
+        $("#_ensemble_popup").modal();
+        
+        // force to sort Select column and fix the title width issue
+        setTimeout(function() { 
+            if(retitle==0) {
+                $("th:contains('Select')").trigger("click"); 
+                $("th:contains('Select')").trigger("click"); 
+                retitle=1; // flag for only modal 1st show up
+            }
+        },1000);
+    }
+    // set ensemble selection         // for creation
+    function set_ensemble_selection(csv_list){
+        var del_indexes=_ensemble_table.rows('.selected' ).indexes();
+        var ids=_ensemble_table.rows('.selected' ).ids();
+
+        //remove existing selection
+        for (var i=0;i<del_indexes.length; i++){
+            var idx=del_indexes[i];
+
+            toggle_ensemble_selection(idx, "#"+ids[i]);
+        }
+
+        var new_list=csv_list.split(',');
+        //add selection for new ensemble
+        for (var i=0;i<new_list.length; i++){
+            var idx=_ensemble_table.row("#_trc_"+new_list[i]).index();
+         
+            toggle_ensemble_selection(idx, "#_trc_"+new_list[i]);
+        }
+    }
+    //toggle ensemble selection
+    function toggle_ensemble_selection(idx, tr_eid){
+        var cell=_ensemble_table.cell(idx,0);
+        
+        var imgc=$(tr_eid.replace("_trc_","_imgc_"))
+        var trc=null; //$(tr_eid)
+
+        if (imgc.hasClass("imgc_checked")){
+            // remove the dot; for sorting, this need to go before jquery access elements
+            if(cell!=undefined && cell.data().indexOf('.')==0){
+                cell.data(cell.data().substring(1,cell.data().length));
+            }
+            //force reassign
+            imgc=$(tr_eid.replace("_trc_","_imgc_"))
+            trc=$(tr_eid)
+            imgc.removeClass("imgc_checked");
+            imgc.addClass("imgc_checked_grey");
+            imgc.attr("src",img_checked_grey);//set img src in css didn't work for IE/Firefox...
+            trc.removeClass('selected');
+        } else {// add checked
+            // add a dot for sorting, this need to go before jquery access elements
+            if(cell!=undefined && !cell.data().indexOf('.')==0){
+                cell.data("."+cell.data());
+            }
+            //force reassign
+            imgc=$(tr_eid.replace("_trc_","_imgc_"))
+            trc=$(tr_eid)
+            imgc.removeClass("imgc_checked_grey");
+            imgc.addClass("imgc_checked");
+            imgc.attr("src",img_checked);//set img src in css didn't work for IE/Firefox...
+            trc.addClass('selected');
+        }
+    
+    }// end toggle
+    // load ensemble modal
+    function load_ensemble_modal(){
+        if (_ensemble_table === null){
+          _ensemble_table = $('#_tbl_id_list').DataTable({
+            "ajax": {
+                "type"   : "GET",
+                "url"    : '{% url "api_get_eslist" %}',
+                "dataSrc": function (json) {
+                    var ret=Array();
+                    for(var i=0;i< json.length; i++){
+                        if (json[i]["file_type"]!="ensemble"){
+                            var id=json[i]["id"];
+                            // check box?
+                            //json[i]["select"]='';
+                            json[i]["select"]='<img id="_imgc_'+id+'" class="imgc_checked_grey" '
+                              +' style="max-height:25px; max-width:25px;" src="{% static "img/checked_grey.png" %}" title="0" value="0" />';
+                            // add id attr to table row
+                            json[i]["DT_RowId"]="_trc_"+id;
+                            var perf=json[i]["perf_measures"];
+                            if (perf === null || perf==""){
+                                json[i]["perfx"]="n/a";
+                            }else{
+                                try{ // NaN causes parsing error
+                                    perf=perf.replace("NaN","\"NaN\"");
+                                    perf=JSON.parse(perf);
+                                    var acc=(perf.accuracy*100).toFixed(2);
+                                    if ("fp" in perf){
+                                        var fp=perf.fp;
+                                        var tn=perf.tn;
+                                        var fn=perf.fn;
+                                        var tp=perf.tp;
+                                        var fpr=((fp/(fp+tn))*100).toFixed(2);
+                                        json[i]["perfx"]="acc:"+acc+"%,fpr="+fpr+"%,p:"+(tp+fn)+",n:"+(fp+tn);
+                                    } else {
+                                        json[i]["perfx"]="n/a";                                    
+                                    }
+                                } catch (err) {
+                                    json[i]["perfx"]="n/a";
+                                }
+                            }
+                            ret.push(json[i]);
+                        }
+                    }
+                    return ret;
+                }// end dataSrc
+            }// end ajax
+            ,paging: false
+            ,searching: true
+            ,scrollY: 550
+            ,scrollX: false
+            ,select: 'multiple'
+            /*,buttons: [ 'selectAll', 'selectNone']
+            ,language: {
+                buttons: {
+                    selectAll: "Select all items",
+                    selectNone: "Select none"
+                }
+            }*/
+            ,bInfo: false
+            ,"order": [[ 1, "desc" ]]//Initial order (sort) to apply to the table
+            ,"columnDefs": [
+                 { "width": "1%", "targets": [0] }
+                ,{ "width": "1%", "targets": [1] }
+                ,{ "width": "5%", "targets": [2] }
+                ,{ "width": "5%", "targets": [3] }
+                ,{ "width": "10%", "targets": [4] }
+
+            ]
+            ,"columns": [
+                 { "data": "select" }
+                ,{ "data": "id" }
+                ,{ "data": "filename" }
+                ,{ "data": "file_type" }
+                ,{ "data": "status" }
+                ,{ "data": "perfx" }
+                ,{ "data": "submitted_by" }
+                ,{ "data": "desc" }
+            ]
+            ,"initComplete": function() {
+            }
+          }); //end datatable
+          
+          // action for ensemble table
+          _ensemble_table.on('click','tr',function () {
+            var row=_ensemble_table.row(this);
+            //var data = row.data(); //html object
+            var idx = row.index();
+            var id=row.data().id; //record id
+            var cell=_ensemble_table.cell(idx,0) //html string for first cell
+            var img_id="#_imgc_"+id; //html id
+            var tr_eid="#_trc_"+id; 
+            //var tr_id="#_trc_"+id; //html id
+            // image for checked, unchecked
+            
+            toggle_ensemble_selection(idx, tr_eid)
+
+          }); // end table tr on click
+        }; // end if _ensemble_table is null    
+    }
+
+    // delete action for confModal
+    function ok_conf(){
+        var rid=$('#confModalId').text();
+        $.ajax({
+          url: '{% url "rm_data4ds" %}'+rid+'/',
+        }).success(function(data, textStatus, strErrorThrown) {
+            $('#msg_success_ph').text(data.msg);
+            setHideShow('#msg_success', 'show');
+            $('#confModal').modal('hide');
+            _ds_list.row( '#_tr_'+rid ).remove().draw();
+            // clean up working table
+            $("#_w_id").text("");
+            $("#_w_name").text("");
+            $("#_w_filetype").text("");  
+            $("#_w_status").text(""); 
+            $("#_w_n_gram").text("");
+            $("#_w_ml_lib").text("");
+            $("#_w_ml_alg").text("");
+            
+        }).error(function( jqXHR, textStatus, strErrorThrown) {
+            var jobj=JSON.parse(jqXHR.responseText);
+            $('#msg_error_ph').text(jobj.msg);
+            setHideShow('#msg_error', 'show');
+            $('#confModal').modal('hide');
+        });
+        
+    }
+    
+    // close ensemble selection
+    function cancel_ensemble(){
+    }
+    // submit ensemble selection
+    function submit_ensemble(){
+        var type=$("#_btn_ds_list").attr("act_type");
+        var selected_ids=_ensemble_table.rows('.selected' ).ids();
+        var select_strs="";
+        var comma="";
+        
+        for (var i=0; i<selected_ids.length;i++){
+            select_strs=select_strs+comma+selected_ids[i].replace("_trc_","");
+            comma=",";
+        }
+        if (type=="create"){
+            $("#_es_list").val(select_strs);
+        } else if (type=="edit"){
+            var rid= $("#hf_w_id").val();
+            $("#hf_w_ds_list").val(select_strs);
+            // change data in datatable
+            _ds_list.row().data()["ds_list"]=select_strs;
+            // submit Ajax
+            // set action
+            $('#_workingtbl_').attr('action',"{% url "api_set_data4ui" %}"+"_es_list/"+rid+"/");
+            //formId, imgId, btnId, rid, initMsg, refreshCallback, logtype
+            submit_job('#_workingtbl_','#prg_img_edit_es_w','_btn_edit_ids_',rid,"Updating dataset list", postUpdate_ds_list, "");
+            
+        } 
+    } // end submit ensemble selection
+    // 
+    function postUpdate_ds_list(data){
+    }
+    
+    // click action for _ds_list.on('init.dt',)
+    function click_the_row(){
+        var hash_rid = window.location.hash.substr(1);
+        var tgt_row=null;
+        //auto click by hash in URL
+        if (hash_rid>"0"){
+            // get selected row
+            tgt_row=$("#_tr_"+hash_rid )
+            if (tgt_row.length){
+                tgt_row.click();
+            }
+        //auto click by hidden field
+        }else if( $("#hf_w_id").val() != null && $("#hf_w_id").val() != "" ){
+            $("#_tr_"+$("#hf_w_id").val() ).click();
+            //$(window).scrollTop(100);
+        }    
+    }
+    //Handler for input_validation #######################################
+    function set_input_validation(){ 
+        // input validation
+        $('._validate_ensemble_').change(function(){
+            validate_panel($(this),'ensemble')
+        });
+    }    
+    // Validate user inputs per panel and disable buttons #######################################
+    function validate_panel(element,type){
+        // check both
+        var err=0;
+        // find element by id and const. str
+        var msg_eid=element.attr('id')+"_error_help_msg"
+        
+        //Disable buttons
+        if (validate_by_rule(element,$('#'+msg_eid)) ){
+            $('#_btn_crt_es').removeAttr("disabled");//enable   
+        }else { //error occur
+            $('#_btn_crt_es').attr("disabled","disabled"); // disable button
+        }
+    }
+
+    </script>
+{% endblock javascript_extra %}

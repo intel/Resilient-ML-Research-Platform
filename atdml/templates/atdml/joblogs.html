@@ -1,0 +1,297 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load extra_tags %}
+
+{% block title %}
+    ML Job Logs 
+{% endblock title %}
+{% block styling_extra %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/pipeline.css' %}" ></link>
+<style>
+/*remove image*/
+.tab_active a
+{
+	background:url('') left no-repeat;
+
+}
+/*fixed white font color in active menu item*/
+.dropdown-menu > .active > a, .dropdown-menu > .active > a:hover, .dropdown-menu > .active > a:focus
+{
+    font-weight: bold;
+    color: #31708f !important;
+}
+
+
+</style>
+{% endblock styling_extra %}
+{% block content %}   
+    <input type="hidden" id="_rid" name="_rid" value="{{ document.id }}" />
+    <input type="hidden" id="_prd_id" name="_prd_id" value="{{ prd_id }}" />
+<div class="container-fluid">
+    
+  <div class="panel panel-default" id='_tbl_panel'>
+    <div class="panel-heading" style="padding-top:2px; padding-bottom:2px">
+    <h3 class="h3_packed">Job Logs for <strong>DataSet Id:{% if document.train_id %}{{ document.train_id }}, Option Id={% endif %}{{ document.id }}:
+    </strong>
+        <button type="button" class="close" data-toggle="collapse" data-target="#collapseOL">
+        <span class="chevron_toggleable glyphicon glyphicon-chevron-up" 
+            data-placement="bottom" data-toggle="tooltip" title="toggle collapse/expand this panel"
+        ></span></button>
+    </h3> 
+    </div> 
+    <div class="panel-body in" id="collapseOL" style="padding-top:2px; padding-bottom:1px">
+
+    
+        <table class="table table-striped table-bordered  table-condensed " 
+            style="margin-bottom:5px;"
+        >
+
+        <thead><tr>
+            <th >Id</th>
+            <th class="col-xs-1">Name</th>
+            <th class="col-xs-2">Type</th>
+            <th >Status</th>
+            <!--th class="col-md-1">Processed Date</th-->
+            <th class="col-xs-1">N-gram</th>
+            <th >Library</th>
+            <th >Accuracy</th>
+            <th class="col-xs-2">ML Parameters</th>
+            <th class="col-xs-2">PCA Parameters</th>
+            <th class="col-xs-2">Links</th>
+         </tr></thead>
+	
+			<tr>
+                <td id="doc_id">{{ document.id  }}</td>
+				<td><!-- a href="{{ document.docfile.url }"</a> -->
+                        {{ document.filename  }}</td>
+                <td id="type_{{ document.id }}">{{ document.file_type  }}</td>
+                <td id="sts_{{ document.id }}">{{ document.status  }}</td>
+                <!--td id="pdate_{{ document.id }}">{{ document.local_processed_date  }}</td-->
+                <!--td id="by_{{ document.id }}">{{ document.submitted_by  }}</td-->
+                <td id="n_gram_{{ document.id }}">{% if document.ml_n_gram == "-1"  %}
+                    N/A {% else %} {{ document.ml_n_gram  }} {% endif %}
+                
+                </td>
+                <td id="lib_{{ document.id }}">{{ document.ml_lib.title  }}</td>
+                <td>{{ document.accuracy_short  }}</td>
+                <td id="opt_{{ document.id }}"
+                >
+                {% for ki, val in jopts.items %}{{ ki.title }}:"{{ val }}" {% endfor %}
+                </td>
+                <td id="pca_opt_{{ document.id }}"
+                >
+                {% for ki, val in pca_jopts.items %}{{ ki.title }}:"{{ val }}" {% endfor %}
+                </td>                
+                <td> 
+                    <a id="_vt_{{ document.id  }}" href="{% url 'train_opts' document.id %}"
+                    {% if document.status_code < 300 %}
+                        class="mlhide"
+                    {% endif %}
+                    >Pipeline</a>
+                    <a id="_vp_{{ document.id  }}" href="{% url 'predict2' document.id %}"
+                    {% if document.status_code < 500 and document.status_code >= 0 %}
+                        class="mlhide"
+                    {% endif %}
+                    >/Predict</a>                    
+                    <a id="_vf_{{ document.id  }}" href="{% url 'feature_impo_combs' document.id %}"
+                    {% if document.status_code < 1000 %}
+                        class="mlhide"
+                    {% endif %}
+                    >/Feature</a>
+                </td>                
+		    </tr>
+        </table>    
+    
+    
+
+    </div><!--End panel-body-->
+</div><!--End panel-->
+    
+    <div class="row ">
+    
+        <div class="col-md-2 pull-right">
+        <img id="_prg_img" class="_progressCircle" 
+                    src="{% static 'img/progress.gif' %}" style="display:none" />
+        <button type="button" class="btn btn-primary btn-sm _refreshlog_btn _tab_ pull-right" 
+                id="_refreshlog_btn"  style="margin-top: 3px;margin-bottom: 5px;margin-left: 5px;margin-right: 5px;"
+                onclick="refresh_log();" >
+          Refresh Log
+        </button>
+        <a id="_download_log" href="#" class="pull-right"
+                download="{{ document.id }}_log.json"
+                data-placement="bottom" data-toggle="tooltip"
+                title="download full log in JSON format"
+                onClick="download_log({{ document.id }});" style="margin-top: 8px;"
+            >Download
+            <span style="margin-left: 2px;" class="glyphicon glyphicon-download-alt pull pull-right"></span>
+        </a>
+        </div>    
+    </div> <!--refresh button--> 
+
+
+
+    </div>
+    <div id="content">
+    {% if file_list %}
+        <ul class="nav nav-tabs" id="logtab">
+        {% for logname in file_list %}
+            {% if forloop.counter == 1 and logname != 'predict' %}<li class="active _tab_">
+                <a href="#{{ logname }}" data-toggle="tab" ltype="{{ logname }}" class="dropdown-toggle tab_packed"
+                ><strong>{{ logname }}</strong></a>
+            {% elif logname in 'predict' %}<li class="dropdown _tab_"> <!-- no ltype to avoid action -->
+              <a href="#" id="pred_dropdown" class="dropdown-toggle tab_packed" data-toggle="dropdown" aria-controls="pred_dropdown-contents">
+                <strong>{{ logname }}</strong> <span class="caret"></span></a>
+               <ul class="dropdown-menu scrollable-menu" role="menu" aria-labelledby="pred_dropdown" id="pred_dropdown-contents" >
+                 {% for pred, fname in prdct_lst %}
+                 <li id="_li_{{ pred }}"><a href="#{{ pred }}" id="dd_tab{{ pred }}" data-toggle="tab" aria-controls="dropdown1" ltype="{{ pred }}"
+                    class="dropdown-toggle tab_packed"
+                    ><strong>{{ pred }}</strong> {{ fname }}</a></li>
+                 {% endfor %}
+               </ul>
+            {% elif logname in 'execution log' %}<li class="dropdown _tab_"> <!-- no ltype to avoid action -->
+              <a href="#" id="exe_dropdown" class="dropdown-toggle tab_packed" data-toggle="dropdown" aria-controls="exec_dropdown-contents">
+                <strong>{{ logname }}</strong> <span class="caret"></span></a>
+               <ul class="dropdown-menu scrollable-menu" role="menu" aria-labelledby="exec_dropdown" id="exec_dropdown-contents" >
+                 {% for exec, ename in exec_lst %}
+                 <li ><a href="#_e_{{ exec }}" id="_e_dd_tab{{ exec }}" data-toggle="tab" aria-controls="dropdown2" ltype="_e_{{ exec }}"
+                    class="dropdown-toggle tab_packed"
+                    ><strong>{{ exec }}</strong> {{ ename }}</a></li>
+                 {% endfor %}
+               </ul>
+            {% else %}<li><a href="#{{ logname }}" data-toggle="tab" ltype="{{ logname }}"
+                    class="dropdown-toggle tab_packed"><strong>{{ logname }}</strong></a>
+            {% endif %}
+            </li>
+        {% endfor %}
+        </ul>    
+        <div id="tabContent" class="tab-content">
+        {% for logname in file_list %}
+              <div class="tab-pane{% if forloop.counter == 1 %} active{% endif %}" id="{{ logname }}">
+                <!--p>log for {{ logname }} </p-->
+                <textarea class="form-control" rows="30" id="_txt_{{ logname }}" style="font-family: 'Lucida Console';"
+
+                readonly>{% if forloop.counter == 1 %}{{ content1st }}{% endif %}</textarea>
+              </div>
+        {% endfor %}
+        {% for logname, fname  in prdct_lst %}
+              <div class="tab-pane" id="{{ logname }}">
+                <!--p>log for {{ logname }} </p-->
+                <textarea class="form-control" rows="30" id="_txt_{{ logname }}" style="font-family: 'Lucida Console'; padding-top:0px;"
+                readonly></textarea>
+              </div>
+        {% endfor %}
+        {% for exec, efname  in exec_lst %}
+              <div class="tab-pane" id="_e_{{ exec }}">
+                <!--p>log for {{ logname }} </p-->
+                <textarea class="form-control" rows="30" id="_txt__e_{{ exec }}" style="font-family: 'Lucida Console'; padding-top:0px;"
+                readonly></textarea>
+              </div>
+        {% endfor %}
+
+        </div>
+    {% else %}
+        <textarea class="form-control" rows="10" id="_txt_{{ logname }}" style="font-family: 'Lucida Console';"
+        readonly>Log file not found!</textarea>
+    {% endif %}
+    </div>
+    
+    
+
+    <div class="container-fluid" style="padding-top:10px;">
+    <!--label class="col-lg-4"><a href="javascript:history.go(-1)">BACK</a></label-->
+    {% if document.status_code >= 0 %}
+    <label class="col-lg-4"><a href="{% url 'train_opts' document.id %}">BACK to ML Pipeline</a></label>
+    {% else %}
+    <label class="col-lg-4"><a href="{% url 'list' %}/#{{ document.id }}">BACK to Dataset List Page</a></label>
+    {% endif %}
+    </div>
+{% endblock content %}
+{% block javascript_extra %}
+<script>
+	$(document).ready(function(){
+        $('#logtab a').click(function (e) {
+          e.preventDefault();
+          if ($(this).attr('ltype')==null)
+            return true;
+          //hide success pane
+          $('#msg_success').hide();
+          // get log data only when no text
+          
+          // fix ltype here for pl_nnn
+          var ltype=$(this).attr('ltype')
+
+          if($("#_txt_"+ltype).val()==""){
+            // progress info
+             query_set_log_prog($('#_rid').val(), ltype, 0,"#_txt_"+ltype, "#_prg_img", "._tab_", "Retrieving log for ["+ltype+"]...");
+          }
+          
+        });
+        // log tab action ========
+        $("#logtab li").click(function() {
+            event.preventDefault();
+            var target_li=$(this);
+            log_tab_onclick(target_li);
+		});
+        
+        //click prediction link if hidden field exists
+        if( $("#_prd_id").val() > ""){ // click execution log
+            if ( $("#_e_dd_tab"+$("#_prd_id").val()).length  ){
+                $("#_e_dd_tab"+$("#_prd_id").val()).click();        
+            } else { // click ML predict log
+                $("#dd_tab"+$("#_prd_id").val()).click();
+            }
+        }
+        //toggle chevron
+        $('.chevron_toggleable').on('click', function() {
+            $(this).toggleClass('glyphicon-chevron-down glyphicon-chevron-up');
+        });
+        
+        //set id to URL for back to list page
+        $("#_home_link").attr("href",$("#_home_link").attr("href")+$("#_rid").val()+"/");
+        //$("#_home_link").attr("href",$("#_home_link").attr("href")+"#"+$("#_rid").val()+"");
+    }); 
+    // refresh button: get log and set time to success pane
+    function refresh_log(){
+        var ltype=$("#logtab li.active a").attr('ltype');
+        var msg_ltype=ltype;
+        if (ltype == null){
+            ltype=$("#logtab li.active ul li.active a").attr('ltype');
+            if (ltype.startsWith("_e_")){
+                msg_ltype=ltype.substring(3,100)
+            } else {
+                msg_ltype=ltype;
+            }
+        }
+        query_set_log_prog($('#_rid').val(), ltype, 0,'#_txt_'+ltype, "#_prg_img", "._tab_"
+            , "Refreshing log for ["+msg_ltype+"]. May take some time for huge size log...");
+        // set time for success pane
+        //setMsgPanText("Log for ["+ltype+"] refreshed at "+getDateTime(), "success",0);
+    }
+    function  log_tab_onclick(target_li){
+
+        $('.tab_active').removeClass('tab_active');
+        target_li.addClass('tab_active');
+        return true;
+    } 
+    // log download
+    function download_log(rid){
+        //var href="{% url 'getlog' document.id 'XXXX' '-1' %}";
+        var href="{% url 'api_get_log_file' document.id 'XXXX' '-1' %}";
+        var ltype=$("#logtab li.active a").attr('ltype');
+        if (ltype == null){ // prediction and execution log
+            ltype=$("#logtab li.active ul li.active a").attr('ltype');
+        }
+        href=href.replace("XXXX",ltype);
+        var fname=rid+"_"+ltype+"_log.txt";
+        $('#_download_log').attr('download',fname);
+        $('#_download_log').attr('href',href);
+
+    }
+</script>
+{% endblock javascript_extra %}
+

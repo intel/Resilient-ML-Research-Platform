@@ -1,0 +1,149 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "base.html" %}
+
+{% load staticfiles %}
+
+{% block title %}
+    Help for Machine Learning as a Service
+{% endblock title %}
+
+{% block styling_extra %}
+{% endblock styling_extra %}
+
+
+
+{% block content %}       
+
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-10">
+                <h2><span class="label label-default">Helps for MLaaS RESTful APIs:</span> </h2>
+            </div >
+        </div>
+        <div class="row">
+            <div class="col-md-10">
+            <div class="panel panel-default ">
+
+ 
+
+                <div class="panel-body">
+                    <h3>
+                    <ul  >
+                    <li >Available functionalities of RESTful web APIs for MLaaS:
+                    <ul>
+                        <li><a href="#list">Download a dataset/classifier list</a></li>
+                        <li><a href="#pred">Submit a prediction</a>: submit a sample for prediction</li>
+                        <li><a href="#newds">Create a new dataset</a>: create a new dataset for ML service </li>
+                        <li><a href="#extract">Extract features</a>: trigger the feature extraction step of ML pipeline </li>
+                        <li><a href="#train">Train a ML model</a>: trigger the training step of ML pipeline to generate ML model</li>
+                        <li><a href="#ensemble">Create a new ensemble classifier</a></li>
+                        <li><a href="#model">Download a ML model</a></li>
+                        <li><a href="#predlist1">Download a prediction result</a></li>
+                        <li><a href="#feat_impor">Download a feature importance list</a></li>
+                        <li><a href="#exec_df">Download an Android emulation output</a></li>
+                        <li><a href="#exec">Submit an Android APK for prediction</a>: execute and classify the APK </li>
+                    </ul>
+                    </li>                        
+                    <li id="list">Download a dataset list:
+                        <ul><li style='font-family: "Courier New";'>
+                        curl -X GET http://{{ request.get_host }}{% url "get_dataset_list" %} -u &lt;yourid&gt;:&lt;yourpwd&gt; </li>                      
+                    </ul> </li>
+                    <li id="pred">Submit a sample file for prediction for both regular/ensemble classifier:
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }}{% url "get_pred2" %}&lt;dataset_id&gt;/raw/ -H "Content-Type: multipart/form-data" 
+                        -F "docfile=@&lt;/yourpath/yourfile4predict&gt;"  </li>                      
+                    </ul> </li>                           
+                    <li id="newds">Create a new dataset (data pre-loaded in HDFS folder):
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }}{% url "api_create_ds" %}  -u &lt;yourid&gt;:&lt;yourpwd&gt; -d "action=hdfs_api
+                        &hdfs_path=&lt;hdfs path after data_retrieved&gt;&hf_uploadtype=&lt;n-gram pattern&gt;&hf_desc=&lt;any desc&gt;&ptn_str=&lt;(.*)&gt;&label_arr=&lt;['clean','dirty']&gt;" </li>                      
+                    </ul> </li>  
+
+                    <li id="extract">Extract features for a dataset:
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }}{% url "api_extract_feature" %}  -u &lt;yourid&gt;:&lt;yourpwd&gt; -d "hf_w_id=
+                        &lt;dataset_id&gt;&action=feature_api&hf_w_ml_n_gram=&lt;2&gt;&hf_w_ml_feat_threshold=&lt;5&gt;&hf_w_pattern=&lt;(.*)&gt;&hf_w_label_arr=&lt;['clean','dirty']&gt;" </li>                      
+                    </ul> </li>
+                    
+                    <li id="train">Train a ML model:
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }}{% url "api_train" %}  -u &lt;yourid&gt;:&lt;yourpwd&gt; -d 'hf_w_id=
+                        &lt;dataset_id&gt;&action=&lt;mllib_api|scikit_api&gt;&hf_w_ml_opts=&lt; find param name in web: e.g. 
+                        {"c":"1","iterations":"300" ,"regularization":"l2" ,"learning_algorithm":"linear_svm_with_sgd"}&gt;&learning_algorithm=&lt;
+                        linear_svm_with_sgd&gt;' </li>                      
+                    </ul> </li>
+                    <li id="model">Download a ML model:
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }}{% url "api" %}model/&lt;dataset_id&gt;/  -u &lt;yourid&gt;:&lt;yourpwd&gt; -o &lt;your_output_fname&gt; </li> 
+                          <li>Field description:</li> <ul>
+                          <li>id, filename, type, status, processed_date</li>
+                          <li>ml_n_gram: n gram number</li>
+                          <li>ml_lib: ML library either <span style='font-family: "Courier New";'>“dnn”, “scikit” or “mllib”</span></li>
+                          <li>ml_opts: all key-value pairs of options for trained model</li>
+                          <li>train_id: id of parent dataset, if any (for training options sharing same dataset)</li>
+                          <li>coef_arr: array of coefficients/weights for features, e.g. <span style='font-family: "Courier New";'>[0.0, 0.0, 0.0, -0.25768792653636535,…]</span></li>
+                          <li>dic_seq_hashes: dictionary for feature id to n-gram hash, e.g. <span style='font-family: "Courier New";'>{"478": "76347,8666", "479": "10669,55469",…}</span></li>
+                          <li>dic_hash_str: dictionary for hash to raw string, e.g. <span style='font-family: "Courier New";'>{"19507": "setPriority", "117775": "edit",…}</span></li>
+                          <li>dic_name_label: array for label string to its value, e.g. <span style='font-family: "Courier New";'>[{"dirty": 1}, {"clean": 0}]</span></li>
+                          </ul>
+                    </ul> </li> 
+                    <li id="ensemble">Create a new ensemble Classifier:
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }}{% url "api_create_ds" %}  -u &lt;yourid&gt;:&lt;yourpwd&gt; -d "action=ensemble_api
+                        &ds_list=&lt;id1,id2,...&gt;&hf_uploadtype=ensemble&hf_desc=&lt;any desc&gt;" </li>                      
+                    </ul> </li>  
+                    <li id="predlist1">Download a prediction result:
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }} {% url "api" %}predlit/&lt;dataset_id&gt;/&lt;hash|sample info&gt;/  -u &lt;yourid&gt;:&lt;yourpwd&gt;  </li>                      
+                    </ul> </li>                           
+                    <li id="predlist">Download a prediction result list:
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }}{% url "api" %}predlit/&lt;dataset_id&gt;/ -u &lt;yourid&gt;:&lt;yourpwd&gt;  </li>                      
+                    </ul> </li>                           
+                    <li id="feat_impor">Download feature importance list:
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }}{% url "api" %}feat/&lt;dataset_id&gt;/ -u &lt;yourid&gt;:&lt;yourpwd&gt;  </li>                      
+                    </ul> </li>                      
+                    <li id="exec">Submit a Android APK to Emulation Farm for execution and prediction:
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }}{% url "get_pred2" %}&lt;dataset_id&gt;/exec/ -H "Content-Type: multipart/form-data" 
+                        -F "docfile=@&lt;/yourpath/yourfile4execution_predict&gt;" --form-string "_file_type=apk" </li>                      
+                    </ul> </li>                           
+                    <li id="exec_df">Download Android emulation output:
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }} {% url "api" %}log/&lt;dataset_id&gt;/_e_&lt;prediction_id&gt;/-1/ -u &lt;yourid&gt;:&lt;yourpwd&gt;  </li>                      
+                    </ul> </li>                      
+
+                    <li id="pred1">Submit a query list for prediction: (input from MongoDB only)
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }}{% url "get_pred2" %}&lt;dataset_id&gt;/list/ -d "list=&lt;hash1&gt;,&lt;hash2&gt;,&lt;...&gt;
+                        &host=&lt;hostname&gt;&db=&lt;dbname&gt;&usr=&lt;userid&gt;&pwd=&lt;password&gt;" -u &lt;yourid&gt;:&lt;yourpwd&gt;  </li>                      
+                    </ul> </li>                           
+                    <li id="pred3">Submit a query for prediction: (input from MongoDB only)
+                        <ul> <li style='font-family: "Courier New";'>
+                        curl -X POST http://{{ request.get_host }}{% url "get_pred2" %}&lt;dataset_id&gt;/&lt;hash&gt;/ -d "host=&lt;hostname&gt;&db=&lt;dbname
+                        &gt;&usr=&lt;userid&gt;&pwd=&lt;password&gt;" -u &lt;yourid&gt;:&lt;yourpwd&gt;  </li>                      
+                    </ul> </li>                           
+
+
+                    </ul>
+                    </h3>
+                </div>
+            </div>
+            </div>
+        </div>
+
+
+
+
+
+
+
+    <div>
+ 
+{% endblock content %}

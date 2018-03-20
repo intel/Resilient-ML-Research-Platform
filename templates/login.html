@@ -1,0 +1,71 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "ae_base.html" %}
+
+{% load staticfiles %}
+{% load extra_tags %}
+
+{% block title %}
+    Machine Learning Login
+{% endblock title %}
+
+{% block styling_extra %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/signin.css' %}" />
+{% endblock styling_extra %}
+
+
+
+{% block content %}       
+
+    <div class ="container">
+
+                                
+       <form role="form" class="form-signin" method="post" action="{% url 'myml_login' %}" >
+            {% csrf_token %}  
+
+            <h3 class="form-signin-heading">Please Sign In: </h3>
+            {% if form.errors %}
+                <h4><p class="text-warning" style="color: red">
+                Your username and password didn't match. 
+                </p></h4>
+            {% endif %}
+
+            <!-- explicitly list fields for styling -->
+            <label for="id_username" class="sr-only">Username</label>
+            <input id="id_username" name="username" type="text" class="form-control" placeholder="username" required autofocus />
+
+            <label for="id_password"  class="sr-only">Password</label>
+            <input id="id_password" name="password" type="password"  class="form-control" placeholder="password" required />
+
+            {% if 'Y' in use_recaptcha %}
+            <script src="{% get_settings_value 'GOOGLE_RECAPTCHA_JS' %}"></script>
+            <div class="g-recaptcha" data-sitekey="{% get_settings_value 'GOOGLE_RECAPTCHA_SITE_KEY' %}"></div>
+            {% endif %}
+            <div style="padding-top: 10px;">
+            <input class="btn btn-primary btn-block form-control" type="submit" value="Login" 
+                 />
+            </div>
+            
+
+            <input type="hidden" name="next" value="{{ next }}" />
+            <div style="padding-top: 10px;">
+
+                <div class="jumbotron" style="padding: 5px 10px 5px 20px; margin: 0px 0px 5px 0px;" >
+                  <h4>Learn more about this project:</h4>
+                  <p><a class="btn btn-primary btn-sm" href="/about_ae" role="button">Click Here</a></p>
+                </div>
+
+            </div> 
+            <div style="padding-top: 10px;">
+            <font size="3">
+            <a href="mailto:loginrequest@your.com?subject=Access Request&body=
+-- Please provide the Terms of Use document and grant access --">Request access</a></font>
+            </div>
+      </form>
+   </div>
+
+ 
+{% endblock content %}

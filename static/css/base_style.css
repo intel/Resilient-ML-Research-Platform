@@ -1,0 +1,27 @@
+/*
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+*/
+body  {
+    padding-top: 0px;
+    background: #ffffff url('../img/background.png') repeat-x;
+    background-size: 1px 60px;
+}
+.navbar {
+  margin-bottom: 10px;
+}
+.scrollable-menu {
+    height: auto;
+    max-height: 500px;
+    overflow-x: hidden;
+}
+.logmodal {
+	font-family:Consolas
+}
+.h3_packed{
+    margin-top:4px;margin-bottom:5px;
+}
+.h4_packed{
+    padding:0px 0px 0px 0px;
+}

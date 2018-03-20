@@ -1,0 +1,213 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "ae_base.html" %}
+{% load staticfiles %}
+{% load extra_tags %}
+
+{% block title %}
+    Android Emulator Execution Logs 
+{% endblock title %}
+{% block styling_extra %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/pipeline.css' %}" ></link>
+<style>
+/*remove tab icon*/
+.tab_active a
+{
+	background:url('') left no-repeat;
+
+}
+/*fixed white font color in active menu item*/
+.dropdown-menu > .active > a, .dropdown-menu > .active > a:hover, .dropdown-menu > .active > a:focus
+{
+    font-weight: bold;
+    color: #31708f !important;
+}
+
+
+</style>
+{% endblock styling_extra %}
+{% block content %}   
+    <input type="hidden" id="_cid" name="_cid" value="{{ cid }}" />
+<div class="container-fluid">
+    
+    <!--h3 class="h3_packed"><strong>Job Logs for Id= {{ document.id }}:</strong></h3-->
+    <h3 class="h3_packed">Logs for <span id="_t_cid"> {{ cid }} </span>
+    </strong></h3>  
+
+
+    <div class="row ">
+    
+        <div class="col-md-2 pull-right">
+        <img id="_prg_img" class="_progressCircle" 
+                    src="{% static 'img/progress.gif' %}" style="display:none" />
+        <button type="button" class="btn btn-primary btn-sm _refreshlog_btn _tab_ pull-right" 
+                id="_refreshlog_btn"  style="margin-top: 3px;margin-bottom: 5px;margin-left: 5px;margin-right: 5px;"
+                onclick="refresh_log();" >
+          Refresh Log
+        </button>
+        <a id="_download_log" href="#" class="pull-right"
+                download="{{ document.id }}_log.json"
+                data-placement="bottom" data-toggle="tooltip"
+                title="download full log in JSON format"
+                onClick="download_log({{ document.id }});" style="margin-top: 8px;"
+            >Download
+            <span style="margin-left: 2px;" class="glyphicon glyphicon-download-alt pull pull-right"></span>
+        </a>
+        </div>    
+    </div> <!--refresh button--> 
+
+
+
+    </div>
+    <div id="content">
+    {% if file_list %}
+        <ul class="nav nav-tabs" id="logtab">
+        {% for logname in file_list %}
+            {% if logname in 'execution log' %}<li class="dropdown _tab_"> <!-- no ltype to avoid action -->
+              <a href="#" id="exe_dropdown" class="dropdown-toggle tab_packed" data-toggle="dropdown" aria-controls="exec_dropdown-contents">
+                <strong>{{ logname }}</strong> <span class="caret"></span></a>
+               <ul class="dropdown-menu scrollable-menu" role="menu" aria-labelledby="exec_dropdown" id="exec_dropdown-contents" >
+                 {% for exec, ename in exec_lst %}
+                 <li ><a href="#_e_{{ exec }}" id="_e_dd_tab{{ exec }}" data-toggle="tab" aria-controls="dropdown2" ltype="_e_{{ exec }}"
+                    class="dropdown-toggle tab_packed"
+                    ><strong>{{ exec }}</strong> {{ ename }}</a></li>
+                 {% endfor %}
+               </ul>
+            {% elif logname in 'predict' %}<li class="dropdown _tab_"> <!-- no ltype to avoid action -->
+              <a href="#" id="pred_dropdown" class="dropdown-toggle tab_packed" data-toggle="dropdown" aria-controls="pred_dropdown-contents">
+                <strong>{{ logname }}</strong> <span class="caret"></span></a>
+               <ul class="dropdown-menu scrollable-menu" role="menu" aria-labelledby="pred_dropdown" id="pred_dropdown-contents" >
+                 {% for pred, fname in prdct_lst %}
+                 <li id="_li_{{ pred }}"><a href="#{{ pred }}" id="dd_tab{{ pred }}" data-toggle="tab" aria-controls="dropdown1" ltype="{{ pred }}"
+                    class="dropdown-toggle tab_packed"
+                    ><strong>{{ pred }}</strong> {{ fname }}</a></li>
+                 {% endfor %}
+               </ul>
+            {% else %}<li><a href="#{{ logname }}" data-toggle="tab" ltype="{{ logname }}"
+                    class="dropdown-toggle tab_packed"><strong>{{ logname }}</strong></a>
+            {% endif %}
+            </li>
+        {% endfor %}
+        </ul>    
+        <div id="tabContent" class="tab-content">
+
+
+        {% for exec, efname  in exec_lst %}
+              <div class="tab-pane {% if forloop.counter == 1 %} active{% endif %}" id="_e_{{ exec }}">
+                <!--p>log for {{ logname }} </p-->
+                <textarea class="form-control" rows="30" id="_txt__e_{{ exec }}" style="font-family: 'Lucida Console'; padding-top:0px;"
+                readonly></textarea>
+              </div>
+        {% endfor %}
+        {% for logname, fname  in prdct_lst %}
+              <div class="tab-pane" id="{{ logname }}">
+                <!--p>log for {{ logname }} </p-->
+                <textarea class="form-control" rows="30" id="_txt_{{ logname }}" style="font-family: 'Lucida Console'; padding-top:0px;"
+                readonly></textarea>
+              </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <textarea class="form-control" rows="10" id="_txt_{{ logname }}" style="font-family: 'Lucida Console';"
+        readonly>Log file not found!</textarea>
+    {% endif %}
+    </div>
+    
+    
+
+    <div class="container-fluid" style="padding-top:10px;">
+    <!--label class="col-lg-4"><a href="javascript:history.go(-1)">BACK</a></label-->
+    <label class="col-lg-4"><a href="{% url 'ae_list' %}">BACK to Emulator Portal</a></label>
+    </div>
+{% endblock content %}
+{% block javascript_extra %}
+<script>
+	$(document).ready(function(){
+        // action for dropdown list
+        $('#logtab a').click(function (e) {
+          e.preventDefault();
+          var ltype=$(this).attr('ltype');
+          var cid=$('#_cid').val();
+          if (ltype != null && ltype.startsWith("_e_")){ // for exec log
+                cid=ltype.substring(3,100)
+                $('#_cid').val(cid);
+                $('#_t_cid').text(cid);
+          } else { // for predict log
+                $('#_cid').val(ltype);
+                $('#_t_cid').text(ltype);            
+          }
+          if (ltype==null)
+            return true;
+          //hide success pane
+          $('#msg_success').hide();
+          // get log data only when not loaded
+          if($("#_txt_"+ltype).val()==""){
+            // progress info
+            query_set_log_prog($('#_cid').val(), ltype, 0,"#_txt_"+ltype, "#_prg_img", "._tab_", "Retrieving execution log for ["+cid+"]...");
+          }
+        });
+
+        //click an item in dropdown list
+        if( $("#_cid").val() > ""){ // click execution log
+            if ( $("#_e_dd_tab"+$("#_cid").val()).length  ){
+                $("#_e_dd_tab"+$("#_cid").val()).click();        
+            } else { // click ML predict log
+                $("#dd_tab"+$("#_prd_id").val()).click();
+            }
+        }
+
+        //set id to URL for back to list page
+        //$("#_home_link").attr("href",$("#_home_link").attr("href")+$("#_rid").val()+"/");
+        // log tab action ========
+        $("#logtab li").click(function() {
+            event.preventDefault();
+            var target_li=$(this);       
+            log_tab_onclick(target_li);
+		});
+
+    }); //End document ready()
+    // refresh button: get log and set time to success pane
+    function refresh_log(){
+        var ltype=$("#logtab li.active a").attr('ltype');
+        var msg_ltype=ltype;
+        if (ltype == null){
+            ltype=$("#logtab li.active ul li.active a").attr('ltype');
+            if (ltype.startsWith("_e_")){
+                msg_ltype=ltype.substring(3,100)
+            } else {
+                msg_ltype=ltype;
+            }
+        }
+        query_set_log_prog($('#_cid').val(), ltype, 0,'#_txt_'+ltype, "#_prg_img", "._tab_"
+            , "Refreshing log for ["+msg_ltype+"]. May take some time for huge size log...");
+    }
+    //
+    function  log_tab_onclick(target_li){
+
+        $('.tab_active').removeClass('tab_active');
+        target_li.addClass('tab_active');
+        return true;
+    } 
+    // log download
+    function download_log(rid){
+        var href="{% url 'api_get_log_file' 0 'XXXX' '-1' %}";
+        var ltype=null;
+        var cid=$('#_cid').val();
+        if (ltype == null){ // prediction and execution log
+            ltype=$("#logtab li.active ul li.active a").attr('ltype');
+        }
+        // set ltype
+        href=href.replace("XXXX",ltype);
+        // replace flag /0/ by /cid/
+        href=href.replace("/0/","/"+cid+"/");
+        // fname for saving locally
+        var fname=cid+"_"+ltype+"_log.txt";
+        $('#_download_log').attr('download',fname);
+        $('#_download_log').attr('href',href);
+    }
+</script>
+{% endblock javascript_extra %}
+

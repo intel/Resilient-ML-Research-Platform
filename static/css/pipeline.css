@@ -1,0 +1,133 @@
+/*
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+
+*/
+
+
+
+.thredraw thead {
+    font-weight: bold;
+}
+.pline_plus_highlight a  /*enlarge the image & bold font*/
+{
+	background:url('../img/plus_g.png') left no-repeat;
+    display:block; background-size:10%;
+    font-weight: bold; color: #000000; 
+}
+.pline_plus a 
+{
+	background:url('../img/plus_g.png') left no-repeat;
+	display:block; background-size:10%;
+    font-weight: normal; color: #000000;
+}
+
+.tab_active a
+{
+	background:url('../img/checked.png') left no-repeat;
+	display:block; background-size:18px;  
+    background-color: #eff5fb !important;
+    font-weight: bold; color: #000000;
+    padding:2px 7px 2px 7px !important;
+}
+
+.panel_heading_packed
+{ 
+    padding:1px 15px 0px 15px; margin: 0px 0px 1px 0px;
+}
+.tab_packed 
+{
+    font-weight: normal;
+    padding:2px 7px 2px 7px !important;
+}
+.tab_packed_bold 
+{
+    font-weight: bold;
+    padding:4px 10px 4px 10px !important;
+}
+
+.dropdown_packed
+{
+    padding:10px 10px 10px 10px !important;
+}
+.pline_bgc_highlight a
+{
+	background:url('../img/pline_bh.png') left no-repeat;
+    display:block; background-size:100% 35px;
+    font-weight: bold; color: #000000;
+}
+.pline_bgc_blue a
+{
+	background:url('../img/pline_b.png') left no-repeat;
+    display:block; background-size:100% 35px;
+    font-weight: bold; color: #000000;
+}
+.pline_bgc_grey a
+{
+	background:url('../img/pline_g.png') left no-repeat;
+    display:block; background-size:100% 30px;
+    font-weight: normal; color: #000000;
+}
+.error_msg 
+{
+    display:inline; color:#FF0000;
+}
+
+.mlhide
+{
+    display:none;
+}
+.mlshow
+{
+    display:inline;
+}
+
+/*image for result page*/
+.img_checked_red
+{
+	background:url('../img/checked_red.png') left no-repeat;
+    display:block; background-size:14%;
+    font-weight: bold; color: #000000; 
+}
+.img_checked_grey
+{
+	background:url('../img/checked_grey.png') left no-repeat;
+    display:block; background-size:14%;
+    font-weight: bold; color: #000000; 
+}
+.img_plus_green
+{
+	background:url('../img/plus_green.png') left no-repeat;
+    display:block; 
+    font-weight: bold; color: #000000; 
+}
+.img_stop_red
+{
+	background:url('../img/stop_red.png') left no-repeat;
+    display:block; 
+    font-weight: bold; color: #000000; 
+}
+
+.highlight_th {
+    background-color: #eff5fb 
+}
+
+/*dataset list*/
+
+.tab_bgc 
+{
+    background-color: #F2F2F2; 
+}
+.row_bgc 
+{
+    background-color: #eff5fb;
+}
+
+.img_warning{
+    content:url('../img/warning.png');
+}
+.tr_active {
+    background-color: #eff5fb !important;
+    font-weight: bold;
+}

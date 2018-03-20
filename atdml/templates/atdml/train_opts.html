@@ -1,0 +1,2574 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load extra_tags %}
+
+{% block title %}
+    Machine Learning Result
+{% endblock title %}
+
+{% block styling_extra %}
+<!--link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/jquery.dataTables.min.css' %}" ></link-->
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/dataTables.bootstrap.min.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/select.jqueryui.min.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'css/pipeline.css' %}" />
+<style>
+/*.selected td {
+     moved to select.jquery.min.css
+    background-color: #eff5fb !important;
+    font-weight: bold;
+}*/
+</style>
+{% endblock styling_extra %}
+
+{% block content %}   
+
+<div class="container-fluid">
+    <h3 class="h3_packed"><strong>Training Options for DataSet {{ document.id }}:</strong></h3>
+    
+    
+<div class="panel panel-default" id='_tbl_panel'>
+    <div class="panel-heading" style="padding-top:2px; padding-bottom:2px">
+        <h4><strong>Name:</strong> {{ document.filename }} &nbsp;&nbsp;&nbsp;<strong>Type:</strong> {{ document.file_type  }}
+        &nbsp;&nbsp;
+        <a  href="{% url 'get_optlist' document.id %}" 
+            download="{{ document.id }}_optlist.json"
+            data-placement="bottom" data-toggle="tooltip"
+            title="download option list for dataset"
+        ><span class="glyphicon glyphicon-download-alt pull"></span></a>
+        <a  href="#" onClick="refresh_tbl()"
+            data-placement="bottom" data-toggle="tooltip"
+            title="refresh table contents"
+        ><span class="glyphicon glyphicon-refresh pull"></span></a>
+
+        
+        <button type="button" class="close" data-toggle="collapse" data-target="#collapseOL">
+        <span class="chevron_toggleable glyphicon glyphicon-chevron-up" 
+            data-placement="bottom" data-toggle="tooltip" title="toggle collapse/expand this panel"
+        ></span></button>
+        </h4>
+    </div>
+    <div class="panel-body in" id="collapseOL" style="padding-top:1px; padding-bottom:1px">
+      <div class="panel panel-default" style="border:0;margin-bottom:8px">
+      <div class="panel-body" style="padding:1px 0px 1px 0px;">
+      <table id="_opt_list" class="table table-striped table-bordered table-hover table-condensed table-scrollable" 
+         >
+        <thead ><tr>
+            <th class="col-md-1">*</th>
+            <th class="col-md-1">Id</th>
+            <th class="col-md-1">Status</th>
+            <th class="col-md-1"  data-placement="bottom" data-toggle="tooltip" 
+                title="'New Training': same feature for different training option.
+ 'New Featuring': new featuring for different training option ">Opt. State</th>
+
+
+            <th class="col-md-1">Accuracy</th>
+
+            <th class="col-md-1">N-gram</th>
+            <th class="col-md-1">Library</th>
+            <th class="col-md-1">ML Algorithm</th>
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip" 
+                title="Parameters for Training Library and Algorithm">ML Parameters</th>         
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip" 
+                title="Parameters for Optional Dimension Reduction">PCA Parameters</th>         
+            </tr>
+        </thead> 
+    </table><!-- opt list -->
+    </div></div> <!--End opt list table-->
+    
+    <div class="panel panel-default " style="border:0;margin-bottom:8px">
+    <div class="panel-heading" style="padding:1px 10px 1px 10px;">
+          <h4 style="margin:8px 8px 6px 8px;">ML Pipeline for Option Id:&nbsp;<span id="oid"></span>
+          <button type="button" class="close" data-toggle="collapse" data-target="#collapsePL">
+          <span class="chevron_toggleable  glyphicon glyphicon-chevron-up" 
+            data-placement="bottom" data-toggle="tooltip" title="toggle collapse/expand this panel"
+          ></span></button>
+          </h4>
+    </div>
+    <!--==== ALL Pipeline tabs/panes==========-->
+    <div class="panel-body in" id="collapsePL" style="padding:3px 5px 1px 5px;">
+    <div class="tabbable boxed parentTabs">
+    <ul class="nav nav-tabs" id="_ul_pipe" >
+        <li class="active pline_plus_highlight pull-right" code="0" data-toggle="tooltip" id="_l_upload"
+            title="Create a new training option">
+            <a id="_la_upload" href="#_t_new_train" data-toggle="tab"  
+			>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Add New Training Option
+            </a></li>
+        <li class="pline_bgc_grey _n4f_"  code="400" data-toggle="tooltip"  id="_l_feature" 
+            title="Stage: Set parameter(s) and extract features">
+            <a id="_la_feature" href="#_t_feature" data-toggle="tab" 
+			>Extract Feature 
+			</a></li>
+        <li class="pline_bgc_grey _n4f_"  code="400" data-toggle="tooltip"  id="_l_pca" 
+            title="(OPTIONAL) Stage: Transform features by PCA. Warning: detailed feature information will be lost after transformation">
+            <a id="_la_pca" href="#_t_pca" data-toggle="tab" 
+			>Reduce Dimension
+			</a></li>
+        <li class="pline_bgc_grey "  code="500" data-toggle="tooltip"  id="_l_train"
+            title="Stage: Set parameter(s), train a model from training dataset and then verify by the testing dataset">
+            <a id="_la_train" href="#_t_train" data-toggle="tab"  
+			>Train Model
+			</a></li>
+        <li class="pline_bgc_grey " code="100" data-toggle="tooltip"  id="_l_result"
+            title="Stage: View results or job logs">
+            <a id="_la_result" href="#_t_result" data-toggle="tab"  
+			>View Log & Predict
+			</a></li>
+        <li class="pline_bgc_grey " code="800" data-toggle="tooltip"  id="_l_mrun"
+            title="Stage: Train multiple run to verify model">
+            <a id="_la_mrun" href="#_t_multiple_run" data-toggle="tab"  
+			>Multiple Run
+			</a></li>
+        <li class="pline_bgc_grey _n4f_" code="1000" data-toggle="tooltip"  id="_l_feature_importance"
+            title="Calculate feature importance">
+            <a id="_la_feature_importance" href="#_t_feature_importance" data-toggle="tab"  
+			>Feature Importance
+			</a></li>
+
+    </ul><!--tabs-->
+    </div><!-- end tabbable -->
+
+    <div id="tc_all" class="tab-content" >
+      <!--New training option pan ==================== ========================================== -->
+      <div id="_t_new_train" class="tab-pane active">
+        <div class="row"> 
+            <div class="col-md-12" data-toggle="tooltip"  
+            title="for data retrieval from MongoDB in next pipleline step">
+                <span><h4><strong>Create a new option entry: </strong></h4></span>  
+            </div>
+        </div>
+        <div class="row"> 
+            <div class="col-md-3"  style="margin-bottom: 3px;">
+            <div class="input-group"> 
+                <span class="input-group-addon" style="min-width: 120px;text-align:right;">
+                    <strong>Starting from:</strong>
+                </span>  
+                <button class="btn btn-default dropdown-toggle form-control _new_opt" type="button" 
+                         title="
+Starting from New Training option: Reuse featured data from dataset and try different training options   
+Starting from New Featuring: Re-feature data with different parameter and then try different training options  
+"
+                     data-toggle="dropdown" aria-expanded="true" value="xxx-dynamic">
+                    <span id="_option_state">New Training</span>
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" id="_option_state_dropdown" role="menu" aria-labelledby="dropdownMenu2">
+                    <li role="presentation">
+                        <a role="menuitem" tabindex="-1" href="#">New Training</a></li>
+                    <li role="presentation" >
+                        <a role="menuitem" tabindex="-1" href="#">New Featuring</a></li>
+                </ul>
+            </div>
+            </div>
+        </div><!--End row-->
+        <div class="row"> 
+            <div class="col-md-6"  style="margin-top: 3px;">
+                <div class="input-group"> 
+                    <span class="input-group-addon"  style="min-width: 120px;text-align:right;">
+                        <strong>Description:</strong>
+                    </span>  
+                    <textarea type="text" class="form-control _new_opt" rows="1" id="_desc_new_opt"  name="_descq"
+                        style="min-width: 500px;font-family: 'Lucida Console'; " placeholder="description for this option"
+                        data-placement="bottom" data-toggle="tooltip"
+                        title="description for options. will be shown in RESTful API"
+                    ></textarea>
+                            
+                </div>
+            </div>                        
+            <div class="col-md-2"> 
+                <img id="_prg_img_new_opt" class="_progressCircle" 
+                            src="{% static 'img/progress.gif' %}" style="display:none" />
+                <!-- button type="submit" value="Upload" -->
+                <button type="submit" class="btn btn-primary _new_opt _w_" id="btn_query"
+                     onclick="event.preventDefault(); $('#hf_w_desc').val($('#_desc_new_opt').val()); $('#hf_w_action').val('new_opt');  
+                      submit_job('#_workingtbl_','#_prg_img_new_opt', '._w_', $('#hf_w_id').val()
+                ,'Create option entry for data set id='+$('#hf_w_id').val()+'...', postupdate_new_opt, 'whichlogtype?'); "
+            {{ disabled4reader }} 
+                    data-placement="bottom" data-toggle="tooltip"
+                    title="Click to Create New Option Entry"
+                    disabledxx
+                >Create New Training Option</button>
+            </div> 
+        </div><!--End row-->
+
+      </div><!--End _t_upload -->
+      <!--feature method pan ========== -->
+      <div id="_t_feature" class="tab-pane ">
+        <div data-placement="bottom" data-toggle="tooltip"
+                title="Feature Extraction Method :
+Predefined: Feature extraction for traditional ML, Feed-forward or Recurrent Neural Network
+Customized: User provided custom featuring module
+">
+        <ul class="nav nav-tabs" style="margin-top: 5px;" id="_ul_fea">
+            <li class="tab_bgc _ml_tbs active" id="_li_fea">
+                <a href="#_fea_pre"  data-toggle="tab" id="_a_fea_pre" tag="predefined" class="tab_packed_bold">
+                Predefined</a></li>
+            <li class="tab_bgc _ml_tbs"  id="_li_pca_scikit">
+                <a href="#_fea_cus" data-toggle="tab" id="_a_fea_cus" tag="customized"  class="tab_packed_bold">
+                User Customized</a></li>
+        </ul>
+        </div><!--end feat method tabs-->
+       <div id="_fea_methods" class="tab-content" >
+       <!--=== feat pre ===-->
+       <div id="_fea_pre" class="tab-pane active">
+        <div class="row" id="_n_gram_row"> 
+          <div class="col-md-2"  style="margin-top: 5px;">
+           <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                    title="number of event in a feature. Vectorization by 'bag of n-grams' representation"> 
+            <span class="input-group-addon"  style="max-width: 125px !important; min-width: 125px;  text-align:right; ">
+                <strong>n-gram&nbsp;n=</strong>
+            </span> 
+            <!--input type="text" id="_n_gram" name="_n_gram" class="form-control" value="{% get_settings_value 'FEAT_N_GRAM' %}"></input-->
+            <div class="input-group-btn" >
+                  <button id="_btn_n_gram" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                     <span id="_btn_n_gram_s">{% get_settings_value 'FEATURE_N_GRAM' %} </span>
+                     <span class="caret"></span>
+                  </button>
+                  <ul id="_ul_n_gram" class="dropdown-menu">
+                     <li><a href="#">2</a></li>
+                     <li><a href="#">3</a></li>
+                     <li><a href="#">4</a></li>
+                     <li><a href="#">5</a></li>
+                     <li><a href="#">1</a></li>
+                  </ul>
+            </div><!-- input-group-btn -->
+           </div><!-- input-group -->
+          </div>
+          <div class="col-md-2"  style="margin-top: 5px;">
+            <div class="input-group" id="_ip_feat_thr" data-placement="bottom" data-toggle="tooltip"
+                    title="threshold to filter sample with feature count less than threshold number"> 
+                <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                    <strong>Count Threshold</strong>
+                </span> 
+                <input type="text" id="_feat_threshold" name="_feat_threshold" class="form-control _validate_ml_" value="5" 
+                    default_val='5' validate_rule="int ge0" >
+                </input>
+
+            </div>
+            <span id="_feat_threshold_error_help_msg" class="help-block mlhide error_msg">threshold should be greater than 0 integer</span>
+          </div>
+          <div class="col-md-2"  style="margin-top: 5px;">
+            <div class="input-group" id="_ip_feat_freq" data-placement="bottom" data-toggle="tooltip"
+                    title="frequency based filtering. set ratio a float number between 0.0-1.0"> 
+                <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                    <strong>Filtering Ratio</strong>
+                </span> 
+                <input type="text" id="_filter_ratio" name="_filter_ratio" class="form-control _validate_ml_" value="" 
+                    placeholder="Optional" 
+                    validate_rule="float gt0 lt1" >
+                </input>
+
+            </div>
+            <span id="_feat_filter_rate_error_help_msg" class="help-block mlhide error_msg">rate should be greater than 0 and less than 1 float number</span>
+          </div>
+        </div><!-- row -->
+        <div class="row"> 
+            <div class="col-md-10 {% if not 'pattern' in document.file_type %} mlhide {% endif %} "
+            style="margin-top: 5px;">
+                <div class="input-group">
+                    <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                        <strong>R.E. Pattern:</strong>
+                    </span>
+                    <input type="text" class="form-control" id="_ptn_str" name="ptn_str" 
+                        style="min-width: 500px; margin-right: 5px; font-family: 'Lucida Console';" 
+                        placeholder="Regular expression pattern" 
+                        data-placement="bottom" data-toggle="tooltip"
+                        title="Regular expression pattern to extract n-gram time series data" />
+                </div><!-- /input-group -->    
+            </div>              
+        </div>
+        <div class="row"> 
+            <div class="col-md-10 {% if not 'JSON' in document.file_type %} mlhide {% endif %} "
+            style="margin-top: 5px;">
+                <div class="input-group">
+                    <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                        <strong>JSON Key List:</strong>
+                    </span>
+                    <input type="text" class="form-control" id="_json_keys_arr" name="json_keys_arr" 
+                        style="min-width: 500px; margin-right: 5px; font-family: 'Lucida Console';" 
+                        placeholder="JSON key list" 
+                        data-placement="bottom" data-toggle="tooltip"
+                        title="JSON field names for feature extraction" />
+                </div><!-- /input-group -->    
+            </div>              
+        </div>
+        <div class="row"> 
+            <div class="col-md-10  {% if not 'pattern' in document.file_type %} mlhide {% endif %} "
+                style="margin-top: 5px;">
+                <div class="input-group">
+                    <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                        <strong>Label List:</strong>
+                    </span>
+                    <input type="text" class="form-control" id="_label_arr" name="label_arr" 
+                        style="min-width: 500px; margin-right: 5px; font-family: 'Lucida Console';" 
+                        placeholder="Optional label list for data verification: e.g. ['clean','dirty']" 
+                        data-placement="bottom" data-toggle="tooltip"
+                        title="Optional label list for data verification: e.g. ['clean','dirty']" />
+                </div><!-- /input-group -->    
+            </div>              
+        </div>
+
+       </div><!--end feat pre tab pane-->
+       <!--=== feat cus ===-->
+       <div id="_fea_cus" class="tab-pane ">
+        <div class="row"> 
+          <div class="col-md-2"  style="margin-top: 5px;">
+           <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                    title="select imported featuring code"> 
+            <span class="input-group-addon"  style="min-width: 150px;max-width: 150px;text-align:right;">
+                <strong>Featuring Module:</strong>
+            </span> 
+            <div class="input-group-btn" >
+                  <button id="_btn_ml_cust" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                     <span id="_btn_ml_cust_s">android_static</span>
+                     <span class="caret"></span>
+                  </button>
+                  <ul id="_ul_cust_feat" class="dropdown-menu">
+                     <li><a href="#">android_static</a></li>
+                     <li><a href="#">android_static2</a></li>
+                  </ul>
+            </div><!-- input-group-btn -->
+           </div><!-- input-group -->
+          </div>
+        </div><!--end row-->
+        
+        <div class="row"> 
+            <div class="col-md-8  "
+                style="margin-top: 5px;">
+                <div class="input-group">
+                    <span class="input-group-addon"  style="min-width: 150px;text-align:right;">
+                        <strong>Parameter JSON:</strong>
+                    </span>
+                    <input type="text" class="form-control" id="_ml_cust_params" name="_ml_cust_params" 
+                        style="min-width: 500px; margin-right: 5px; font-family: 'Lucida Console';" 
+                        placeholder='Optional parameters in JSON format: e.g. {"n-gram":2}' 
+                        data-placement="bottom" data-toggle="tooltip"
+                        title='Optional parameters in JSON format: e.g. {"n-gram":2}' />
+                </div><!-- /input-group -->    
+            </div>              
+        </div><!--end row-->
+       </div><!--end feat cus tab pane-->
+
+        <div class="row"> 
+            <div class="col-md-2"  style="margin-top: 5px;margin-bottom: 5px;"> 
+            <!--feature button ============== -->
+            <img id="prg_img_fea_w" class="_progressCircle"  
+                    src="{% static 'img/progress.gif' %}" style="display:none" />
+            <button type="submit" class="btn btn-primary btn-sm _w_ sts_btn _n4fb_" 
+                    id="btn_fea_w" name="action"  value="feature"  code="100"
+                    data-placement="bottom" data-toggle="tooltip"
+                    title="Submit a featuring job to server; may take some time to finish."
+                    onclick=" event.preventDefault(); $('#hf_w_action').val('feature');
+                        $('#hf_w_pattern').val( $('#_ptn_str').val() ); $('#hf_w_label_arr').val( $('#_label_arr').val() );
+                        $('#hf_w_ml_feat_threshold').val( $('#_feat_threshold').val() );
+                        $('#hf_w_ml_filter_ratio').val( $('#_filter_ratio').val() );
+                        $('#hf_w_ml_cust_params').val( $('#_ml_cust_params').val() );
+                        submit_job('#_workingtbl_','#prg_img_fea_w', '._w_', $('#hf_w_oid').val()
+                    ,'Processing feature extraction. Id='+$('#hf_w_oid').val()+'...', postupdate_file_record, 'feature'); "
+                    disabled
+            >Extract Features</button>
+            </div>
+        </div><!--row-->
+      </div> <!-- end fea  tab-content-->
+      </div><!-- end feature ============== ============== -->
+
+      <!--PCA pan ============== ============== ============================ ============== -->
+      <div id="_t_pca" class="tab-pane ">
+        <div data-placement="bottom" data-toggle="tooltip"
+                title="Training library:
+Spark MLlib: Apache Spark’s scalable ML library
+Scikit-Learn: Machine learning library in Python
+">
+        <ul class="nav nav-tabs" style="margin-top: 5px;" id="_ul_pca">
+            <li class="tab_bgc _ml_tbs active" id="_li_pca_ml">
+                <a href="#_pca_scikit"  data-toggle="tab" id="_a_pca_mllib" tag="mllib" class="tab_packed_bold">
+                    Spark ML</a></li>
+            <li class="tab_bgc _ml_tbs"  id="_li_pca_scikit">
+                <a href="#_pca_scikit" data-toggle="tab" id="_a_pca_scikit" tag="scikit"  class="tab_packed_bold">
+                Scikit-Learn</a></li>
+        </ul>
+        </div>
+        <div id="_pca_params" class="tab-content" >
+        <!--_pca_mllib ============================ ============== -->
+        <div id="_pca_ml" class="tab-pane" style="margin-top: 0px;">
+      
+          <div class="row"> 
+            <div class="col-md-3 "  style="margin-top: 5px;">
+            <div class="input-group" id="_pca_c_ig" data-placement="bottom" data-toggle="tooltip"
+                    title="Principal Component Analysis (PCA) column number. 0 for all columns"> 
+                <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                    <strong>k</strong>
+                </span> 
+                <input type="text" id="_pca_k" name="_pca_k" class="form-control _validate_pca_" value="" 
+                    placeholder="k columns of PCA output"
+                    default_val='0' validate_rule="int ge0" >
+                </input>
+
+            </div>
+            <span id="_pca_k_error_help_msg" class="help-block mlhide error_msg">K should be equal or greater than 0 integer</span>
+            </div> 
+            
+          </div><!--row-->
+        
+        </div><!--end _tp_mllib-->
+        <!--_pca_scikit ============================ ============== -->
+        <div id="_pca_scikit" class="tab-pane active" style="margin-top: 0px;">
+
+          <div class="row"> 
+            <div class="col-md-3 "  style="margin-top: 5px;">
+            <div class="input-group" id="_pca_threshold_ig" data-placement="bottom" data-toggle="tooltip"
+                    title="The threshold to keep the variance of PCA output. Enter ratio 0.0-1.0 to perform PCA. The k value will be calculated"> 
+                <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                    <strong>Threshold</strong>
+                </span> 
+                <input type="text" id="_pca_threshold" name="_pca_threshold" class="form-control _validate_pca_" value="" 
+                    placeholder="Variance ratio 0.0-1.0"
+                    default_val='0.9' validate_rule="float gt0 lt1" >
+                </input>
+
+            </div>
+            <span id="_pca_threshold_error_help_msg" class="help-block mlhide error_msg">Threshold should be greater than 0.0 and less than 1.0 float number</span>
+            </div> 
+            
+          </div><!--row-->
+        </div><!--end _pca_scikit-->
+        </div><!--end _pca_params-->
+        <div class="row"> 
+            <div class="col-md-2"  style="margin-top: 5px;margin-bottom: 5px;"> 
+            <!--feature button ============== -->
+            <img id="prg_img_pca_w" class="_progressCircle"  
+                    src="{% static 'img/progress.gif' %}" style="display:none" />
+            <button type="submit" class="btn btn-primary btn-sm _w_ sts_btn " 
+                    id="_btn_pca_w" name="action"  value="pca"  code="400"
+                    data-placement="bottom" data-toggle="tooltip"
+                    title="Optional. Submit a Principal Component Analysis (PCA) job to server; may take some time to finish."
+                    onclick=" event.preventDefault(); $('#hf_w_action').val('pca');
+                    var ltype=$('ul#_ul_pca li.active a').attr('tag').trim();
+                    if (create_pca_opt_jstring( ltype,'hf_w_ml_pca_opts',$('#_pca_k').val(), $('#_pca_threshold').val() )){
+                        
+                        submit_job('#_workingtbl_','#prg_img_pca_w', '._w_', $('#hf_w_oid').val()
+                        ,'Processing PCA transformation. Id='+$('#hf_w_oid').val()+'...', postupdate_file_record, 'pca'); 
+                    } "
+                    disabled 
+            >Reduce by PCA (Optional) </button>
+            </div>
+        </div><!--row-->
+        </div><!-- end pca ============== ============== -->
+      
+        <!--train pan ============== ============== ============================ ============== -->
+        <div id="_t_train" class="tab-pane " ><!-- _t_train ==================================== -->
+            <div data-placement="bottom" data-toggle="tooltip"
+                    title="Training library:
+Spark MLlib: Apache Spark’s scalable machine learning library
+Scikit-Learn: Machine learning library in Python
+Neural Network: Keras/Theano/TensorFlow libraries
+">
+            <ul class="nav nav-tabs" style="margin-top: 5px;" id="_ul_ml_lib">
+                <li class="tab_bgc _ml_tbs active" id="mllib">
+                    <a href="#_tp_mllib"  data-toggle="tab" id="_a_mllib" tag="mllib" class="tab_packed_bold">
+                        Spark MLlib</a></li>
+                <li class="tab_bgc _ml_tbs"  id="scikit">
+                    <a href="#_tp_scikit" data-toggle="tab" id="_a_scikit" tag="scikit"  class="tab_packed_bold">
+                    Scikit-Learn</a></li>
+                <li class="tab_bgc _ml_tbs"  id="dnn">
+                    <a href="#_tp_dnn" data-toggle="tab" id="_a_dnn" tag="dnn"  class="tab_packed_bold">
+                    Neural Network</a></li>
+            </ul>
+            </div>
+        <div id="_train_params" class="tab-content" >
+        <!--_tp_dnn ============================ ============== -->
+        <div id="_tp_dnn" class="tab-pane " style="margin-top: 0px;">
+            <div class="row"  data-placement="bottom" data-toggle="tooltip"
+                    title="Classification algorithms:
+CNN: Convolution/ Feed-Forward Neural Network (non-time series data; for LIBSVM format)
+LSTM: Long Short-Term Memory/ Recurrent Neural Network (time series data; eg. n-gram=1)
+"> 
+                <ul class="nav navbar-nav"  >
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle dropdown_packed" data-toggle="dropdown" role="button"  style="margin-left: 15px; margin-top: 0px;"
+                            aria-haspopup="true" aria-expanded="false">Learning Algorithm:
+                            <span id="_dnn_t_learning_algorithm" style="font-weight: bold; color: #000000;">CNN</span>
+                            <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu" id="_ul_dnn" style="margin-left: 20px; margin-top: 1px;" >
+                        <li role="presentation" class="drowdown-header">&nbsp;&nbsp;Classification:</li>
+                        <li id="_li_alg_cnn" class="_dnn_li_ _cnn_li_" >
+                            <a href="#_tp_cnn" style="margin-top: 1px;" id="_dnn_def" >CNN</a></li>
+                        <li id="_li_alg_lstm" class="_dnn_li_ _lstm_li_">
+                            <a href="#_tp_lstm" style="margin-top: 1px;" >LSTM</a></li>
+                    </ul>
+                </li>
+                </ul>            
+            </div> <!--row of dnn alg tab -->
+            <div id="_train_dnn" class="tab-content"><!-- _train_dnn tab-content -->
+
+            <div class="panel-group" id="dnn_alg" role="tablist" aria-multiselectable="true">
+              <div class="panel panel-default">
+                <div class="panel-heading" role="tab" id="dnn_p1">
+                  <h4 class="panel-title" data-placement="bottom" data-toggle="tooltip"
+                            title="Adjust parameters for calculation">
+                    <a id="_dnn_diff_params" class="_ml_alg_cv" role="button" data-toggle="collapse" data-parent="#accordion_alg" 
+                    href="#_dnn_param_pane"  aria-expanded="true" aria-controls="_dnn_param_pane" tag="no">
+                      <span class="glyphicon glyphicon-ok _dnn_alg_param mlhide" aria-hidden="true"
+                      >&nbsp;</span>Learning with Customized Parameters:</a></h4>
+                </div><!--panel-heading-->
+                <div id="_dnn_param_pane" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="algOne">
+                  <div class="panel-body">  
+                  <div class="row"> 
+                    <div class="col-md-2 _dnn_ "  style="margin-top: 5px;">
+                    <div class="input-group" id="_ig_dnn" data-placement="bottom" data-toggle="tooltip"
+                            title="Epoch is a single pass through the entire training set, followed by testing of the verification set"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>Epoch</strong>
+                        </span> 
+                        <input type="text" id="_dnn_epoch" name="_dnn_epoch" class="form-control _validate_dnn_" value="12" 
+                            default_val='12' validate_rule="gt0" >
+                        </input>
+                    </div>
+                    <span id="_dnn_epoch_error_help_msg" class="help-block mlhide error_msg">Epoch should be greater than 0</span>
+                    </div>                  
+                    <div class="col-md-2 _dnn_ "  style="margin-top: 5px;">
+                    <div class="input-group" id="_bs_dnn" data-placement="bottom" data-toggle="tooltip"
+                            title="the number of training examples in one forward/backward pass"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>Batch Size</strong>
+                        </span> 
+                        <input type="text" id="_dnn_batch_size" name="_dnn_batch_size" class="form-control _validate_dnn_" value="128" 
+                            default_val='128' validate_rule="gt0" >
+                        </input>
+                    </div>
+                    <span id="_dnn_batch_size_error_help_msg" class="help-block mlhide error_msg">Epoch should be greater than 0</span>
+                    </div> 
+                    <div class="col-md-2 _dnn_ _cnn_"  style="margin-top: 5px;">
+                    <div class="input-group" id="_bs_dnn" data-placement="bottom" data-toggle="tooltip"
+                            title="row count of image. zero if not an image"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>Data Rows</strong>
+                        </span> 
+                        <input type="text" id="_dnn_data_rows" name="_dnn_data_rows" class="form-control _validate_dnn_" value="28" 
+                            default_val='28' validate_rule="ge0" >
+                        </input>
+                    </div>
+                    <span id="_dnn_data_rows_error_help_msg" class="help-block mlhide error_msg">data rows be greater than 0</span>
+                    </div> 
+                    <div class="col-md-2 _dnn_ _cnn_"  style="margin-top: 5px;">
+                    <div class="input-group" id="_bs_dnn" data-placement="bottom" data-toggle="tooltip"
+                            title="column count of image. zero if not an image"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>Data Columns</strong>
+                        </span> 
+                        <input type="text" id="_dnn_data_cols" name="_dnn_data_cols" class="form-control _validate_dnn_" value="28" 
+                            default_val='28' validate_rule="ge0" >
+                        </input>
+                    </div>
+                    <span id="_dnn_data_cols_error_help_msg" class="help-block mlhide error_msg">data columns should be greater than 0</span>
+                    </div> 
+                  </div><!--row of options -->
+
+                  
+                  <div class="row">
+                    <div class="col-md-2  _dnn_ "  style="margin-top: 5px;">  
+                    <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="Specifies the optimizer for DNN model">
+                        <span class="input-group-addon"  style="min-width: 100px; text-align:right;">
+                            <strong>Optimizer:</strong></span>                          
+                        <div class="input-group-btn" > 
+                            <button id="_btn_dnn_optimizer" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                 <span id="_btn_dnn_optimizer_s" default_val='Adadelta' name="_dnn_t_optimizer">Adadelta</span><span class="caret"></span>
+                            </button>
+                            <ul id="_ul_dnn_optimizer" class="dropdown-menu">
+                                <li><a href="#">Adadelta</a></li>
+                                <li><a href="#">RMSprop</a></li>
+                                <li><a href="#">SGD</a></li>
+                            </ul>
+                        </div><!-- input-group-btn -->
+                    </div><!--input grp-->
+                    </div>                  
+                    <div class="col-md-2  _dnn_ "  style="margin-top: 5px;">  
+                    <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="Specifies the Loss/Objective function for DNN model">
+                        <span class="input-group-addon"  style="min-width: 100px; text-align:right;">
+                            <strong>Loss:</strong></span>                          
+                        <div class="input-group-btn" > 
+                            <button id="_btn_dnn_loss" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                 <span id="_btn_dnn_loss_s" default_val='categorical_crossentropy' name="_dnn_t_loss">categorical_crossentropy</span><span class="caret"></span>
+                            </button>
+                            <ul id="_ul_dnn_loss" class="dropdown-menu">
+                                <li><a href="#">categorical_crossentropy</a></li>
+                                <li><a href="#">binary_crossentropy</a></li>
+                                <li><a href="#">mean_squared_error</a></li>
+                            </ul>
+                        </div><!-- input-group-btn -->
+                    </div><!--input grp-->
+                    </div>                   
+                  </div><!--row opt-->
+                  
+                  
+                  <div class="row">
+                    <div class="col-md-11 "  style="margin-top: 5px;">
+                    <div class="input-group" id="_ig_dnn" data-placement="bottom" data-toggle="tooltip"
+                            title="Edit your DNN model"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>Model</strong>
+                        </span>
+                       
+                    <!--p>log for {{ logname }} </p-->
+                    <textarea class="form-control _validate_dnn_" rows="10" id="_dnn_model" 
+                        style="font-family: 'Lucida Console';" validate_rule="json" 
+                        cnn_def='{"class_name": "Sequential", "config": [
+  {"class_name": "Convolution2D", "config": {"nb_col": 3,"nb_filter": 32,"nb_row": 3
+    , "border_mode": "valid","batch_input_shape": [null, 28, 28, 1], "name": "01"}}
+ ,{"class_name": "Activation", "config":{"activation": "relu", "name": "02"}}
+ ,{"class_name": "Convolution2D", "config":{"nb_col": 3,"nb_filter": 32,"nb_row": 3,"name": "03"}}
+ ,{"class_name": "Activation", "config":{"activation": "relu", "name": "04"}}
+ ,{"class_name": "MaxPooling2D", "config":{"pool_size": [2, 2], "name": "05"}}
+ ,{"class_name": "Dropout", "config":{"p": 0.25, "name": "06"}}
+ ,{"class_name": "Flatten", "config":{ "name": "07"}}
+ ,{"class_name": "Dense", "config":{"output_dim": 128, "name": "08"}}
+ ,{"class_name": "Activation", "config":{"activation": "relu", "name": "09"}}
+ ,{"class_name": "Dropout", "config":{"p": 0.5, "name": "10"}}
+ ,{"class_name": "Dense", "config":{"output_dim": 10, "name": "11"}}
+ ,{"class_name": "Activation", "config":{"activation": "softmax", "name": "12"}}
+]} '
+                        lstm_def='{  "class_name": "Sequential", "config": [
+  {"class_name": "Embedding", "config":{"name": "01", "input_dim": 160, "output_dim": 100, "mask_zero": true}}
+, {"class_name": "LSTM", "config":{"name": "02", "input_dim": 100, "output_dim": 100, "return_sequences": false}}
+, {"class_name": "Dropout", "config": {"name": "03","p": 0.5}}
+, {"class_name": "Dense", "config": {"name": "04", "output_dim": 2}}
+, {"class_name": "Activation", "config":{"name": "05", "activation": "sigmoid"}}
+]}'
+                    >
+                    </textarea>
+                    </div>
+                    
+                    <span id="_dnn_model_error_help_msg" class="help-block mlhide error_msg">Invalid JSON format</span>
+                    </div>
+                  </div><!--row-->                  
+
+                  
+                  <div class="row">
+                    <div class="col-md-6"  style="margin-top: 5px;margin-bottom: 5px;"> 
+                    <!--verify button ============== -->
+
+                    <button type="submit" class="btn btn-default btn-md _w_ sts_btn" 
+                            id="btn_tra_w_dnn_verify" name="action"  value="verify_dnn_model"   code="400"
+                            data-toggle="modal" data-target="#qryModal"
+                            btn_text="Verify Model"
+                            title="Verify Neural Network Model. Note: verification check by model compilation. It won't catch all errors."
+                            onclick="event.preventDefault(); 
+                            $('#hf_w_action').val('verify_dnn_model'); 
+                            $('#learning_algorithm').val($('#_dnn_t_learning_algorithm').text());
+                            $('#hf_w_ml_model').val($('#_dnn_model').val());  
+                            create_opt_jstring('_dnn_','hf_w_ml_opts','learning_algorithm'); 
+                            show_query( $('#hf_w_id').val()
+                                , '{% url 'api_query4script' %}'+$('#hf_w_id').val()+'/verify_dnn_model/'
+                                ,$('#_workingtbl_'), 'Verify DNN Model for id='+$('#hf_w_id').val() )
+                            "
+
+                    >Verify Model & Show Summary</button>
+
+                    <!--train button ============== -->
+                    <img id="prg_img_tra_w_dnn" class="_progressCircle"  
+                            src="{% static 'img/progress.gif' %}" style="display:none" />
+                    <button type="submit" class="btn btn-primary btn-md _w_ sts_btn" 
+                            id="btn_tra_w_dnn" name="action"  value="dnn"   code="400"
+                            data-placement="bottom" data-toggle="tooltip"
+                            btn_text="Learn & Verify by Neural Network"
+                            title="Submit training jobs to GPU machine; calculated by Deep Neural Network algorithm."
+                            onclick=" event.preventDefault(); $('#hf_w_action').val('dnn'); 
+                            $('#learning_algorithm').val($('#_dnn_t_learning_algorithm').text());
+                            $('#hf_w_ml_model').val($('#_dnn_model').val());  
+                            
+                            create_opt_jstring('_dnn_','hf_w_ml_opts','learning_algorithm');
+                            
+                            submit_job('#_workingtbl_','#prg_img_tra_w_dnn', '._w_', $('#hf_w_id').val()
+                            ,'Processing learn and predict. Id='+$('#hf_w_oid').val()+'...', postupdate_file_record, 'train'); "
+                            disabled
+
+                    >Learn & Verify by Neural Network</button>
+                    </div>
+                    <!--button--> 
+                   </div><!--row-->
+                  </div><!--panel-body-->
+                </div><!--panel-collapse-->
+                </div><!--panel panel-default-->
+            </div><!--panel-group-->
+            </div><!-- _train_dnn tab-content -->
+            
+        </div><!--_tp_dnn -------------->
+        <!--_tp_mllib ============================ ============== -->
+        <div id="_tp_mllib" class="tab-pane active" style="margin-top: 0px;">
+            <div class="row"  data-placement="bottom" data-toggle="tooltip" id="_ml_lib_alg_list"
+                    title="Classification algorithms:
+Linear SVM with SGD: Train a support vector machine with Stochastic Gradient Descent
+Logistic Regression with L-BFGS: Train a logistic regression model with Limited-memory BFGS
+Logistic Regression with SGD: Train a logistic regression model with Stochastic Gradient Descent
+Clustering algorithms:
+Kmeans: Train a clustering model for non-labelled dataset (ignoring label)
+"
+            > 
+                <ul class="nav navbar-nav"  >
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle dropdown_packed" data-toggle="dropdown" role="button"  style="margin-left: 15px; margin-top: 0px;"
+                            aria-haspopup="true" aria-expanded="false">Learning Algorithm:
+                            <span id="_alg_t_learning_algorithm" style="font-weight: bold; color: #000000;">Logistic Regression with LBFGS</span>
+                            <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu" id="_ul_alg" style="margin-left: 20px; margin-top: 1px;" >
+                        <li role="presentation" class="drowdown-header">&nbsp;&nbsp;Classification:</li>
+                        <li id="_li_alg_ls_sgd" class="_mlib_li_ _only2c_" >
+                            <a href="#_tp_ls_sgd" style="margin-top: 1px;" >Linear SVM with SGD</a></li>
+                        <li id="_li_alg_lr_sgd" class="_mlib_li_ _only2c_">
+                            <a href="#_tp_lr_sgd" style="margin-top: 1px;"  >Logistic Regression with SGD</a></li>
+                        <li id="_li_alg_lr_lbfgs" class="_mlib_li_">
+                            <a href="#_tp_lr_lbfgs" style="margin-top: 1px;" id="_alg_def" >Logistic Regression with LBFGS</a></li>
+                        <li role="presentation" class="divider"></li>
+                        <li role="presentation" class="drowdown-header">&nbsp;&nbsp;Clustering:</li>
+                        <li id="_li_alg_lr_kmeans" class="_mlib_li_">
+                            <a href="#_tp_lr_kmeans" style="margin-top: 1px;" >Kmeans</a></li>
+                            <!-- share same pane; no data-toggle="tab"-->
+                    </ul>
+                </li>
+                </ul>            
+            </div> <!--row of alg tab -->
+            
+        <div id="_train_mllib" class="tab-content"><!-- _train_mllib tab-content -->
+
+            <div class="panel-group" id="accordion_alg" role="tablist" aria-multiselectable="true">
+              <div class="panel panel-default">
+                <div class="panel-heading" role="tab" id="algOne">
+                  <h4 class="panel-title" data-placement="bottom" data-toggle="tooltip"
+                            title="Adjust parameters for calculation">
+                    <a id="_alg_diff_params" class="_ml_alg_cv" role="button" data-toggle="collapse" data-parent="#accordion_alg" 
+                    href="#_acv_param_pane"  aria-expanded="true" aria-controls="_acv_param_pane" tag="no">
+                      <span class="glyphicon glyphicon-ok _ml_alg_param mlhide" aria-hidden="true"
+                      >&nbsp;</span>Learning with Customized Parameters:</a></h4>
+                </div><!-- panel-heading -->
+                <div id="_acv_param_pane" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="algOne">
+                  <div class="panel-body">  
+                  <div class="row"> 
+                    <div class="col-md-2 _alg_ _linear_svm_with_sgd _logi_sgd _logi_fgs"  style="margin-top: 5px;">
+                    <div class="input-group" id="_ig_spark_alg" data-placement="bottom" data-toggle="tooltip"
+                            title="for calculating the regularizer parameter"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>C</strong>
+                        </span> 
+                        <input type="text" id="_alg_c" name="_alg_c" class="form-control _validate_ml_" value="1" 
+                            default_val='1' validate_rule="gt0" >
+                        </input>
+                    </div>
+                    <span id="_alg_c_error_help_msg" class="help-block mlhide error_msg">C should be greater than 0</span>
+                    </div>
+                    <div class="col-md-2 _alg_ _kmeans _linear_svm_with_sgd _logi_sgd _logi_fgs"  style="margin-top: 5px;">
+                    <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="The max number of iterations"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>Iterations</strong>
+                        </span> 
+                        <input type="text" id="_alg_iterations" name="_alg_iterations" class="form-control _validate_ml_" value="300" 
+                            default_val='300'  validate_rule="int gt0" >
+                        </input>
+                    </div>
+                    <span id="_alg_iterations_error_help_msg" class="help-block mlhide error_msg" >iterations should be an integer and greater than 0</span>
+                    </div>
+                    <div class="col-md-2 _alg_ _linear_svm_with_sgd _logi_sgd _logi_fgs"  style="margin-top: 5px;">  
+                    <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="The type of regularizer">
+                        <span class="input-group-addon"  style="text-align:right;">
+                            <strong>Regularization:</strong></span>                          
+                        <div class="input-group-btn" > 
+                            <button id="_btn_alg_reg" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                 <span id="_btn_alg_reg_s" name="_alg_t_regularization" default_val='L2'>L2</span><span class="caret"></span>
+                            </button>
+                            <ul id="_ul_alg_reg" class="dropdown-menu">
+                                <li><a href="#">L1</a></li>
+                                <li><a href="#">L2</a></li>
+                            </ul>
+                        </div><!-- input-group-btn -->
+                    </div>
+                    </div>
+                    <div class="col-md-2 _alg_ _kmeans mlhide"  style="margin-top: 5px;">  
+                    <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="The number of clusters"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>k</strong>
+                        </span> 
+                        <input type="text" id="_alg_k" name="_alg_k" class="form-control _validate_ml_" value="2" 
+                            default_val='2'  validate_rule="int gt0" >
+                        </input>
+                    </div>
+                    <div>
+                    <span id="_alg_k_error_help_msg" class="help-block mlhide error_msg" >cluster count, k, should be an integer and greater than 0</span>
+                    </div>
+                    </div>
+                  </div><!--row of options -->
+                  </div><!--panel-body-->
+                </div><!--panel-collapse-->
+              </div><!--panel panel-default-->
+
+              <div class="panel panel-default" id="_ml_cv"> <!-- alg CV panel #################-->
+                <div class="panel-heading" role="tab" id="algTwo">
+                  <h4 class="panel-title" data-placement="bottom" data-toggle="tooltip"
+                      title="Exhaustive search over specified parameter values for an estimator.">
+                    <a id="_alg_grid_cv" class="_ml_alg_cv collapsed" role="button" data-toggle="collapse" 
+                    data-parent="#accordion_alg" href="#_acv_pane" aria-expanded="false" aria-controls="_acv_pane" tag="yes">
+                      <span class="glyphicon glyphicon-ok _acv mlhide" aria-hidden="true"
+                      >&nbsp;</span>Grid Search with Cross Validation:
+                    </a>
+                  </h4>
+                </div>
+                <div id="_acv_pane" class="panel-collapse collapse" role="tabpanel" aria-labelledby="algTwo">
+                  <div class="panel-body">
+                    <div class="row"> <!--row of acv options --> 
+
+                    <div class="col-md-2 _acv_"  style="margin-top: 5px;">  
+                        <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="integer or cross-validation generator, default=3"
+                            >
+                            <span class="input-group-addon"  style="text-align:right;">
+                                <strong>CV:</strong></span>                          
+                            <div class="input-group-btn" > 
+                                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                     <span id="_btn_acv_s" default_val='3' name="_acv_t_cv">3</span>&nbsp;<span class="caret"></span>
+                                </button>
+                                <ul id="_ul_acv" class="dropdown-menu">
+                                    <li><a href="#">3</a></li>
+                                    <li><a href="#">4</a></li>
+                                    <li><a href="#">5</a></li>
+                                    <li><a href="#">6</a></li>
+                                    <li><a href="#">7</a></li>
+                                    <li><a href="#">8</a></li>
+                                    <li><a href="#">9</a></li>
+                                    <li><a href="#">10</a></li>
+                                </ul>
+                            </div><!-- input-group-btn -->
+                        </div>
+                    </div> <!--end cv -->
+                    
+                    <div class="col-md-2 _acv_"  style="margin-top: 5px;">  
+                        <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="Cheap: grid search with 3-5 options;
+Expensive: grid search with more options">
+                            <span class="input-group-addon"  style="text-align:right;">
+                                <strong>Mode:</strong></span>                          
+                            <div class="input-group-btn" > 
+                                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                     <span id="_btn_amode_s" default_val='Cheap' name="_acv_t_mode">Cheap</span>&nbsp;<span class="caret"></span>
+                                </button>
+                                <ul id="_ul_acv_mode" class="dropdown-menu">
+                                    <li><a href="#">Cheap</a></li>
+                                    <li><a href="#">Expensive</a></li>
+                                </ul>
+                            </div><!-- input-group-btn -->
+                        </div>
+                    </div> <!--end _mode -->                                       
+                    </div><!--row of acv options --> 
+                  </div><!-- End ACV panel body -->
+                </div> 
+              </div> <!-- End alg CV panel -->
+            </div>  <!--END panel group --> 
+              
+        </div><!--END _train_mllib-->
+                
+            <div class="row"> 
+            <div class="col-md-4"  style="margin-top: 5px;margin-bottom: 5px;"> 
+            <!--train button ============== -->
+            <img id="prg_img_tra_w_ml" class="_progressCircle"  
+                    src="{% static 'img/progress.gif' %}" style="display:none" />
+            <button type="submit" class="btn btn-primary btn-md _w_ sts_btn" 
+                    id="btn_tra_w_ml" name="action"  value="mllib"   code="400"
+                    data-placement="bottom" data-toggle="tooltip"
+                    btn_text="Learn & Verify by Spark ML Library"
+                    btn_text_cv="Model Selection via Cross-Validation by Spark MLlib"                    
+                    title="Submit training jobs to Spark cluster; calculated by MLlib."
+                    onclick=" event.preventDefault(); $('#hf_w_action').val('mllib'); 
+                    create_opt_jstring('_alg_','hf_w_ml_opts','learning_algorithm');
+                    submit_job('#_workingtbl_','#prg_img_tra_w_ml', '._w_', $('#hf_w_id').val()
+                    ,'Processing learn and predict. Id='+$('#hf_w_oid').val()+'...', postupdate_file_record, 'train'); "
+                    disabled
+
+            >Learn & Verify by Spark MLlib</button>
+            </div><!--button-->
+
+              <div class="col-md-3"  style="margin-top: 5px;margin-bottom: 5px;"> 
+              <div class="btn-group" data-toggle="buttons" id="_btn_alg_pca">
+                <button type="button" class="btn btn-default" data-toggle="button" aria-pressed="true" autocomplete="off"
+                    data-placement="bottom" data-toggle="tooltip"
+                    title="Optional, click to use dimension reduced dataset from prior pipeline stage for training."
+                    onclick="//toggle pca-ed dataset selection
+                        toggle_2comps($('#_yes_pca_ml'),$('#_no_pca_ml'),null);"
+                ><div id="_yes_pca_ml" class="mlhide">
+                 <span class="glyphicon glyphicon-ok " aria-hidden="false" ></span>
+                    &nbsp;Dimension reduced dataset will be used </div>
+                 <div id="_no_pca_ml">
+                    Click to use the dimension reduced dataset&nbsp;</span></div>
+                </button>
+              </div></div>
+              
+            </div><!--row-->                 
+        </div><!--_tp_mllib -------------->
+            
+          <!-- _tp_scikit ============================ ============== -->
+        <div id="_tp_scikit" class="tab-pane" > 
+
+            <div class="row"  data-placement="bottom" data-toggle="tooltip"
+                            title="Supported Scikit-learn algorithms: 
+Linear SVM: Linear Support Vector Classification
+Logistic Regression: Logistic Regression (aka logit, MaxEnt) classifier
+SVM: C-Support Vector Classification
+Nu-SVM: Nu-Support Vector Classification
+Linear SVM with SGD: Linear classifiers with stochastic gradient descent training
+Passive Aggressive Classifier: Linear classifiers
+Perceptron: Linear classifiers
+Kmeans: Train a clustering model for non-labelled dataset (ignoring label)
+"> 
+            <ul class="nav navbar-nav"  >
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle dropdown_packed" data-toggle="dropdown" role="button"  style="margin-left: 15px; margin-top: 0px;"
+                        aria-haspopup="true" aria-expanded="false">Learning Algorithm:
+                    <span id="_skl_t_learning_algorithm" style="font-weight: bold; color: #000000;" placeholder="S">Linear SVM</span>
+                    <span class="caret"></span>
+                </a>
+                <ul class="dropdown-menu" id="_ul_skl" style="margin-left: 20px; margin-top: 1px;" >
+                    <li role="presentation" class="drowdown-header">&nbsp;&nbsp;Classification:</li>
+                    <li id="_li_skl_ls" >
+                        <a href="#_tp_ls" id="_skl_def" >Linear SVM</a></li>
+                    <li id="_li_skl_lr">
+                        <a href="#_tp_lr" >Logistic Regression</a></li>
+                    <li id="_li_skl_svm">
+                        <a href="#_tp_svm" >SVM</a></li>
+                    <li id="_li_skl_nsvm">
+                        <a href="#_tp_nsvm" >nu-SVM</a></li>
+                    <li id="_li_skl_ls_sgd" >
+                        <a href="#_tp_ls_sgd" >Linear SVM with SGD</a></li>
+                    <li id="_li_skl_pac" >
+                        <a href="#_tp_pac" >Passive Aggressive Classifier</a></li>
+                    <li id="_li_skl_p" >
+                        <a href="#_tp_p" >Perceptron</a></li>
+                        <!-- share same pane; no data-toggle="tab"-->
+                    <li role="presentation" class="divider"></li>
+                    <li role="presentation" class="drowdown-header">&nbsp;&nbsp;Clustering:</li>                        
+                    <li id="_li_skl_km" >
+                        <a href="#_tp_lm"style="margin-top: 1px;" >Kmeans</a></li>
+
+                </ul>
+            </li>
+            </ul>            
+            </div> <!--row of alg tab -->
+
+
+                
+            <div id="_train_skl" class="tab-content"><!-- _train_skl tab-content -->
+                
+            <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+              <div class="panel panel-default">
+                <div class="panel-heading" role="tab" id="headingOne">
+                  <h4 class="panel-title" data-placement="bottom" data-toggle="tooltip"
+                            title="Adjust parameters for calculation">
+                    <a id="_skl_diff_params" class="_ml_skl_cv" role="button" data-toggle="collapse" data-parent="#accordion" 
+                    href="#_scv_param_pane"  aria-expanded="true" aria-controls="_scv_param_pane" tag="no">
+                      <span class="glyphicon glyphicon-ok _ml_skl_param mlhide" aria-hidden="true"
+                      >&nbsp;</span>Learning with Customized Parameters:</a></h4>
+                </div>
+              <div id="_scv_param_pane" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                <div class="panel-body">                
+                
+                  <div class="row"> <!--row of skl options -->
+                    <div class="col-md-2 _skl_ _linear_svm _logistic_regression _passive_aggressive_ _svm "  
+                        style="margin-top: 5px;" id="I_am_C">
+                    <div class="input-group" id="_ig_skl" data-placement="bottom" data-toggle="tooltip"
+                            title="Penalty parameter C of the error term"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>C</strong>
+                        </span> 
+                        <input type="text" id="_skl_c" name="_skl_c" class="form-control _validate_skl_" value="1" 
+                            default_val='1' validate_rule="gt0" >
+                        </input>
+                    </div>
+                    <span id="_skl_c_error_help_msg" class="help-block mlhide error_msg" >C should be greater than 0</span>
+                    </div>
+
+                    <div class="col-md-2  _skl_ _logistic_regression"  style="margin-top: 5px;">  
+                    <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="Penalty parameter. Used to specify the norm used in the penalization">
+                        <span class="input-group-addon"  style="text-align:right;">
+                            <strong>Regularization:</strong></span>                          
+                        <div class="input-group-btn" > 
+                            <button id="_btn_skl_reg" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                 <span id="_btn_skl_reg_s" default_val='L2' name="_skl_t_regularization">L2</span><span class="caret"></span>
+                            </button>
+                            <ul id="_ul_skl_reg" class="dropdown-menu">
+                                <li><a href="#">L1</a></li>
+                                <li><a href="#">L2</a></li>
+                            </ul>
+                        </div><!-- input-group-btn -->
+                    </div>
+                    </div>
+                    
+                    <div class="col-md-2  _skl_ _svm _nu-svm"  style="margin-top: 5px;">  
+                    <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="Specifies the kernel type to be used in the algorithm">
+                        <span class="input-group-addon"  style="text-align:right;">
+                            <strong>Kernel:</strong></span>                          
+                        <div class="input-group-btn" > 
+                            <button id="_btn_skl_kernel" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                 <span id="_btn_skl_kernel_s" default_val='L2' name="_skl_t_kernel">RBF</span><span class="caret"></span>
+                            </button>
+                            <ul id="_ul_skl_kernel" class="dropdown-menu">
+                                <li><a href="#">RBF</a></li>
+                                <li><a href="#" id="_poly">Poly</a></li>
+                                <li><a href="#">Sigmoid</a></li>
+                                <li><a href="#">Linear</a></li>
+                            </ul>
+                        </div><!-- input-group-btn -->
+                    </div>
+                    </div>
+                                     
+                    <div class="col-md-2  _skl_ mlhide"  style="margin-top: 5px;" id="_degree_">
+                    <div class="input-group" id="_ig_skl" data-placement="bottom" data-toggle="tooltip"
+                            title="Degree of the polynomial kernel function"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>Degree</strong>
+                        </span> 
+                        <input type="text" id="_skl_degree" name="_skl_degree" class="form-control _validate_skl_" value="3"
+                            default_val='1' validate_rule="int gt0" >
+                        </input>
+                    </div>
+                    <span id="_skl_degree_error_help_msg" class="help-block mlhide error_msg" >Degree should be an integer and greater than 0</span>
+                    </div> 
+                    
+                    <div class="col-md-2  _skl_ _svm _nu-svm"  style="margin-top: 5px;">
+                    <div class="input-group" id="_ig_skl" data-placement="bottom" data-toggle="tooltip"
+                            title="Kernel coefficient"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>Gamma</strong>
+                        </span> 
+                        <input type="text" id="_skl_gamma" name="_skl_gamma" class="form-control _validate_skl_" value="0.0"
+                            default_val='0.0' validate_rule="float ge0" >
+                        </input>
+                    </div>
+                    <span id="_skl_gamma_error_help_msg" class="help-block mlhide error_msg" >Gamma should be a positive float</span>
+                    </div>
+                    
+                    <div class="col-md-2 _skl_ _nu-svm"  style="margin-top: 5px;">
+                    <div class="input-group" id="_ig_skl" data-placement="bottom" data-toggle="tooltip"
+                            title="An upper bound on the fraction of training errors 
+and a lower bound of the fraction of support vectors. 
+Should be in the interval (0, 1]."> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>nu</strong>
+                        </span> 
+                        <input type="text" id="_skl_nu" name="_skl_nu" class="form-control _validate_skl_" value="0.2"
+                            default_val='0.2' validate_rule="float gt0 lt1" >
+                        </input>
+                    </div>
+                    <span id="_skl_nu_error_help_msg" class="help-block mlhide error_msg" >Nu should be a float number and between 0.0 and 1.0</span>
+                    </div> 
+                    <!-- clustering opts -->
+                    <div class="col-md-2  _skl_ _kmeans mlhide"  style="margin-top: 5px;" id="_degree_">
+                    <div class="input-group" id="_ig_skl" data-placement="bottom" data-toggle="tooltip"
+                            title="Max number of iteration"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>Iteration</strong>
+                        </span> 
+                        <input type="text" id="_skl_iteration" name="_skl_iteration" class="form-control _validate_skl_" value="300"
+                            default_val='300' validate_rule="int gt0" >
+                        </input>
+                    </div>
+                    <span id="_skl_iteration_error_help_msg" class="help-block mlhide error_msg" >iteration should be an integer and greater than 0</span>
+                    </div>
+                    <div class="col-md-2  _skl_ _kmeans mlhide"  style="margin-top: 5px;" id="_degree_">
+                    <div class="input-group" id="_ig_skl" data-placement="bottom" data-toggle="tooltip"
+                            title="Number of cluster"> 
+                        <span class="input-group-addon"  style="min-width: 100px;text-align:right;">
+                            <strong>k</strong>
+                        </span> 
+                        <input type="text" id="_skl_k" name="_skl_k" class="form-control _validate_skl_" value="2"
+                            default_val='2' validate_rule="int gt0" >
+                        </input>
+                    </div>
+                    <span id="_skl_k_error_help_msg" class="help-block mlhide error_msg" >k should be an integer and greater than 0</span>
+                    </div> 
+                    
+                    <div class="col-md-2  _skl_  _kmeans mlhide"  style="margin-top: 5px;">  
+                    <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="Specifies the initialization algorithm">
+                        <span class="input-group-addon"  style="text-align:right;">
+                            <strong>initialization:</strong></span>                          
+                        <div class="input-group-btn" > 
+                            <button id="_btn_skl_init" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                 <span id="_btn_skl_init_s" default_val='k-means++' name="_skl_t_init">k-means++</span><span class="caret"></span>
+                            </button>
+                            <ul id="_ul_skl_init" class="dropdown-menu">
+                                <li><a href="#">k-means++</a></li>
+                                <li><a href="#">random</a></li>
+                            </ul>
+                        </div><!-- input-group-btn -->
+                    </div>
+                    </div>                    
+                    </div><!--row of skl options -->
+                    
+                  </div>
+                </div>
+              </div>  <!-- param options panel -->
+
+              <div class="panel panel-default" id="_skl_cv"> <!-- CV panel #################-->
+                <div class="panel-heading" role="tab" id="headingTwo">
+                  <h4 class="panel-title" data-placement="bottom" data-toggle="tooltip"
+                      title="Exhaustive search over specified parameter values for an estimator.">
+                    <a id="_skl_grid_cv" class="_ml_skl_cv collapsed" role="button" data-toggle="collapse" 
+                    data-parent="#accordion" href="#_scv_pane" aria-expanded="false" aria-controls="_scv_pane" tag="yes">
+                      <span class="glyphicon glyphicon-ok _scv mlhide" aria-hidden="true"
+                      >&nbsp;</span>Grid Search with Cross Validation:
+                    </a>
+                  </h4>
+                </div>
+                <div id="_scv_pane" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
+                  <div class="panel-body">
+                    <div class="row"> <!--row of cv options --> 
+
+                    <div class="col-md-2 _scv_"  style="margin-top: 5px;">  
+                        <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="integer or cross-validation generator, default=3">
+                            <span class="input-group-addon"  style="text-align:right;">
+                                <strong>CV:</strong></span>                          
+                            <div class="input-group-btn" > 
+                                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                     <span id="_btn_scv_s" default_val='3' name="_scv_t_cv">3</span>&nbsp;<span class="caret"></span>
+                                </button>
+                                <ul id="_ul_scv" class="dropdown-menu">
+                                    <li><a href="#">3</a></li>
+                                    <li><a href="#">4</a></li>
+                                    <li><a href="#">5</a></li>
+                                    <li><a href="#">6</a></li>
+                                    <li><a href="#">7</a></li>
+                                    <li><a href="#">8</a></li>
+                                    <li><a href="#">9</a></li>
+                                    <li><a href="#">10</a></li>
+                                </ul>
+                            </div><!-- input-group-btn -->
+                        </div>
+                    </div> <!--end cv -->
+                    
+                    <div class="col-md-2 _scv_"  style="margin-top: 5px;">  
+                        <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="Cheap: grid search with 3-5 options;
+Expensive: grid search with more options">
+                            <span class="input-group-addon"  style="text-align:right;">
+                                <strong>Mode:</strong></span>                          
+                            <div class="input-group-btn" > 
+                                <button id="_btn_mode" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                     <span id="_btn_mode_s" default_val='Cheap' name="_scv_t_mode">Cheap</span>&nbsp;<span class="caret"></span>
+                                </button>
+                                <ul id="_ul_scv_mode" class="dropdown-menu">
+                                    <li><a href="#">Cheap</a></li>
+                                    <li><a href="#">Expensive</a></li>
+                                </ul>
+                            </div><!-- input-group-btn -->
+                        </div>
+                    </div> <!--end _mode -->                    
+
+                    <div class="col-md-2 _scv_"  style="margin-top: 5px;">  
+                        <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                            title="Centralized: calculated by master node;
+Distributed: calculated by Spark cluster;">
+                            <span class="input-group-addon"  style="text-align:right;">
+                                <strong>API:</strong></span>                          
+                            <div class="input-group-btn" > 
+                                <button  type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                     <span id="_btn_api_s" default_val='Centralized' name="_scv_t_api">Centralized</span>&nbsp;<span class="caret"></span>
+                                </button>
+                                <ul id="_ul_scv_api" class="dropdown-menu">
+                                    <li><a href="#">Centralized</a></li>
+                                    <li><a href="#">Distributed</a></li>
+                                </ul>
+                            </div><!-- input-group-btn -->
+                        </div>
+                    </div> <!--end _mode --> 
+                    
+                    </div><!--row of cv options --> 
+                  </div><!-- End CV panel body -->
+                </div> 
+              </div> <!-- End CV panel -->
+            </div>  <!--END panel group --> 
+            </div> <!--END _train_skl tab-content -->               
+
+              <div class="row"> 
+                <div class="col-md-5"  style="margin-top: 5px;margin-bottom: 5px;"><!--train button ============== -->
+                <img id="prg_img_tra_w" class="_progressCircle"  
+                        src="{% static 'img/progress.gif' %}" style="display:none" />
+                <button type="submit" class="btn btn-primary btn-md _w_ sts_btn" 
+                        id="btn_tra_w" name="action"  value="scikit"  code="400"
+                        data-placement="bottom" data-toggle="tooltip" 
+                        btn_text="Learn & Verify by Scikit-Learn Library"
+                        btn_text_cv="Model Selection via Cross-Validation by Scikit-Learn"
+                        title="Submit training jobs to Spark cluster; calculated by Scikit-Learn."
+                        onclick=" event.preventDefault(); $('#hf_w_action').val('scikit');  
+                        create_opt_jstring('_skl_','hf_w_ml_opts','learning_algorithm');
+                        submit_job('#_workingtbl_','#prg_img_tra_w', '._w_', $('#hf_w_id').val()
+                        ,'Processing learn and predict. Id='+$('#hf_w_oid').val()+'...', postupdate_file_record, 'train'); "
+                        disabled
+
+                >Learn & Verify by Scikit-Learn Library</button>
+                </div>
+
+              <div class="col-md-3"  style="margin-top: 5px;margin-bottom: 5px;"> 
+              <div class="btn-group" data-toggle="buttons" id="_btn_skl_pca">
+                <button type="button" class="btn btn-default" data-toggle="button" aria-pressed="true" autocomplete="off"
+                    data-placement="bottom" data-toggle="tooltip"
+                    title="Optional, click to use dimension reduced dataset from prior pipeline stage for training."
+                    onclick="//toggle pca-ed dataset selection
+                        toggle_2comps($('#_yes_pca_sk'),$('#_no_pca_sk'),null);
+                        "
+                ><div id="_yes_pca_sk" class="mlhide">
+                 <span class="glyphicon glyphicon-ok" ></span>&nbsp;Dimension reduced dataset will be used </div>
+                 <div id="_no_pca_sk">
+                    Click to use the dimension reduced dataset&nbsp;</div>
+                </button>
+              </div></div>
+              </div><!--row-->  
+
+              
+          </div> <!-- _tp_scikit ------------------------> 
+        </div><!-- _train_params tab-content -->
+        </div><!--  _t_train ============== ============== ==========================================>
+
+      <!--result pan ============== ============== ==========================================-->        
+      <div id="_t_result" class="tab-pane ">
+        <div class="row"> 
+        <!--View Result ============== -->
+
+        <!--View Log ============== -->
+        <div class="col-xs-2"  style="margin-top: 5px;margin-bottom: 5px;"> 
+            <a id="btn_pred_w" class="btn btn-default btn-md sts_btn" code="500"
+                base_url="{% url 'predict4oid' %}"
+                href="abc" data-placement="bottom" data-toggle="tooltip" title="Go to Prediction page"
+                onclick="//$('#btn_pred_w').attr('href', $('#btn_pred_w').attr('base_url')+$('#hf_w_oid').val()+'/'); 
+                    "
+                disabled
+            >Go to Prediction page...</a>
+
+        </div>
+        <div class="col-xs-3"  style="margin-top: 5px;margin-bottom: 5px;"> 
+            <a id="btn_feares_w2" class="btn btn-default btn-md sts_btn _n4fb_ _n4atdb_" code="800"
+                base_url="{% url 'feature_impo4oid' %}"
+                href="" data-placement="bottom" data-toggle="tooltip" title="Go to feature importance page"
+                onclick="//$('#btn_feares_w2').attr('href', $('#btn_feares_w2').attr('base_url')+$('#hf_w_oid').val()+'/'); 
+                    "
+                disabled
+            >Go to Feature Importance page...</a>
+
+        </div> 
+        <div class="col-xs-2"  style="margin-top: 5px;margin-bottom: 5px;"> 
+            <a id="btn_log_w" class="btn btn-default btn-md sts_btn" code="310"
+                base_url="{% url 'job_logs4oid' %}"
+                href="" data-placement="bottom" data-toggle="tooltip" title="Go to log page"
+                disabled
+            >Go to Log page...</a>
+            <!--button type="submit" class="btn btn-default btn-md sts_btn" 
+                        id="btn_log_w" name="action" value="viewlog"   code="310"
+                        data-placement="bottom" data-toggle="tooltip"
+                        title="Go to result page"
+                onclick=" event.preventDefault(); $('#hf_w_action').val('viewlog'); 
+                $('#_workingtbl_').attr('action','{% url 'job_logs4oid' %}'+$('#hf_w_oid').val()+'/');
+                $('#_workingtbl_').submit();    "
+                disabled
+            >Go to Log page...</button-->
+        </div>
+        </div><!--row-->
+      </div><!--end result tab ============================ ============== -->   
+
+      <!--multiple run pan =========================== ============================= -->        
+      <div id="_t_multiple_run" class="tab-pane ">
+            <div class="row"> 
+            <div class="col-md-2"  style="margin-top: 5px;margin-bottom: 5px;"> 
+            <input type="text" class="input-sm form-control _validate_mrun_" id="_mrun_numb"
+            data-placement="bottom" data-toggle="tooltip"
+                    title="Count for training multiple times"
+                    value="10" {{ disabled4reader }} default_val='10' validate_rule="int gt0" />
+            <span id="_mrun_numb_error_help_msg" class="help-block mlhide error_msg" 
+                >multiple run should be an integer and greater than 0</span>
+            </div>
+
+            <div class="col-md-3"  style="margin-top: 5px;margin-bottom: 5px;"> 
+            <!-- mrun button ============== -->
+            <img id="prg_img_mrunimp_w" class="_progressCircle"  
+                    src="{% static 'img/progress.gif' %}" style="display:none" />
+            <button type="submit" class="btn btn-primary btn-sm _w_ sts_btn " 
+                    id="btn_mrun_numb"   code="500"
+                    data-placement="bottom" data-toggle="tooltip"
+                    title="Train multiple times to verify variance"
+                    onclick="event.preventDefault(); //clean_mrun('{{ document.id }}'); 
+                        $('#hf_w_action').val('multiple_run'); $('#hf_w_mrun_numb').val($('#_mrun_numb').val());
+                    submit_job('#_workingtbl_','#prg_img_mrunimp_w', '._w_', $('#hf_w_id').val()
+                        ,'Processing Multiple run. Id='+$('#hf_w_oid').val()+'...', postupdate_file_record, 'multi_run'); "
+            >Multiple Run</button>
+
+            </div>
+            
+            </div><!--row-->
+      </div><!--end mrun ============================ ==============-->       
+      
+      <!--feature_importance pan =========================== ============================= -->        
+      <div id="_t_feature_importance" class="tab-pane ">
+            <div class="row"> 
+            <div class="col-xs-3"  style="margin-top: 5px;margin-bottom: 5px;"> 
+                <a id="btn_feares_w" class="btn btn-default btn-md sts_btn _n4fb_ _n4atdb_" code="800"
+                    base_url="{% url 'feature_impo4oid' %}"
+                    href="" data-placement="bottom" data-toggle="tooltip" title="Go to feature importance page"
+                    disabled
+                >Go to Feature Importance page...</a>            
+                <!--button type="submit" class="btn btn-default btn-sm sts_btn _n4fb_ _n4atdb_" 
+                            id="btn_feares_w" name="action" value="feat_result"   code="800"
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="Go to feature importance page"
+                    onclick=" event.preventDefault(); $('#hf_w_action').val('feat_result'); 
+                    window.location.href='{% url 'feature_impo4oid' %}'+$('#hf_w_oid').val()+'/';    "
+                    disabled
+                >Go to Feature Importance Page</button-->
+            </div>
+            <!--feature importance button ============== -->
+            <div class="col-md-2"  style="margin-top: 5px;margin-bottom: 5px;"> 
+            <img id="prg_img_feaimp_w" class="_progressCircle"  
+                    src="{% static 'img/progress.gif' %}" style="display:none" />
+            <button type="submit" class="btn btn-primary btn-sm _w_ sts_btn _n4fb_ _n4atdb_" 
+                    id="btn_feaimp_w" name="action"  value="feature_importance"  code="990"
+                    title="Calculate feature importance"
+                    onclick=" event.preventDefault(); $('#hf_w_action').val('feature_importance'); 
+                    submit_job('#_workingtbl_','#prg_img_feaimp_w', '._w_', $('#hf_w_id').val()
+                    ,'Processing feature importance calculation. Id='+$('#hf_w_oid').val()+'...', postupdate_file_record, 'feature_importance'); "
+                    disabled
+
+            >Calculate Feature Importance</button>
+            </div>
+             
+            </div><!--row-->
+      </div><!--end feature_importance ============================ ==============-->      
+      </div>
+
+    </div><!-- ============================ ALL Pipeline tabs/panes============== -->
+    </div>
+</div><!-- panel body -->
+</div><!-- _tbl_panel panel -->
+</div><!-- container-fluid -->
+
+<div class="container-fluid">  
+    <h3 class="h3_packed"><strong>Training Results:</strong></h3>
+  
+<div class="row">
+    <div class="panel panel-default" >
+    <div class="panel-body" style="min-height: 1070px; max-height: 1070px;">
+    <div class="tabbable boxed parentTabs">
+        <ul class="nav nav-tabs" id="_result_">
+          <li class="active tab_active" ><a id="_lia_{{ document.id }}" href="#_t_{{ document.id }}" 
+            data-toggle="tab" class="tab_packed">&nbsp;&nbsp;&nbsp;{{ document.id }}</a></li>
+          {% if options %}
+			{% for opt in options %}
+             <li ><a id="_lia_{{ opt.id }}" href="#_t_{{ opt.id }}" data-toggle="tab" 
+             class="tab_packed">&nbsp;&nbsp;&nbsp;{{ opt.id }}</a></li>
+			{% endfor %}
+		  {% endif %}
+        </ul>
+    </div>  <!--tabbable-->        
+    <div class="tab-content" id="_tc_">
+      <div class="tab-pane active"  id="_t_{{ document.id }}"  style="min-height: 1000px; max-height: 1000px;" >
+          <iframe width="100%" height="1000px" id="_if_{{ document.id }}" src="{% url 'results4oid' %}{{ document.id }}/{{ document.id }}/"></iframe>            
+      </div>
+          {% if options %}
+			{% for opt in options %}
+      <div class="tab-pane"  id="_t_{{ opt.id }}"  style="min-height: 1000px; max-height: 1000px;" >
+          <iframe width="100%" height="1000px" id="_if_{{ opt.id }}" src=""></iframe>            
+      </div>
+            {% endfor %}
+		  {% endif %}      
+    </div><!--tab-content-->  
+    </div></div>
+</div><!--row-->              
+</div><!--container-fluid-->
+
+        <form id="_workingtbl_"  class="form-inline" method="POST" action="{% url 'ml_opts' %}">
+            {% csrf_token %}
+            <input type="hidden" id="hf_w_id" name="hf_w_id" value="{{ document.id }}"></input>
+            <input type="hidden" id="hf_w_oid" name="hf_w_oid" value="{{ document.id }}"></input>
+            <input type="hidden" id="hf_w_action" name="action" value="" /> 
+            <input type="hidden" id="hf_w_sts_cde" name="hf_w_sts_cde" value="-1"></input>
+            <input type="hidden" id="hf_w_status" name="hf_w_status" value="-1"></input>
+            <input type="hidden" id="hf_w_ml_n_gram" name="hf_w_ml_n_gram" value="" /> 
+            <input type="hidden" id="hf_w_ml_feat_threshold" name="hf_w_ml_feat_threshold" value="" /> 
+            <input type="hidden" id="hf_w_ml_filter_ratio" name="hf_w_ml_filter_ratio" value="" /> 
+            <input type="hidden" id="hf_w_pattern" name="hf_w_pattern" value="" /> 
+            <input type="hidden" id="hf_w_label_arr" name="hf_w_label_arr" value="" /> 
+            <input type="hidden" id="hf_w_json_keys_arr" name="hf_w_json_keys_arr" value="" /> 
+            <input type="hidden" id="hf_w_ml_lib" name="hf_w_ml_lib" value="" /> 
+            <input type="hidden" id="hf_w_ml_opts" name="hf_w_ml_opts" value="" /> 
+            <input type="hidden" id="hf_w_ml_pca_opts" name="hf_w_ml_pca_opts" value="" /> 
+            <input type="hidden" id="hf_w_ml_model" name="hf_w_ml_model" value="" /> 
+            
+            <input type="hidden" id="hf_w_ml_cust_params" name="hf_w_ml_cust_params" value="" ></input>
+            <input type="hidden" id="hf_w_ml_cust" name="hf_w_ml_cust" value="" ></input>
+            
+            <input type="hidden" id="learning_algorithm" name="learning_algorithm" value="Linear SVM with SGD" /> 
+            <input type="hidden" id="hf_w_alg_reg" name="hf_w_alg_reg" value="L2" /> 
+            
+            <!--input type="hidden" id="hf_w_skl" name="learning_algorithm" value="Linear SVM" /--> 
+            <input type="hidden" id="hf_w_skl_kernel" name="hf_w_skl_kernel" value="RBF" /> 
+            <input type="hidden" id="hf_w_skl_reg" name="hf_w_skl_reg" value="L2" /> 
+            <input type="hidden" id="hf_w_skl_init" name="hf_w_skl_init" value="kmeans++" /> 
+            
+            <input type="hidden" id="hf_w_ml_has_cv" name="hf_w_ml_has_cv" value="" /> 
+            <input type="hidden" id="hf_w_desc" name="hf_w_desc" value="" /> 
+            <input type="hidden" id="hf_w_option_state" name="hf_w_option_state" value="New Training" /> 
+            <input type="hidden" id="hf_w_filetype" name="hf_w_filetype" value="{{ document.file_type }}"></input>
+            <input type="hidden" id="hf_w_class_numb" name="hf_w_class_numb" value="{{ document.class_numb }}" ></input>
+            <input type="hidden" id="hf_w_mrun_numb" name="hf_w_mrun_numb" value="" ></input>
+
+        </form>
+
+        
+{% endblock content %}
+{% block javascript_extra %}
+
+</style>
+<script src="{% static 'css/datatables/js/jquery.dataTables.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.bootstrap.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.select.min.js' %}" ></script>
+
+<script>
+    // list table for all options
+    var opt_list_tbl=null;
+    var firstLoadId="";
+    
+    //On Ready #######################################
+	$(document).ready(function(){
+        //init opt list
+        opt_list_tbl=$('#_opt_list').DataTable( {//'/atdml/api/optlist/{{ document.id }}/'
+            "ajax": //'{% url "get_optlist" document.id %}'
+            {
+            "type"   : "GET",
+            "url"    : '{% url "get_optlist" document.id %}',
+            "dataSrc": function (json) { // expect an array
+                var arr=json.data
+                var id=0
+                for(var i=0;i< arr.length; i++){
+                    id=arr[i].DT_RowId
+                    arr[i]["*"]='<img id="_img_'+id+'" class="img_checked_grey _img_ds_r" style="max-height:20px; max-width:20px; " src="/static/img/checked_grey.png" />' 
+                }
+                return arr; // return an array
+                }
+            }
+            ,paging: false
+            ,searching: false
+            ,scrollY: 180
+            ,scrollX: false
+            //,bscrollcollapse : false
+            ,select: 'single'
+            ,bInfo: false
+            //,ordering: false //true didn't work...
+            ,"order": [[ 1, "desc" ]]//Initial order (sort) to apply to the table
+            ,"columnDefs": [
+                 { "width": "1%", "targets": [0] }
+                ,{ "width": "1%", "targets": [1] }
+                ,{ "width": "1%", "targets": [2] }
+                ,{ "width": "1%", "targets": [3] }
+                ,{ "width": "1%", "targets": [4] }
+                ,{ "width": "7%", "targets": [5] }
+                ,{ "width": "1%", "targets": [6] }
+                ,{ "width": "1%", "targets": [7] }
+                ,{ "width": "45%", "targets": [8] }
+                ,{ "width": "15%", "targets": [9] }
+            ]
+            //,processing:true//display of a 'processing' indicator when the table is being processed
+            //,serverSide:true// where filtering, paging and sorting calculations are all performed by a server.
+            ,"columns": [
+                { "data": "*" },
+                { "data": "id" },
+                { "data": "status" },
+                { "data": "option_state" },
+                { "data": "accuracy_short" },
+                { "data": "ml_n_gram" },
+                { "data": "ml_lib" },
+                { "data": "ml_alg" },
+                { "data": "ml_opts" },
+                { "data": "ml_pca_opts" }
+            ] 
+           
+
+
+        } );
+        // tr click action =========== 
+        opt_list_tbl.on( 'click', 'tr', function () {
+            var row= opt_list_tbl.row(this);
+            var data = row.data();
+            var idx = row.index();
+
+            //clean up the flag to remove highlight class
+            if (firstLoadId>""){//workaround default click
+                $('#'+firstLoadId).removeClass('selected');
+                firstLoadId="";
+            }
+
+            tr_onclick(data);
+        } ); 
+        // pipeline tab click action  ===========
+		$("#_ul_pipe li").click(function() {
+            //event.preventDefault();
+            var target_li=$(this);
+            //event.stopPropagation();
+            tab_onclick(target_li);
+
+		});
+        // result tab action ========
+        $("#_result_ li").click(function() {
+            //event.preventDefault();
+            var target_li=$(this);
+            result_tab_onclick(target_li);
+
+		});
+        // dropdown boxes' action ===========
+        set_training_actions()
+        // set input validation
+        set_input_validation()
+ 
+        
+        //auto click the row ===========
+        $('#_opt_list').on('init.dt', function() {
+            click_the_row();
+            set_tbl_height();
+        });
+        //toggle chevron
+        $('.chevron_toggleable').on('click', function() {
+            $(this).toggleClass('glyphicon-chevron-down glyphicon-chevron-up');
+        });
+        
+        $("#_home_link").attr("href",$("#_home_link").attr("href")+$("#hf_w_id").val()+"/0/");
+        //var hash_rid = window.location.hash.substr(1);
+        // click the dataset table row by default, if id was set in hidden field
+        //check input to active button
+        $('#_pca_threshold,#_pca_k').on("change", toggle_pca_button);
+
+    }); // END $(document).ready()
+    // set table height #######################################
+    function set_tbl_height(){
+        var row_count=opt_list_tbl.data().length;
+        var hi=40; 
+        if (row_count < 5){
+            hi=row_count* hi;
+            $('.dataTables_scrollBody').css('height', hi);
+        } else if (row_count == 5){
+            $('.dataTables_scrollBody').css('height', 180);
+        }
+    }
+    // Handler to load result #######################################
+    function  result_tab_onclick(target_li){
+        var a=target_li.children('a').eq(0);
+        var id=a.text().trim();
+        var iframe=$("#_if_"+id);
+        var src=iframe.attr('src');
+        var sts_cde=$("#hf_w_sts_cde").val();
+        var len=iframe.contents().find('html body').text().length;
+        if (len==0 || src=="" || src==undefined || src==null)
+        {
+            var url='/atdml/results/'+$('#hf_w_id').val()+'/'+id+'/';
+            iframe.attr('src', url);
+        }
+        $('.tab_active').removeClass('tab_active');
+        target_li.addClass('tab_active');
+        return true;
+    }
+    // Create json string for PCA options #######################################
+    function create_pca_opt_jstring(ltype,w_ml_pca_opts_eid,k,threshold){
+        var ret={};
+        var jstr="";
+        if(ltype=="mllib"){
+            //if (k==null || k=="")
+            if (threshold==null || threshold=="")
+                return false;
+            ret["lib"]="mllib";
+            //ret["k"]=parseInt(k);
+            ret["threshold"]=parseFloat(threshold);
+        }else {
+            if (threshold==null || threshold=="")
+                return false;
+            ret["lib"]="scikit";
+            ret["threshold"]=parseFloat(threshold);
+        }
+        //convert to string
+        jstr=JSON.stringify(ret);
+        if (jstr.length>2){
+            //set to form
+            $("#"+w_ml_pca_opts_eid).val(jstr);
+        }
+        return true;        
+    }
+    // Create json string for TRAINING options #######################################
+    function create_opt_jstring(ctype,w_ml_opts_eid,learn_alg_eid){
+        var ret={};
+        var jstr="";
+        var alg="";
+        var oid=$("#hf_w_oid").val()
+        var tdata=opt_list_tbl.row("#"+oid).data();       
+
+        
+        // find if cross validation
+        if(ctype=="_skl_" && $('#hf_w_ml_has_cv').val()=="yes")
+            ctype="_scv_";
+        else if (ctype=="_alg_" && $('#hf_w_ml_has_cv').val()=="yes")
+            ctype="_acv_";
+
+        // set value based on name: _skl_<key>
+        $('.'+ctype).not(".mlhide").each(function(){
+            // find name like ctype
+            var element=$(this).children().find("[name*='"+ctype+"']");
+            var name=element.attr('name'); // get fullname which find json key inside
+            var key_str="";
+            // for text
+            if (name.indexOf(ctype+"t_")==0){
+                key_str=name.replace(ctype+"t_","");
+                ret[key_str]=element.text().toLowerCase();
+            } else { // val
+                key_str=name.replace(ctype,"");
+                ret[key_str]=element.val().toLowerCase();
+            }
+        }); 
+        // add alg
+        // set "learning_algorithm"
+        alg=$('#'+learn_alg_eid).val();
+        if (alg != null && alg>""){
+            ret[$('#'+learn_alg_eid).attr("name")]=alg.toLowerCase().replace(/ /g,"_");
+        } else {// can't find alg
+    
+            if(ctype=="_skl_"){ 
+                alg=$("#_skl_def").text()
+            } else if(ctype=="_dnn_"){ 
+                alg=$("#_dnn_def").text()
+            }else{
+                alg=$("#_alg_def").text()
+            }
+            ret[learn_alg_eid]=alg.toLowerCase().replace(/ /g,"_");
+        }
+        // set PCA selection
+        if ( (ctype=="_skl_" ||ctype=="_scv_") && !($('#_yes_pca_sk').hasClass('mlhide')) ) {
+            ret["pca"]="Y";
+        } else if ((ctype=="_alg_"||ctype=="_acv_") && !($('#_yes_pca_ml').hasClass('mlhide')) ) {
+            ret["pca"]="Y";
+        }
+        
+        //convert to string
+        jstr=JSON.stringify(ret);
+        
+        if (jstr.length>2){
+            //set to form
+            $("#"+w_ml_opts_eid).val(jstr);
+            //save to table row will be done by ajax callback
+            //$("#hf_"+$('#hf_w_id').val()+"_ml_opts").val(jstr);
+        }
+        // set ml_lib for target rid
+        $("#hf_"+$('#hf_w_oid').val()+"_ml_lib").val($("#hf_w_ml_lib").val());
+
+        // set working tables
+        tdata.ml_opts=jstr;
+        tdata.ml_lib=$("#hf_w_ml_lib").val();
+        tdata.ml_alg=alg.toLowerCase().replace(/ /g,"_");
+        opt_list_tbl.row("#"+oid).data(tdata).draw();
+        return jstr;
+    }
+    
+    //select default row. TBD to fix ###############
+    function click_the_row(){
+        var hash_rid = window.location.hash.substr(1);
+        var tgt_row=null;
+        if (hash_rid>"0"){
+            //$('#_opt_list tbody tr[id="'+hash_rid+'"]').click();
+            // scroll to selected row?
+            tgt_row=$("#"+hash_rid )
+            if (tgt_row.length){
+                tgt_row.click();
+                firstLoadId=hash_rid;
+            }
+            //$('#_opt_list tbody tr:eq(0)').click();
+
+        } else if( $("#hf_w_oid").val() != null && $("#hf_w_oid").val() != "" ){
+            tgt_row=$("#"+$("#hf_w_oid").val() )
+            if (tgt_row.length){
+                tgt_row.click();
+                firstLoadId=$("#hf_w_oid").val();
+            }
+        } 
+        if ( tgt_row.length==0 ){
+            tgt_row=$("#"+$("#hf_w_id").val() )
+            if (tgt_row.length ){
+                tgt_row.click();
+                firstLoadId=$("#hf_w_id").val();
+            }
+        }
+        //workaround to highlight
+        $('tr.selected').removeClass('selected');
+        if ( tgt_row.length){
+            tgt_row.addClass('selected');     
+        }
+
+    }
+    //Handler for input_validation #######################################
+    function set_input_validation(){ 
+        // input validation
+        $('._validate_pca_').change(function(){
+            validate_panel($(this),'pca')
+        });
+        $('._validate_ml_').change(function(){
+            validate_panel($(this),'ml')
+        });
+        $('._validate_skl_').change(function(){
+            validate_panel($(this),'skl')
+        });
+        $('._validate_mrun_').change(function(){
+            validate_panel($(this),'mrun')
+        });
+        $('._validate_dnn_').change(function(){
+            validate_panel($(this),'dnn')
+        });
+    }
+    // Validate user inputs per panel and disable buttons #######################################
+    function validate_panel(element, type){
+        // check both
+        var err=0;
+        // find element by id and const. str
+        var msg_eid=element.attr('id')+"_error_help_msg"
+        
+        //Disable buttons
+        if (validate_by_rule(element,$('#'+msg_eid)) ){
+            if (type=='ml')
+                $('#btn_tra_w_ml').removeAttr("disabled");//enable
+            else if (type=='skl')
+                $('#btn_tra_w').removeAttr("disabled");//enable
+            else if (type=='mrun')
+                $('#btn_mrun_numb').removeAttr("disabled");//enable
+            else if (type=='pca')
+                $('#btn_pca').removeAttr("disabled");//enable
+            else if (type=='dnn')
+                $('#btn_tra_w_dnn').removeAttr("disabled");//enable
+                
+        }else { //error occur
+            if (type=='ml')
+                $('#btn_tra_w_ml').attr("disabled","disabled"); // disable button
+            else if (type=='skl')
+                $('#btn_tra_w').attr("disabled","disabled"); // disable button
+            else if (type=='mrun')
+                $('#btn_mrun_numb').attr("disabled","disabled");
+            else if (type=='pca')
+                $('#btn_pca').attr("disabled","disabled");
+            else if (type=='dnn')
+                $('#btn_tra_w_dnn').attr("disabled","disabled");
+        }
+    }
+    
+    //Handler for dropdown in training tab  #######################################
+    function set_training_actions(){
+        // feature n-gram dropdown action
+	    $("#_ul_n_gram li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_n_gram_s").text(sel); //display only
+			$("#hf_w_ml_n_gram").val(sel); // hidden field		
+	    });
+        // feature method dropdown action
+	    $("#_ul_cust_feat li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_ml_cust_s").text(sel); //display only
+			$("#hf_w_ml_cust").val(sel); // hidden field		
+	    });
+
+        // ML library tab action; library selection
+	    $("#_ul_ml_lib li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).attr('tag');
+            // init scikit pane, if no dataset selected
+            var old_ml_lib=$("#hf_w_ml_lib").val();
+            if(sel=="scikit" && (old_ml_lib==null || old_ml_lib=="" || sel !=old_ml_lib)){
+                $("#_skl_diff_params").click(); // click to select non-cd
+                $("#_ul_skl li a")[0].click(); // click to enforce show/hide for controls
+            } else if (sel=="mllib" && (old_ml_lib==null || old_ml_lib=="" || sel !=old_ml_lib)){
+                $("#_alg_diff_params").click(); // click to select non-cd
+                $("#_ul_alg li a")[0].click(); // click to enforce show/hide for controls
+            } else if (sel=="dnn" && (old_ml_lib==null || old_ml_lib=="" || sel !=old_ml_lib)){
+                $("#_ul_dnn li a")[0].click(); // click to enforce show/hide for controls
+            }
+			$("#hf_w_ml_lib").val(sel); // hidden field		
+	    });
+        // DNN algorithm dropdown action
+	    $("#_ul_dnn li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text()
+            var model=$('#hf_w_ml_model').val();
+			$("#_dnn_t_learning_algorithm").text(sel); //display only
+			$("#learning_algorithm").val(sel); // set hidden field	
+            // hide/show components
+            sel=sel.toLowerCase();
+            if (sel=="lstm"){
+                $("._cnn_").addClass('mlhide');
+                $("._lstm_").removeClass('mlhide');
+            } else {
+                $("._cnn_").removeClass('mlhide');
+                $("._lstm_").addClass('mlhide');
+            }
+            //set default model
+            if (model==null || model==""){
+                if (sel=="lstm"){
+                    $('#_dnn_model').val($('#_dnn_model').attr("lstm_def"));
+                } else if (sel=="cnn"){
+                    $('#_dnn_model').val($('#_dnn_model').attr("cnn_def"));
+                }
+            }
+       }); 
+        // MLlib algorithm dropdown action
+	    $("#_ul_alg li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_alg_t_learning_algorithm").text(sel); //display only
+			//$("#hf_w_alg").val(sel); // set hidden field	
+			$("#learning_algorithm").val(sel); // set hidden field	
+            var tclass=sel.replace(/ /g,"_").toLowerCase();
+            if (tclass.length > 19)  //get 1st 5 and last 3
+                tclass=tclass.substring(0,4)+'_'+tclass.slice(-3);//jquery #id len limit
+            // hide or show valid options; only iterations & k are special
+            $('._alg_').addClass('mlhide');
+            $('._'+tclass).removeClass('mlhide'); 
+            // hide cross validation tab for kmeans
+            if (sel=="kmeans" || sel=="Kmeans"){
+                $("#_ml_cv").addClass('mlhide');
+                $('#_alg_diff_params').trigger('click'); //force to click customized param pane
+            }else 
+                $("#_ml_cv").removeClass('mlhide');
+        }); 
+        // SciKit-learn algorithm dropdown action
+	    $("#_ul_skl li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+            var tclass=sel.replace(/ /g,"_").toLowerCase();
+            if (tclass.length > 19)
+                tclass=tclass.substring(0,19);//jquery #id len limit
+			$("#_skl_t_learning_algorithm").text(sel); //display only
+			//$("#hf_w_skl").val(sel); // set hidden field	
+			$("#learning_algorithm").val(sel); // set hidden field	
+            // hide or show valid options
+            $('._skl_').addClass('mlhide');
+            $('._'+tclass).removeClass('mlhide');     
+            // 
+            if (sel=="svm" || sel=="SVM"|| sel=="nu-SVM"|| sel=="nu-svm"){
+                if($("#_btn_skl_kernel_s").text()=="Poly" || $("#_btn_skl_kernel_s").text()=="poly")
+                    //$("#_degree_").trigger('click');
+                    $("#_degree_").removeClass('mlhide');
+            }            
+            // hide cross validation tab for kmeans
+            if (sel=="kmeans" || sel=="Kmeans"){
+                $("#_skl_cv").addClass('mlhide');
+                $('#_skl_diff_params').trigger('click'); //force to click customized param pane
+            }else 
+                $("#_skl_cv").removeClass('mlhide');
+	    });
+        // SciKit reg dropdown action
+	    $("#_ul_skl_reg li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_skl_reg_s").text(sel); //display only
+			$("#hf_w_skl_reg").val(sel); // hidden field       
+	    });  
+        // SciKit kernel dropdown action
+	    $("#_ul_skl_kernel li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_skl_kernel_s").text(sel); //display only
+			$("#hf_w_skl_kernel").val(sel); // hidden field      
+            if (sel == "poly" || sel =="Poly"){
+                $("#_degree_").removeClass('mlhide'); 
+            } else {
+                $("#_degree_").addClass('mlhide'); 
+            }
+	    }); 
+        // SciKit kernel dropdown action
+	    $("#_ul_skl_init li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_skl_init_s").text(sel); //display only
+			$("#hf_w_skl_init").val(sel); // hidden field 
+	    }); 
+        // CV or Param panel for SKL
+	    $("._ml_skl_cv").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).attr('tag');
+			$("#hf_w_ml_has_cv").val(sel); 
+            
+            if($(this).parents('.panel').children('.panel-collapse').hasClass('in')){
+                event.stopPropagation();
+                event.preventDefault(); 
+            }
+            if (sel=="yes"){// for CV
+                $("._scv_").removeClass("mlhide");
+                $("._scv").removeClass("mlhide"); // for icon
+                $("._ml_skl_param").addClass("mlhide");
+                $("#btn_tra_w").text($("#btn_tra_w").attr('btn_text_cv'));
+            }else{
+                $("._scv_").addClass("mlhide");
+                $("._scv").addClass("mlhide");
+                $("._ml_skl_param").removeClass("mlhide");
+                $("#btn_tra_w").text($("#btn_tra_w").attr('btn_text'));
+            }
+	    }); 
+        // CV or Param panel for MLlib/alg
+	    $("._ml_alg_cv").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).attr('tag');
+			$("#hf_w_ml_has_cv").val(sel); 
+            
+            if($(this).parents('.panel').children('.panel-collapse').hasClass('in')){
+                event.stopPropagation();
+                event.preventDefault(); 
+            }
+            if (sel=="yes"){// for CV
+                $("._acv_").removeClass("mlhide");
+                $("._acv").removeClass("mlhide"); // for icon
+                $("._ml_alg_param").addClass("mlhide");// for icon
+                $("#btn_tra_w_ml").text($("#btn_tra_w_ml").attr('btn_text_cv'));
+            }else{
+                $("._acv_").addClass("mlhide");
+                $("._acv").addClass("mlhide");// for icon
+                $("._ml_alg_param").removeClass("mlhide"); // for icon
+                $("#btn_tra_w_ml").text($("#btn_tra_w_ml").attr('btn_text'));
+            }
+	    });         
+        // scv dropdown action ==============
+	    $("#_ul_scv li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_scv_s").text(sel); //display only
+	    });  
+	    $("#_ul_scv_mode li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_mode_s").text(sel); //display only
+	    }); 
+        $("#_ul_scv_api li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_api_s").text(sel); //display only
+	    }); 
+        // acv dropdown action ==============
+	    $("#_ul_acv li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_acv_s").text(sel); //display only
+
+	    });  
+	    $("#_ul_acv_mode li a").click(function(){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_amode_s").text(sel); //display only
+	    });      
+        // MLlib reg dropdown action
+	    $("#_ul_alg_reg li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_alg_reg_s").text(sel); //display only
+			$("#hf_w_alg_reg").val(sel); // hidden field          
+	    });    
+        // set hidden field for start from  dropdown
+	    $("#_option_state_dropdown li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+            
+			$("#_option_state").text(sel); //display only
+			$("#hf_w_option_state").val(sel); // hidden field		
+	    });
+        // set selection for dnn optimizer
+	    $("#_ul_dnn_optimizer li a").click(function(){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_dnn_optimizer_s").text(sel); //display only
+	    });         
+        // set selection for dnn loss
+	    $("#_ul_dnn_loss li a").click(function(){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_dnn_loss_s").text(sel); //display only
+	    });
+    }//end set_training_actions()
+    
+    //Handler for table row #######################################
+    function tr_onclick(data){
+        var sts_cde=data["status_code"];
+        var id=data["DT_RowId"];
+        var img_checked_grey="{% static 'img/checked_grey.png' %}"
+        var img_checked="{% static 'img/checked.png' %}"
+
+        //fillout form
+        $('#hf_w_oid').val(id);
+        $('#hf_w_status').val(data["status"]);
+        
+        $('#hf_w_ml_n_gram').val(data["ml_n_gram"]);
+        $('#hf_w_ml_feat_threshold').val(data["ml_feat_threshold"]);
+        $('#_feat_threshold').val(data["ml_feat_threshold"]);
+        // set n-gram dropdown
+        $('#_btn_n_gram_s').text(data["ml_n_gram"]);
+        $('#hf_w_pattern').val(data["pattern"]);
+        $('#_ptn_str').val(data["pattern"]);
+        $('#hf_w_label_arr').val(data["label_arr"]);
+        $('#_label_arr').val(data["label_arr"]);
+        $('#hf_w_json_keys_arr').val(data["json_keys_arr"]);
+        $('#_json_keys_arr').val(data["json_keys_arr"]);
+        
+        $('#hf_w_ml_lib').val(data["ml_lib"]);
+        $('#hf_w_ml_opts').val(data["ml_opts"]);
+        $('#hf_w_ml_pca_opts').val(data["ml_pca_opts"]);
+        $('#hf_w_ml_has_cv').val(data["ml_has_cv"]);
+        $('#hf_w_class_numb').val(data["class_numb"]);
+        $('#hf_w_ml_model').val(data["ml_model"]);
+        $('#_dnn_model').val(data["ml_model"]);
+        $('#learning_algorithm').val(data["ml_alg"]);
+        $('#hf_w_sts_cde').val(sts_cde); // for GUI colors
+
+        if (data["mrun_numb"]>"" && data["mrun_numb"] !="None" )
+            $('#_mrun_numb').val(data["mrun_numb"]);
+        else
+            $('#_mrun_numb').val("");
+
+
+        //set 'checked' image
+        var active_img=$(".img_checked");
+        if (active_img){ // remove prior checked image
+            active_img.removeClass("img_checked");
+            active_img.attr("src",img_checked_grey)
+        }
+        $("#_img_"+id).addClass("img_checked");//set img src in css didn't work for IE/Firefox...
+        $("#_img_"+id).attr("src",img_checked)
+
+
+
+        set_all_tabs(sts_cde);//chg color for tabs
+        click_next_tab(sts_cde); //auto click tab based on status
+        set_4_special_type(sts_cde);//for special types
+        set_pca_options(sts_cde);//load value to pca
+        toggle_pca_button(); // enable or disable pca button
+        set_training_options(sts_cde); //load value to all options
+        //save id to URL for BACK button
+        document.location.hash = $("#hf_w_oid").val();
+        $("#oid").text(id); //set title label
+        // click the result tab?
+        $('#_lia_'+id).trigger("click");
+        
+        // set href for button links
+        $('#btn_feares_w').attr('href', $('#btn_feares_w').attr('base_url')+$('#hf_w_oid').val()+'/');
+        $('#btn_feares_w2').attr('href', $('#btn_feares_w2').attr('base_url')+$('#hf_w_oid').val()+'/'); 
+        $('#btn_pred_w').attr('href', $('#btn_pred_w').attr('base_url')+$('#hf_w_oid').val()+'/');
+        $('#btn_log_w').attr('href', $('#btn_log_w').attr('base_url')+$('#hf_w_oid').val()+'/');        
+    }
+    // toggle hide/show for 2 components #######################################
+    function toggle_2comps(comp1, comp2, hide1){
+        if (hide1==null){
+            //toggle only
+            if (comp1.hasClass('mlhide') ){//show 1, hide2 
+                comp1.removeClass('mlhide');
+                comp2.addClass('mlhide');
+            }else{  //show 2, hide1
+                comp1.addClass('mlhide'); 
+                comp2.removeClass('mlhide');
+            }
+        } else if (hide1){//show 2, hide1
+            comp1.addClass('mlhide'); 
+            comp2.removeClass('mlhide');            
+        } else { //show 1, hide2
+            comp1.removeClass('mlhide');
+            comp2.addClass('mlhide');
+        }
+    }                            
+    // Load all PCA options to UI #######################################
+    function set_pca_options(sts_cde){
+        if (sts_cde==null)
+            return true;        
+        var i_sts_cde=parseInt(sts_cde,10);
+        if (i_sts_cde<300) 
+            return true;
+        // get opts from hidden field
+        var opts=$("#hf_w_ml_pca_opts").val();
+        if (opts !=null && opts!="None" && opts.length>3)
+            jobj=JSON.parse(opts);
+        else    
+            return;
+        var lib=jobj.lib;
+        //click lib tab
+        if (lib>""){
+            $('#_a_pca_'+lib).trigger("click");
+            if (lib=="mllib"){
+                //$('#_pca_k').val(jobj.k); //not using k
+                $('#_pca_threshold').val(jobj.threshold);   //clean up         
+                $('#_a_pca_mllib').trigger("click");
+            } else {
+                $('#_pca_threshold').val(jobj.threshold);            
+                //$('#_pca_k').val('');
+                $('#_a_pca_scikit').trigger("click");
+            }
+        } else {
+            $('#_a_pca_mllib').trigger("click");
+                $('#_pca_threshold').val('');   //clean up         
+            $('#_pca_k').val($('#_pca_k').attr('default_val')); //clean up
+        }        
+    
+    }
+    // Load all training options to UI #######################################
+    function set_training_options(sts_cde){
+        if (sts_cde==null)
+            return true;        
+        var i_sts_cde=parseInt(sts_cde,10);
+        if (i_sts_cde<300) 
+            return true;
+        // get opts from hidden field
+        var opts=$("#hf_w_ml_opts").val();
+        var ml_lib=$("#hf_w_ml_lib").val();
+        var jobj=null;
+        if (opts !=null && opts!="None" && opts.length>3)
+            jobj=JSON.parse(opts);
+        else    
+            return;
+        
+        // set lib tab , alg dropdown and valid options
+        var alg=jobj.learning_algorithm
+        //
+        set_lib_alg(ml_lib, alg);
+        // set working table here
+        //$("#_w_ml_alg").text(alg);
+        var has_cv=$("#hf_w_ml_has_cv").val();
+        var pca=jobj.pca
+        var has_dim_red="N"
+        var pca_opts=$("#hf_w_ml_pca_opts").val();
+        if (pca_opts !=null && pca_opts!="None" && pca_opts.length>3){
+            has_dim_red="Y"
+            $("#_btn_skl_pca").removeClass('mlhide');
+            $("#_btn_alg_pca").removeClass('mlhide');
+        }else { // hide buttons if not pca-ed dataset
+            has_dim_red="N"
+            $("#_btn_skl_pca").addClass('mlhide');
+            $("#_btn_alg_pca").addClass('mlhide');
+        }
+        
+        //load values in elements ===============  ======
+        if (ml_lib=='mllib'){  // ====================== =====
+            // set learning_algorithm tab
+            $('#_alg_t_learning_algorithm').text(alg);
+            if(has_cv=="yes"){ // has CV
+                // set value based on name: _acv_<key> (for val()) or acv_t_<key> (for text())
+                $('._acv_').each(function(){
+                    var element=$(this).children().find("[name*='_acv_']");
+                    var name=element.attr('name');
+                    var key_str="";
+                    if (name!=null && name.indexOf("_acv_t_")==0){
+                        key_str=name.replace("_acv_t_","");
+                        element.text(jobj[key_str]); 
+                    }
+                    $('#_alg_grid_cv').trigger('click');
+                });
+            } else { //params          
+                // set value based on name: _alg_<key> (for val()) or alg_t_<key> (for text())
+                $('._alg_').not(".mlhide").each(function(){
+                    var element=$(this).children().find("[name*='_alg_']");
+                    var name=element.attr('name');
+                    var key_str="";
+                    if (name!=null && name.indexOf("_alg_t_")==0){
+                        key_str=name.replace("_alg_t_","");
+                        element.text(jobj[key_str]); 
+                    } else if (name!=null) {
+                        key_str=name.replace("_alg_","");
+                        element.val(jobj[key_str]); 
+                    }
+                    $('#_alg_diff_params').trigger('click');
+                });
+            }
+            if (pca=="Y" && has_dim_red=="Y"){
+                toggle_2comps($('#_yes_pca_ml'),$('#_no_pca_ml'),false);
+            } else if (has_dim_red=="Y"){
+                toggle_2comps($('#_yes_pca_ml'),$('#_no_pca_ml'),true);
+            } 
+            // click lib tab
+            $("#_a_mllib").trigger('click');
+
+        }
+        else if (ml_lib=='scikit') {// scikit/train ====================== =====
+            // set learning_algorithm
+            $('#_skl_t_learning_algorithm').text(alg);
+			//$("#hf_w_skl").val(alg); // hidden field	
+			$("#learning_algorithm").val(alg); // hidden field	
+            //var has_cv=$("#hf_w_ml_has_cv").val();
+            if(has_cv=="yes"){ // has CV
+                // set value based on name: _scv_<key> (for val()) or scv_t_<key> (for text())
+                $('._scv_').each(function(){
+                    var element=$(this).children().find("[name*='_scv_']");
+                    var name=element.attr('name');
+                    var key_str="";
+                    if (name!=null && name.indexOf("_scv_t_")==0){
+                        key_str=name.replace("_scv_t_","");
+                        element.text(jobj[key_str]); 
+                    }
+                });
+                $('#_skl_grid_cv').trigger('click');
+            } else { //params
+                // special rule for Kernel==Poly, show Degree box
+                if (jobj["kernel"]=="poly")
+                    $('#_degree_').removeClass('mlhide')
+                else
+                    $('#_degree_').addClass('mlhide')
+                // set value based on name: _skl_<key> (for val()) or skl_t_<key> (for text())
+                $('._skl_').not(".mlhide").each(function(){
+                    var element=$(this).children().find("[name*='_skl_']");
+                    var name=element.attr('name');
+                    var key_str="";
+                    if (name!=null &&  name.indexOf("_skl_t_")==0){
+                        key_str=name.replace("_skl_t_","");
+                        element.text(jobj[key_str]); 
+
+                    } else if (name!=null) {
+                        key_str=name.replace("_skl_","");
+                        element.val(jobj[key_str]); 
+                    }
+                });
+                $('#_skl_diff_params').trigger('click');
+            } // end params
+            
+            // set pca button
+            if (pca=="Y" && has_dim_red=="Y"){
+                toggle_2comps($('#_yes_pca_sk'),$('#_no_pca_sk'),false);
+            } else if (has_dim_red=="Y"){  
+                toggle_2comps($('#_yes_pca_sk'),$('#_no_pca_sk'),true);
+            }
+            // click lib tab
+            $("#_a_scikit").trigger('click');
+
+        }//end scikit   
+        else if (ml_lib=='dnn') {// dnn/train   ====================== =====
+            // set learning_algorithm
+            $('#_dnn_t_learning_algorithm').text(alg);
+			//$("#hf_w_skl").val(alg); // hidden field	
+			$("#learning_algorithm").val(alg); // hidden field	
+
+            $('._dnn_').not(".mlhide").each(function(){
+                var element=$(this).children().find("[name*='_dnn_']");
+                var name=element.attr('name');
+                var key_str="";
+                if (name!=null &&  name.indexOf("_dnn_t_")==0){
+                    key_str=name.replace("_dnn_t_","");
+                    element.text(jobj[key_str]); 
+
+                } else if (name!=null) {
+                    key_str=name.replace("_dnn_","");
+                    element.val(jobj[key_str]); 
+                }
+            });
+            // click lib tab
+            $("#_a_dnn").trigger('click');
+        }//end dnn  ====================== =====
+    }
+    // Set lib tab and algorithm dropdown #######################################
+    function set_lib_alg(ml_lib, alg){
+        if(alg==null || alg=="")
+            return false;
+            
+        var tgt_alg_class=alg.replace(/ /g,"_").toLowerCase();           
+        // set ative lib 
+        if (ml_lib>""){
+            //$('#'+ml_lib).click()
+            // click to refresh valid controls
+            $('#_a_'+ml_lib).trigger("click");
+        }        
+        // show/hide options
+        if (ml_lib=="mllib"){
+            // set alg
+            if (tgt_alg_class.length > 19)  //get 1st 5 and last 3
+                tgt_alg_class=tgt_alg_class.substring(0,4)+'_'+tgt_alg_class.slice(-3);//jquery #id len limit
+            // hide or show valid options; only iterations & k are special
+            $('._alg_').addClass('mlhide');
+            $('._'+tgt_alg_class).removeClass('mlhide'); 
+            //hide 2-class only alg 
+            if ($("#hf_w_class_numb").val()>2)
+                $('._only2c_').addClass('mlhide'); //hide all alg
+            else //un-hide
+                $('._mlib_li_').removeClass('mlhide');             
+            // hide cross validation tab for kmeans
+            if (tgt_alg_class=="kmeans" || tgt_alg_class=="Kmeans")
+                $("#_ml_cv").addClass('mlhide');
+            else 
+                $("#_ml_cv").removeClass('mlhide');
+
+        } else if (ml_lib=="scikit") { // scikit train
+            //hide all options
+            $('._skl_').addClass('mlhide'); 
+            if (tgt_alg_class.length > 19)
+                tgt_alg_class=tgt_alg_class.substring(0,19);
+            //show valid options; assume class format _<alg name>    
+            $('._'+tgt_alg_class).removeClass('mlhide'); 
+        } else if (ml_lib=="dnn") { // dnn
+            //hide all options
+            //$('._skl_').addClass('mlhide'); 
+            if (alg=="lstm") {
+                $('._cnn_').addClass('mlhide'); 
+                $('._lstm_').removeClass('mlhide'); 
+            }else{ //cnn
+                $('._cnn_').removeClass('mlhide'); 
+                $('._lstm_').addClass('mlhide'); 
+            }
+            //show valid options; assume class format _<alg name>    
+            $('._'+tgt_alg_class).removeClass('mlhide'); 
+            
+        }
+    }
+    
+    // Refresh pipeline images; for tr click and postUpdate #################
+    function set_all_tabs(sts_cde){
+        if (sts_cde==null)
+            return true;
+        var i_sts_cde=parseInt(sts_cde,10);
+        // set pipeline images (blue/grey) based on status code
+        $("#_ul_pipe").children('li').each(function(){
+            var li_cde=parseInt($(this).attr('code'),10);
+            if ( i_sts_cde >= li_cde && li_cde !=0){
+                $(this).removeClass("pline_bgc_grey");           
+                $(this).addClass("pline_bgc_blue");            
+            }else if (li_cde !=0){
+                $(this).removeClass("pline_bgc_blue");           
+                $(this).addClass("pline_bgc_grey");
+            }        
+        });
+
+        var file_type=$("#hf_w_filetype").val();
+        // set all action buttons
+        set_all_sts_buttons(sts_cde,file_type);
+ 
+        //disable all actions if job is running
+        if($("#hf_w_status").val().indexOf('processing')>=0){
+            $("._w_").attr("disabled","disabled");
+        }
+        //disable unsupported algorithm for class numb > 2
+        if ($("#hf_w_class_numb").val()>2){
+            $("#_li_alg_ls_sgd").addClass('mlhide');
+            $("#_li_alg_lr_sgd").addClass('mlhide');
+        } else {
+            $("#_li_alg_ls_sgd").removeClass("mlhide");
+            $("#_li_alg_lr_sgd").removeClass("mlhide");
+        }
+        // show/hide n_gram
+        var n_gram=$("#hf_w_ml_n_gram").val();
+        if (n_gram=="N/A" || parseInt(n_gram,10)<0){// hide for static data, n_gram =-1
+            $("#_n_gram_row").addClass('mlhide');
+        } else {
+            $("#_n_gram_row").removeClass('mlhide');
+        }
+    }    
+    // Auto click tab by status; assume sts_cde is int #######################################
+    function click_next_tab(sts_cde){
+        if (sts_cde==null)
+            return true;        
+        var i_sts_cde=parseInt(sts_cde,10);
+
+        //set tab 
+        if (i_sts_cde<100){  // retrieve 100
+            $("#_la_retrieve").trigger("click");
+        } else if (i_sts_cde<400){  //  to feature
+            $("#_la_feature").trigger("click");
+        } else if (i_sts_cde==400){ //feature 400
+            $("#_la_train").trigger("click");
+        } else { // default to result
+            $("#_la_result").trigger("click");
+        }
+    }
+    //Handler for ML pipeline tab #######################################
+    function tab_onclick(target_li){
+        // en-/dis-able tab images
+        var pr_li=$("#_ul_pipe li.active"); //prior active li
+        var sts_cde=parseInt($("#hf_w_sts_cde").val(),10);//curr sts cde
+        var for_new_row=false; //
+        var li_cde=parseInt(target_li.attr('code'),10);//li cde
+        var pr_li_cde=parseInt(pr_li.attr('code'),10); //prior li cde       
+        
+        //cke if new upload
+        if (target_li.attr('code') == '0'){
+            for_new_row=true;
+            $("#oid").text("New");
+        }
+        // clean up prior active tab
+        if (pr_li.attr('code') != '0'){//prior not upload
+            // remove highlight
+            pr_li.removeClass("pline_bgc_highlight");  
+            //set image  based on sts cde
+            if (sts_cde >= pr_li_cde){
+                pr_li.removeClass("pline_bgc_grey");           
+                pr_li.addClass("pline_bgc_blue");            
+            }else{
+                pr_li.removeClass("pline_bgc_blue");           
+                pr_li.addClass("pline_bgc_grey");
+            }
+        } else { // for inactive upload
+            pr_li.removeClass("pline_plus_highlight");           
+            pr_li.addClass("pline_plus");  
+        }
+        // set new selected active tab 
+        if (!for_new_row){
+            target_li.removeClass("pline_bgc_blue");
+            target_li.removeClass("pline_bgc_grey");
+            target_li.addClass("pline_bgc_highlight");
+        } else {
+            target_li.removeClass("pline_plus");
+            target_li.addClass("pline_plus_highlight");  
+        }
+        //for type's special behaviour?
+        set_4_special_type(sts_cde, null);
+    }    
+    //En-/dis-able action buttons #######################################
+    function set_all_sts_buttons(sts_cde,file_type){
+        if (sts_cde==null)
+            return true;
+        var i_sts_cde=parseInt(sts_cde,10);
+
+        // set all buttons 
+        $(".sts_btn").each(function(){ 
+            var btn_cde=parseInt($(this).attr('code'),10);
+            // retrieve=0  feature_extraction=100
+            // train=500
+            // feat_impo=990, feat_impo_result=1000
+            if ( i_sts_cde >= btn_cde ){
+                $(this).removeAttr("disabled"); //enabled 
+            }else if ($("#hf_w_class_numb").val()=="2" //special case
+                && i_sts_cde>=500 && btn_cde==990){
+                    $(this).removeAttr("disabled"); //show feat impo button
+            }else {
+                $(this).attr("disabled","disabled");//disabled
+            }        
+        });
+
+
+    }
+    //special behaviour for special types
+    function set_4_special_type(sts_cde,file_type){
+        //var file_type=$("#hf_w_filetype").val();
+        if (file_type==null)
+            file_type=$("#hf_w_filetype").val();
+        
+        //set pipeline tabs
+        if (file_type.indexOf('Format')>0){// for libsvm format
+            $("._n4f_").removeClass("pline_bgc_blue");   
+            $("._n4f_").addClass("pline_bgc_grey");
+        }
+        else if (file_type.indexOf('ATD')==0){//for atd
+            $("._n4atd_").removeClass("pline_bgc_blue");   
+            $("._n4atd_").addClass("pline_bgc_grey");
+        }
+
+        // disable buttons for libsvm
+        if (file_type.indexOf('Format')>0){
+            $("._n4fb_").attr("disabled","disabled");
+        }
+        // disable tabs for ATD
+        if (file_type.indexOf('ATD')==0){
+            $("._n4atdb_").attr("disabled","disabled");
+         }        
+    }
+    // callback for adding new option
+    function postupdate_new_opt(data){
+        //get new id
+        id=data.new_id; //data.opt_rows[0].DT_RowId;
+        // set icon "*" column
+        data.opt_rows[0]["*"]='<img id="_img_'+id+'" class="img_checked_grey _img_ds_r" style="max-height:20px; max-width:20px; " src="/static/img/checked_grey.png" />' 
+        //add & draw the new row
+        opt_list_tbl.rows.add(data.opt_rows).draw();
+        //set hash for auto click 
+        document.location.hash = data.new_id;
+        $("#hf_w_oid").val(data.new_id);
+        $("#hf_w_sts_cde").val(data.status_code);
+        
+        //delay for auto click the new row
+        setTimeout(function(){
+          click_the_row();
+          //$('#'+data.new_id).click(); //didn't work....
+          set_tbl_height();
+        }, 1000); 
+        //add a new result tab
+        $('<li id="_dli_'+data.new_id+'"><a id="_lia_'+data.new_id+'" href="#_t_'+data.new_id+'" data-toggle="tab" class="tab_packed">&nbsp;&nbsp;&nbsp;'
+            +data.new_id+'</a></li>').appendTo('#_result_');
+        // create the tab content
+        $('<div class="tab-pane" id="_t_'+data.new_id+'" style="min-height: 1000px; max-height: 1000px;" >'
+            +'<iframe width="100%" height="1000px" id="_if_'+data.new_id+'" src="{% url 'results4oid' %}'+data.new_id+'/'+data.new_id+'/"></iframe> </div>').appendTo('#_tc_');
+        // bind event handler to newly added li
+        $('#_result_').on('click','#_dli_'+data.new_id,function(e){
+            result_tab_onclick($(this));
+        })        
+    }
+    // callback to Update table row after Ajax call
+    function postupdate_file_record(data){
+        var id=data.id; 
+        var tdata=opt_list_tbl.row("#"+id).data();       
+        var sts_cde=data.status_code;
+        //dataset table
+        //$("#sts_"+data.id).text(data.status);
+      
+        tdata.local_processed_date=data.pdate;
+        tdata.status=data.status;
+        tdata.status_code=sts_cde;
+        tdata.ml_n_gram=data.ml_n_gram
+        tdata.ml_feat_threshold=data.ml_feat_threshold
+        tdata.ml_lib=data.ml_lib;
+        tdata.ml_opts=data.ml_opts;
+        tdata.ml_pca_opts=data.ml_pca_opts;
+        tdata.ml_alg=data.ml_alg;
+        tdata.ml_has_cv=data.ml_has_cv;
+        tdata.accuracy_short=data.accuracy_short;
+        tdata.mrun_numb=data.mrun_numb;
+        tdata.pattern=data.pattern;
+        tdata.label_arr=data.label_arr;
+        //hidden fields in dataset table
+        $("#hf_w_sts_cde").val(sts_cde);
+
+        opt_list_tbl.row("#"+id).data(tdata).draw();
+        // set pipeline images
+        set_all_tabs(sts_cde);
+        click_next_tab(sts_cde);
+        setTimeout(function(){
+          //$('#'+data.new_id).click(); //didn't work....
+          click_the_row();
+        }, 500);  
+        
+        //refresh iframe
+        $('#_if_'+id).attr("src", $('#_if_'+id).attr("src"));
+        // click the result tab?
+        $('#_lia_'+id).trigger("click");
+        
+    }
+    // dis-/en-able pca buttons based on tab and if input exists
+    function toggle_pca_button() {
+        var activeTabId = $('#_ul_pca li.active').attr('id');
+        if( (activeTabId=='_li_pca_scikit' &&  $('#_pca_threshold').val().length > 0) 
+         || (activeTabId=='_li_pca_ml' && $('#_pca_threshold').val().length > 0)
+        ) {
+            $('#_btn_pca_w').prop("disabled", false); //enable
+        } else {
+            $('#_btn_pca_w').prop("disabled", true); //disable
+        }   
+    }
+
+    // refresh opt list table
+    function refresh_tbl(){
+        var id=$('#hf_w_id').val();
+        opt_list_tbl.ajax.reload();
+        sts_cde=opt_list_tbl.row("#"+String(id)).data().status_code;
+        set_all_tabs(sts_cde);
+        click_next_tab(sts_cde);
+        setTimeout(function(){
+          //$('#'+data.new_id).click(); //didn't work....
+          click_the_row();
+        }, 500); 
+        //refresh result tab
+        $('#_if_'+id).attr('src', $('#_if_'+id).attr('src'));
+        
+    } // end refresh table 
+    
+    </script>
+{% endblock javascript_extra %}
+

@@ -1,0 +1,67 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "ae_base.html" %}
+
+{% load staticfiles %}
+
+{% block title %}
+    About Android Emulator
+{% endblock title %}
+
+{% block styling_extra %}
+{% endblock styling_extra %}
+
+
+
+{% block content %}       
+
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-10">
+                <h2><span class="label label-default">Emulator for Android application runtime analysis:</span> </h2>
+            </div >
+        </div>
+        <div class="row">
+            <div class="col-md-10">
+            <div class="panel panel-default ">
+
+ 
+
+                <div class="panel-body">
+                    <h3>
+                    <ul  >
+                    <li>leverages emulator images provided by Google for quick runtime emulation
+                    </li>                        
+                    <li>uses <a href="http://repo.xposed.info/module/de.robv.android.xposed.installer"> Xposed framework</a> and API monitor plugins to record invocations to critical android runtime functions</li>
+                    <li>uses Houdini and additional runtime monitor tools to detect application behaviours at native code level</li>
+                    <li>leverages Intel designed UI testing automation tool and third party tools to automatically navigate application</li>
+
+                    </ul>
+                    </h3>
+                </div>
+            </div>
+            </div>
+        </div>
+
+
+        <div class="row">
+            <div class="col-md-10">
+                <h2><span class="label label-default">Architecture:</span> </h2>
+            </div >
+        </div>
+        <div class="row">
+            <div class="col-md-10">
+            <img class="col-md-8 img-responsive" src="{% static 'atdml/img/ae_arch.png' %}"  > 
+            </div>
+        </div>
+
+
+
+
+    <div>
+ 
+{% endblock content %}

@@ -1,0 +1,1538 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "base_no_menu.html" %}
+{% load staticfiles %}
+{% load extra_tags %}
+
+{% block title %}
+    Machine Learning Result
+{% endblock title %}
+
+{% block styling_extra %}
+<!--link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/jquery.dataTables.min.css' %}" ></link-->
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/dataTables.bootstrap.min.css' %}" ></link>
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/select.jqueryui.min.css' %}" ></link>
+<link rel="stylesheet" type="text/css" href="{% static 'css/vis.min.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'css/pipeline.css' %}" />
+<style>
+</style>
+{% endblock styling_extra %}
+
+
+
+{% block content %}   
+
+    <div class="container-fluid" style="padding-top:2px;">
+
+    <!--h3  class="h3_packed"><strong>Result Summary:</strong></h3-->
+       
+        <table class="table table-striped table-bordered  table-condensed " style="border:0;  margin-bottom:5px;" >
+
+        <thead><tr>
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+                title="training option ID">Id</th>
+            <th class="col-md-2" data-placement="bottom" data-toggle="tooltip"
+                title="date & time of training processed">Processed Date</th>
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+                title="featuring method">N-gram</th>
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+                title="ML library used for this training result">ML Library</th>
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+                title="featuring method">Class Count</th>
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+                title="sample count in dataset">Dataset Count</th>
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+                title="portion of dataset for training">Training Portion</th>
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+                title="total feature count">Feature Count</th>
+                
+            <th class="col-md-1 highlight_th" data-placement="bottom" data-toggle="tooltip"
+                title="prediction accuracy of testing dataset">Accuracy</th>
+            <th class="col-md-2 highlight_th" data-placement="top" data-toggle="tooltip"
+                title="True positive | True negative | False positive | False negative 
+ of prediction of testing dataset ">Tp | Tn | Fp | Fn</th>
+            <th class="col-md-1 highlight_th" data-placement="bottom" data-toggle="tooltip"
+                title="the F1 score (also F-score or F-measure), the harmonic mean of precision and recall ">F1 Score</th>
+            <th class="col-md-1 highlight_th" data-placement="bottom" data-toggle="tooltip"
+                title="the phi/Matthews correlation coefficient (the 'mean square contingency coefficient' 
+ and denoted by φ (or rφ)) is a measure of quality of binary classifications">Phi Coef.</th>
+            <th class="col-md-1 highlight_th" data-placement="bottom" data-toggle="tooltip"
+                title="the Area Under Curve (Receiver Operating Characteristic curve, ROC,
+ a graphical plot that illustrates the performance of a binary classifier system)." >ROC AUC</th>
+
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+                title="Multiple run, count of multiple training dataset with random splitting to Training Portion">mRun Count</th>
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+                title=" mean of results of multiple training">Mean</th>
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+                title="variance of results of multiple training">Variance</th>
+            <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+                title="description of this training result" >Description</th>
+            <!--th class="col-md-1">Links</th-->
+         </tr></thead>
+
+		<!-- List of uploaded documents -->
+	
+			<tr>
+                <td id="doc_id">{{ document.id  }}
+                    <a  href="{% url 'api_get_model' document.id %}" 
+                        download="{{ document.id }}_model.json"
+                        data-placement="bottom" data-toggle="tooltip"
+                        title="download linear ML model in JSON format for local prediction"
+                    ><span class="glyphicon glyphicon-download-alt pull"></span></a>
+                </td>
+                <td id="pdate_{{ document.id }}">{{ document.local_processed_date  }}</td>
+                <td id="n_gram_{{ document.id }}">{% if document.ml_n_gram == "-1"  %}
+                    N/A {% else %} {{ document.ml_n_gram  }} {% endif %}
+                </td>
+                <td id="lib_{{ document.id }}">{{ document.ml_lib.title  }}</td>
+                <td id="p_{{ document.id }}">{{ class_count }}</td>
+                <td id="c_{{ document.id }}">{{ dataset_count }}</td>
+                <td id="p_{{ document.id }}">{{ training_fraction }}</td>
+                <td id="feat_{{ document.id }}">{{ document.total_feature_numb }}</td>
+                <td>{{ document.accuracy_short  }}</td>
+                <td id="tf_{{ document.id }}">{{ tp }} | {{ tn }} | {{ fp }} | {{ fn }}</td>
+                <td id="fs_{{ document.id }}">{{ fscore }}</td>
+                <td id="phi_{{ document.id }}">{{ phi }}</td>
+                <td id="auc_{{ document.id }}">{{ roc_auc  }}</td>
+                <td id="mr_{{ document.id }}">{{ document.mrun_numb  }}</td>
+                <td id="mean_{{ document.id }}">{{ document.mean_short  }}</td>
+                <td id="vari_{{ document.id }}">{{ document.variance_short  }}</td>
+                <td >{{ document.desc  }}</td>
+                <!--td> <a id="_vj_{{ document.id  }}" href="{% url 'job_logs' document.id %}"
+                    {% if document.status_code == 0 %}
+                        class="mlhide"
+                    {% endif %} 
+                    >Log</a>
+                    <a id="_vp_{{ document.id  }}" href="{% url 'predict2' document.id %}"
+                    {% if document.status_code < 500 %}
+                        class="mlhide"
+                    {% endif %}
+                    >/Predict</a>
+                    <a id="_vf_{{ document.id  }}" href="{% url 'feature_impo' document.id %}"
+                    {% if document.status_code < 1000 %}
+                        class="mlhide"
+                    {% endif %}
+                    >/Feature Importance</a>
+                </td-->  
+		    </tr>
+        </table>
+
+
+    {% if has_featc and has_result != "U" %} 
+    
+    <div class="panel panel-default" id="_feat_p" style="border:0;margin-bottom:8px">
+    <div class="panel-heading" style="padding:1px 10px 1px 10px;" >
+
+        <h4 id="feat_h" style="margin:3px;"><strong>Feature List for Id:{{ document.id }}&nbsp;</strong> 
+            <span style="font-size: 12px;">
+            <a  href="{% url 'api_get_result_jfile' document.id '_feat_coef.json' '0' %}" 
+                download="{{ document.id }}_feat_coef.json"
+                data-placement="bottom" data-toggle="tooltip"
+                title="download full feature list in JSON format"
+            ><span class="glyphicon glyphicon-download-alt pull"></span>JSON
+            </a>&nbsp;
+            <a  href="{% url 'api_get_result_jfile' document.id '_feat_coef.json' '-1,json_csv' %}" 
+                download="{{ document.id }}_feat_coef.csv"
+                data-placement="bottom" data-toggle="tooltip"
+                title="download full feature list in CSV format"
+            >CSV
+            </a>&nbsp;</span>
+        <img id="_prg_img_excl_feat" class="_progressCircle" 
+              src="{% static 'img/progress.gif' %}" style="display:none" />
+        <button type="submit" id="_btn_excl_feat" class="btn btn-primary btn-sm _{{ document.id }}_"
+            onclick="event.preventDefault(); save_excluded_features();" 
+            data-placement="bottom" data-toggle="tooltip"
+            title="Save Excluded Features for Next Training" >Save Excluded Features
+        </button>
+
+        <button type="button" class="close" data-toggle="collapse" data-target="#collapseFL" aria-expanded="true" id="_f">
+        <span class="chevron_toggleable glyphicon glyphicon-chevron-up" 
+            data-placement="bottom" data-toggle="tooltip" title="toggle collapse/expand this table">
+        </span></button>
+        </h4>
+
+    </div>
+    <div class="panel-body collapse in" id="collapseFL" style="padding:1px 0px 1px 0px;" aria-expanded="true">
+
+        <table id="_feat_list" class="table table-striped table-bordered table-hover table-condensed table-scrollable" 
+             >
+            <thead ><tr>
+                <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+            title="Feature Id">Fid</th>
+                <th class="col-md-2" data-placement="bottom" data-toggle="tooltip"
+            title="Absolute value of coefficient/weight, combined with +/- column">Absolute Coefficient</th>
+                <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+            title="Positive/negative sign for coefficient">+/-</th>
+                <th class="col-md-5" data-placement="bottom" data-toggle="tooltip"
+            title="Total sample count in whole dataset for this feature">Count</th>
+                <th class="col-md-5" data-placement="bottom" data-toggle="tooltip"
+            title="Raw string of the feature before feature engineering">Raw String</th>
+                <th class="col-md-2" data-placement="bottom" data-toggle="tooltip"
+            title="List of items for N-gram">N-gram</th>
+                <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+            title="Check to exclude this feature from future training. Please click [Save Excluded Features] to save to DB">Excluded</th>
+                </tr>
+            </thead> 
+            <tbody></tbody>
+        </table><!-- opt list -->
+    </div>
+    </div> <!--End feat list table-->        
+
+    {% endif %} <!-- Feature list -->
+    </div><!-- 1st container-fluid -->
+
+    <div class="container-fluid">
+
+    <!--input type="hidden" id="hf_img_base" value="{{ MEDIA_URL }}result/{{ document.id }}/{{ document.filename }}_var_XXXX_.png/" /-->
+    <ul class="nav nav-tabs" id="_ul_figs" >
+    {% if has_result == "U" %}
+        <li class=""  data-toggle="tooltip"  data-placement="bottom" id="_clustering_2d" 
+            title="Clustering 2D Dot Chart">
+            <a id="_f_clustering_2d" href="#_f_2d" data-toggle="tab"  class="tab_packed_bold"
+			>2D Dot Chart
+			</a></li> 
+        <li class="active"  data-toggle="tooltip"  data-placement="bottom" id="_clustering_3d" 
+            title="Clustering 3D Dot Chart; due to performance, not all dots were shown">
+            <a id="_f_clustering_3d" href="#_f_3d" data-toggle="tab"  class="tab_packed_bold"
+			>3D Dot Chart
+			</a></li>
+
+        <li class=""  data-toggle="tooltip"  data-placement="bottom" id="_clustering_hist" 
+            title="Clustering Histograms">
+            <a id="_f_clustering_hist" href="#_f_hist" data-toggle="tab"  class="tab_packed_bold"
+			>Histograms
+			</a></li>
+
+    {% elif has_result %}
+        {% if cv_grid_data %}
+            <li class="active" data-toggle="tooltip" id="_cv"
+                title="Cross Validation Output from Training">
+                <a id="_t_cv" href="#_f_cv" data-toggle="tab"  class="tab_packed_bold"
+                >Cross Validation
+                </a></li>     
+            <li 
+        {% else %} <!-- no CV  -->
+            <li class="active" 
+        {% endif %}            
+                data-toggle="tooltip" id="_classification"
+                title="Classification Result Diagram for Testing Dataset">
+                <a id="_t_classification" href="#_f_classification" data-toggle="tab" class="tab_packed_bold"
+                >Prediction Diagram
+                </a></li>   
+        {% if ml_lib == "dnn" %}
+        <li data-toggle="tooltip" id="_dnn_sts"
+            title="DNN Model Diagram">
+            <a id="_tdnn_mdl" href="#_f_dnn_vis" data-toggle="tab" class="tab_packed_bold" 
+			>DNN Model
+            </a></li>   
+        <li data-toggle="tooltip" id="_dnn_sts"
+            title="Error Epoch Diagram">
+            <a id="_tdnn_sts" href="#_f_dnn_sts" data-toggle="tab" class="tab_packed_bold" 
+			>DNN Status
+            </a></li>     
+        {% endif %}            
+        <li data-toggle="tooltip" id="_flist"
+            title="Sample list of False Prediction of Training Dataset">
+            <a id="_t_fp_list" href="#_f_fp_list" data-toggle="tab" class="tab_packed_bold" 
+			>False Prediction
+            </a></li>     
+        <li data-toggle="tooltip" id="_roc"
+            title="ROC Diagram and Data List for Testing Dataset">
+            <a id="_t_roc" href="#_f_roc" data-toggle="tab"  class="tab_packed_bold" 
+			>ROC
+            </a></li>     
+        <li data-toggle="tooltip" id="_dps"
+            title="Distribution of Prediction Score">
+            <a id="_t_dps" href="#_f_dps" data-toggle="tab"  class="tab_packed_bold"
+			>Distribution
+            </a></li>     
+        <li data-toggle="tooltip" id="_mrun"
+            title="Multiple Training Accuracy Distribution Diagram">
+            <a id="_t_mrun" href="#_f_mrun" data-toggle="tab" class="tab_packed_bold" 
+			>Multiple Run
+            </a></li>     
+    {% endif %} <!-- Clustering or Classification tabs  -->
+    </ul><!--tabs-->
+
+    <div class="tab-content" id="_tc_">
+    {% if has_result == "U" %}
+    
+      <div class="tab-pane "  id="_f_2d"  style="min-height: 1000px; max-height: 1000px;" >
+        <div class="row">
+            <div class="col-md-6"> <h3><strong>Kmeans Cluster:</strong></h3></div>
+            <div class="col-md-6"> <h3><strong>Cluster by True Labels:</strong></h3></div>
+        </div>
+        <div class="row">
+            <img class="col-md-6 img-responsive" src="{{ MEDIA_URL }}result/{{ document.id }}/{{ document.id }}_cluster.png/" 
+                    style="max-height:550px; max-width:55%;"> 
+            <img class="col-md-6 img-responsive" src="{{ MEDIA_URL }}result/{{ document.id }}/{{ document.id }}_cluster_tl.png/" 
+                    style="max-height:550px; max-width:55%;"> 
+        </div>
+      </div><!--End tab-pane _f_2d  ============ -->
+      <div class="tab-pane"  id="_f_hist"  style="min-height: 1000px; max-height: 1000px;" >
+
+        <div class="row">
+            <div class="col-md-6"> <h3><strong>Kmeans Histograms:</strong></h3></div>
+            <!--div class="col-md-6"> <h3><strong>Kmeans Histograms Normalized:</strong></h3></div-->
+            <div class="col-md-6"> <h3><strong>Kmeans Histograms with True Lables:</strong></h3></div>
+        </div>
+        <div class="row">
+            <img class="col-md-6 img-responsive" src="{{ MEDIA_URL }}result/{{ document.id }}/{{ document.id }}_histogram_predicted_labels.png/"  
+                    style="max-height:800px; max-width:55%; "> 
+            <img class="col-md-6 img-responsive" src="{{ MEDIA_URL }}result/{{ document.id }}/{{ document.id }}_histogram_true_labels.png/"  
+                    style="max-height:800px; max-width:55%; "> 
+        </div>
+        <div class="row">
+            <div class="col-md-6"> <h3><strong>Kmeans Histograms Normalized:</strong></h3></div>
+        </div>
+        <div class="row">
+            <img class="col-md-6 img-responsive" src="{{ MEDIA_URL }}result/{{ document.id }}/{{ document.id }}_histogram_true_labels_normalized.png/" 
+                    style="max-height:800px; max-width:55%;"> 
+        </div>
+      </div><!--End tab-pane _f_hist ============ -->
+      <div class="tab-pane active"  id="_f_3d"  style="min-height: 1000px; max-height: 1000px;" >
+        <div class="row">
+            <div class='col-md-6 '        
+            > <h3><strong>3D Kmeans Cluster:</strong></h3></div>
+
+            <div class='col-md-6 '   > 
+            <h3><strong>3D Cluster by True Labels:</strong></h3></div>
+        </div>
+        <div class="row" data-toggle="tooltip"  data-placement="bottom" 
+            title="Clustering 3D Dot Chart; due to performance, not all dots were shown; Click and drag to show 3D charts">
+            
+            <div id="kmeans_chart" class='col-md-6 with-3d-shadow with-transitions ' 
+                url="{% url 'get_gdata' document.id 'cluster_3d' %}" pwidth='700px' pheight='700px' > 
+                
+            </div>            
+            <div id="kmeans_tl_chart" class='col-md-6 with-3d-shadow with-transitions ' 
+                url="{% url 'get_gdata' document.id 'cluster_3d_tl' %}"  pwidth='700px' pheight='700px'>   
+                
+            </div>
+        </div><!--row-->
+        <div class="row">
+            <div class="col-md-6">
+                    <button type="submit" class="btn btn-primary btn-sm " id="_btn_k"
+                    id="_animation" 
+                    title="Animate to show each family cluster"
+                    onclick=" event.preventDefault(); toggle_animation('kmeans_chart'); $('#_btn_k').addClass('mlhide');"
+            >Start Animation</button>
+            </div>
+
+            <div class="col-md-6">
+                    <button type="submit" class="btn btn-primary btn-sm " id="_btn_k_tl"
+                    id="_animation" 
+                    title="Animate to show each family cluster"
+                    onclick=" event.preventDefault(); toggle_animation('kmeans_tl_chart'); $('#_btn_k_tl').addClass('mlhide');"
+            >Start Animation</button>
+            </div>       
+        </div>
+      </div><!--End tab-pane _f_3d  ============ -->
+         
+    {% elif has_result %}
+    
+     {% if cv_grid_data  %}
+     <div class="tab-pane active"  id="_f_cv"  style="min-height: 300px; max-height: 300px;" >
+      <h3><strong>Cross Validation with Grid Search Results:</strong></h3>
+        <table class="table table-striped table-bordered table-hover table-condensed table-scrollable" >
+
+        <thead><tr>
+            <th class="col-md-1">Parameters for [ {{ jopts.learning_algorithm }} ]</th>
+            <th class="col-md-1">Average Accuracy</th>
+            <th class="col-md-1">Standard Deviation</th>
+            <th class="col-md-1">Parameters Used</th>
+         </tr></thead>
+
+			{% for item in cv_grid_data %}
+		    <tr>
+
+                <!--td>C={{ item.param.C }},regType={{ item.param.regType }},iterations={{ item.param.iterations }}</td--> 
+                <!--td>{{ item.param }}</td-->
+                <td>{% for ki, val in item.param.items %}{{ ki.title }}={{ val }} {% endfor %}</td>
+                <td>{{ item.average_accuracy }}</td>
+                <td>+/-{{ item.std_deviation }}</td>
+                <td>{{ item.selected }}</td>
+
+            </tr>
+			{% endfor %}
+        </table>
+     </div><!--End tab-content _f_cv-->
+     <div class="tab-pane" 
+	 {% else %} 
+     <div class="tab-pane active"   
+	 {% endif %} 
+        id="_f_classification"  style="min-height: 500px; max-height: 500px;" >
+        <div class="row">
+            <div class="col-md-6"> <h3 style="margin:3px;"><strong>Prediction Results of Testing Dataset:</strong></h3></div>
+            <div class="col-md-6"> <h3 style="margin:3px;"><strong>True Labels of Testing Dataset:</strong></h3></div>
+        </div>
+        <div class="row">
+            <img class="col-md-6 img-responsive" src="{{ MEDIA_URL }}result/{{ document.id }}/{{ document.id }}_1.png/" 
+                    style="max-height:550px; max-width:45%;"> 
+            <img class="col-md-6 img-responsive" src="{{ MEDIA_URL }}result/{{ document.id }}/{{ document.id }}_2.png/"  
+                    style="max-height:550px; max-width:45%; "> 
+        </div>
+      </div><!--End tab-content _f_classification-->
+      <div class="tab-pane "  id="_f_roc"  style="min-height: 500px; max-height: 500px;" >
+        <div class="row">
+            <div class='col-md-6 {% if not has_roc %} mlhide {% endif %}'        
+            > <h3><strong>ROC Curve Diagram:</strong></h3></div>
+            <div class='col-md-6 {% if not has_roc %} mlhide {% endif %}'        
+            > <h3><strong>ROC Data List:</strong></h3></div>
+        </div>
+        <div class="row">
+            <!--img class="col-md-6 img-responsive" src="{{ MEDIA_URL }}result/{{ document.id }}/{{ document.filename }}_ROC.png/"  -->       
+            
+            <div id="roc_chart" class='col-md-6 with-3d-shadow with-transitions {% if not has_roc %} mlhide {% endif %}' 
+                ylabel="TPR and Accuracy" xlabel="FPR" xtformat=".4f" ytformat=".4f" 
+                url="{% url 'get_gdata' document.id 'roc' %}" > 
+                <svg style="min-height:90%; min-width:90%; height:400px; width:750px;"> </svg>
+            </div>            
+            <div class='col-md-5' >         
+            <table id="_roc_list" class="table table-striped table-bordered table-hover table-condensed table-scrollable {% if not has_roc %} mlhide {% endif %}" 
+                   >
+                <thead ><tr>
+                    <th >FPR</th>
+                    <th >TPR</th>
+                    <th >Accuracy</th>
+                    </tr>
+                </thead> 
+
+            </table><!-- opt list -->
+            </div>
+        </div>
+      </div><!--End tab-content _f_roc -->
+      <div class="tab-pane "  id="_f_dps"  style="min-height: 500px; max-height: 500px;" >
+        <div class="row">
+            <div class='col-md-6 {% if not has_score %} mlhide {% endif %}'        
+            > <h3><strong>Prediction Score Distribution:</strong></h3></div>
+
+        </div>
+        <div class="row">
+            <div id="score_chart" class='col-md-6 with-3d-shadow with-transitions {% if not has_score %} mlhide {% endif %}' 
+                ylabel="Sample Count" xlabel="Prediction Score" xtformat=".2f" ytformat="d"
+                url="{% url 'get_gdata' document.id 'score' %}" >   
+                <svg style="min-height:90%; min-width:90%; height:400px; width:750px;"> </svg>
+            </div>
+        </div>
+      </div><!--End tab-content _f_dps -->
+      <div class="tab-pane "  id="_f_mrun"  style="min-height: 500px; max-height: 500px;" >
+        <div class="row">
+            <div class='col-md-6 {% if not has_mrun %} mlhide {% endif %}'  id="_div_mrun" > 
+            <h3><strong>Accuracy Distribution from Multiple Run:</strong></h3><h4><span id="_mrun_numb">{{ document.mrun_numb }}</span> Times</h4>
+            </div>
+
+        </div>
+        <div class="row">
+            <div id="mrun_chart" class='col-md-6 with-3d-shadow with-transitions {% if not has_mrun %} mlhide {% endif %}' 
+                ylabel="Probability / Accuracy bar width" xlabel="% Accuracy" xtformat=".2f" ytformat="d"
+                url="{% url 'get_gdata' document.id 'mrun' %}" >   
+                <svg style="min-height:90%; min-width:90%; height:400px; width:750px;"> </svg>
+            </div>
+        </div>
+      </div><!--End tab-content _f_mrun -->
+      <div class="tab-pane "  id="_f_fp_list" >
+            
+        <div class="row">
+            <div class='col-md-12' > 
+            <h3><strong>False Prediction List of Testing Dataset:</strong>
+            <span style="font-size: 12px;">
+            <a  href="{% url 'api_get_result_jfile' document.id '_false_pred.json' '0' %}" 
+                download="{{ document.id }}_false_pred.json"
+                data-placement="bottom" data-toggle="tooltip"
+                title="download full false prediction list in JSON format"
+            ><span class="glyphicon glyphicon-download-alt pull"></span>JSON
+            </a>&nbsp;
+            <a  href="{% url 'api_get_result_jfile' document.id '_false_pred.json' '-1,json_csv' %}" 
+                download="{{ document.id }}_false_pred.csv"
+                data-placement="bottom" data-toggle="tooltip"
+                title="download full false prediction list in CSV format"
+            >CSV
+            </a>&nbsp;
+            </span>
+            </h3>
+            </div>
+        </div>
+        <div class="row">
+            <div class='col-md-12' >         
+            <table id="_fp_list" class="table table-striped table-bordered table-hover table-condensed table-scrollable" 
+                   >
+                <thead ><tr>
+                    <th data-placement="bottom" data-toggle="tooltip"
+            title="Hash of Sample in Testing Dataset">Sample Info</th>
+                    <th data-placement="bottom" data-toggle="tooltip"
+            title="True Lable of Sample in Testing Datase">True Label</th>
+                    <th data-placement="bottom" data-toggle="tooltip"
+            title="Predicted Label of Sample in Testing Datase">Predict Label</th>
+                    <th data-placement="bottom" data-toggle="tooltip"
+            title="Positive/negative sign forPrediction Score">+/-</th>
+                    <th data-placement="bottom" data-toggle="tooltip"
+            title="Absolute Prediction Score, combined with +/- column">Score</th>
+                    <th data-placement="bottom" data-toggle="tooltip"
+            title="Details of Features and Weights">Details</th>
+                    </tr>
+                </thead> 
+
+            </table><!-- opt list -->
+            </div>
+        </div>
+      </div><!--End tab-content _f_fp_list -->
+      {% if ml_lib == 'dnn' %} 
+      <div class="tab-pane "  id="_f_dnn_vis"  style="max-height: 350px;" >
+        <div class="row">
+            <div class="col-md-6 {% if not ml_lib == 'dnn' %} mlhide {% endif %}"       
+            > <h3><strong>Model Diagram:</strong></h3></div>
+        </div>
+        <div class="row" style="padding-top:5px;">
+            <img class="col-md-6 img-responsive " 
+                src="{{ MEDIA_URL }}result/{{ document.id }}/{{ document.id }}_model/{{ document.id }}_model_fig.png/" 
+                    style="max-width:20%;"> 
+        </div>
+      </div><!--End tab-content _f_dnn_vis -->
+      
+      <div class="tab-pane "  id="_f_dnn_sts"  style="min-height: 600px; max-height: 600px;" >
+        <div class="row">
+            <div class="col-md-6 {% if not ml_lib == 'dnn' %} mlhide {% endif %}"       
+            > <h3><strong>Error Epoch Diagram:</strong></h3></div>
+            <div class="col-md-6 {% if not ml_lib == 'dnn' %} mlhide {% endif %}"       
+            > <h3><strong>Accuracy Epoch Diagram:</strong></h3></div>
+
+        </div>
+        <div class="row" style="padding-top:5px;">
+
+          <div id="dnn_b" class="col-md-12">
+            <button class="btn btn-primary btn-sm {% if not status == 'processing training' %} mlhide {% endif %}" id='_dnn_start_stop_btn'
+            >Start Real-time Status Polling</button>
+            <img id="_prg_img_sts" class="_progressCircle mlhide" src="{% static 'img/progress.gif' %}" style="" />
+            <label style="font: bold 16px courier !important;" id="_epoch_state"></label>
+          </div>          
+
+        </div>
+        <div class="row" style="padding-top:5px;">
+            <div id="dnn_chart" class="col-md-6 with-3d-shadow with-transitions {% if not ml_lib == 'dnn' %} mlhide {% endif %} " 
+                ylabel="Error" xlabel="Epoch" xtformat="d" ytformat=".2f"
+                url="{% url 'get_gdata_tick' document.id 'dnn' 0 %}" >   
+                <svg style="min-height:90%; min-width:95%; height:500px; width:95%;"> </svg>
+            </div>
+            <div id="dnn_acc_chart" class="col-md-6 with-3d-shadow with-transitions {% if not ml_lib == 'dnn' %} mlhide {% endif %} " 
+                ylabel="Accuracy" xlabel="Epoch" xtformat="d" ytformat=".2f" >
+                <svg style="min-height:90%; min-width:95%; height:500px; width:95%;"> </svg>
+            </div>
+        </div>
+     
+      </div><!--End tab-content _f_dnn_sts -->
+      {% endif %}
+    {% endif %} <!-- Clustering or Classification panes -->
+   </div><!--End tab-content _tc_-->
+
+    </div><!--End container-fluid-->  
+
+    
+   
+</div>
+        <form id="_feat_excl_frm"  class="form-inline" method="POST" action="{% url 'exclude_feature' document.id %}">
+            {% csrf_token %}
+            <input type="hidden" id="hf_w_id" name="hf_w_id" value="{{ document.id }}"></input>
+            <input type="hidden" id="hf_w_excl_feat" name="hf_w_excl_feat" value=""></input>
+        </form>
+
+{% endblock content %}
+{% block javascript_extra %}
+<script src="{% static 'js/d3.min.js' %}"></script>
+<script src="{% static 'js/nv.d3.min.js' %}"></script>
+<script src="{% static 'js/vis.min.js' %}"></script>
+
+<link rel="stylesheet" type="text/css" href="{% static 'css/nv.d3.css' %}" />
+<style>
+.mlhide {
+    display:none
+}
+</style>
+<script src="{% static 'css/datatables/js/jquery.dataTables.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.bootstrap.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.select.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.buttons.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/buttons.html5.min.js' %}" ></script>
+<script>
+    var _feat_list=null;
+    var _fp_tbl=null;
+    var _roc_tbl=null;
+    var r_timeout=null;
+    var itable_html ={};
+    var graph_tooltips={};
+    var graph_state={};
+    var graph_list={};
+    var graph_data={};
+    var graph_view={};
+    var first_load=0;
+    //var exclude_feat={"259":1,"261":1}
+    var str_exclude_feat="{{ feature_excluded }}"
+    var roc_data={};
+    var dnn_data={};
+    var dnn_acc_data={};
+    var dnn_chart=null;
+    var dnn_acc_chart=null;
+
+    
+	$(document).ready(function(){
+        //init opt list
+        _feat_list=$('#_feat_list').DataTable( {
+            "ajax": //'/atdml/api/jf/{{ document.id }}/{{ document.id }}_feat_coef.json/0/'
+           {
+            "type"   : "GET",
+            "url"    : '{% url "api_get_result_jfile" document.id "_feat_coef.json" "1000,json,-flo_abs_coef" %}',
+            "dataSrc": function (json) {
+                      var excl_feat_list=str_exclude_feat.split(",");
+                      var exclude_feat={}
+                      for (k in excl_feat_list){
+                        exclude_feat[excl_feat_list[k]]=1
+                      }
+                      var json=json.data; // get array
+                      //convert into all positive 
+                      for(var i=0;i< json.length; i++){
+                        //sign for feature weight
+                        if (json[i].coef < 0.0){
+                            json[i].coef= json[i].coef * -1.0;
+                            json[i]["sign"]="-"
+                        }
+                        else json[i]["sign"]="+"
+                        // image for check/uncheck exclude feature
+                        if(json[i].fid in exclude_feat){
+                            json[i]["exclude"]="<span id='_img_"+json[i]["fid"]+"' class='img_checked_red _feat_excl' " + 
+                         " >*</span>"
+                        } else {
+                            json[i]["exclude"]="<span id='_img_"+json[i]["fid"]+"' class='img_checked_grey _feat_excl' " + 
+                         " >&nbsp;</span>"
+                        }
+                        //escape angle quote for html display
+                        if (json[i].raw_string.indexOf('<')>0){
+                            json[i]["raw_string"]=json[i].raw_string.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        }
+                        // set n/a if no count
+                        if (! json[i]["feat_sample_count"]){
+                            json[i]["feat_sample_count"]="n/a";
+                        }                        
+                      }
+                      return json; // return an array
+                      /*
+                      var return_data = new Array();
+                      for(var i=0;i< json.length; i++){
+                        var coef=json[i].coef;
+                        if (coef < 0.0)
+                            coef= -coef;    
+                        return_data.push({
+                          'fid': json[i].fid,
+                          'coef': coef,
+                          'n_gram': json[i].n_gram,
+                          'raw_string': json[i].raw_string,
+                        })
+                      }
+                      return return_data;
+                      */
+                }
+            
+            }
+            ,paging: false
+            ,searching: false
+            ,scrollY: 210
+            ,scrollX: false
+            //,bscrollcollapse : false
+            ,select: 'single'
+            ,bInfo: false
+            //,ordering: false //true didn't work...
+            ,"order": [[ 1, "desc" ]]//Initial order (sort) to apply to the table
+            ,"columnDefs": [
+                 { "width": "1%", "targets": [0] }
+                ,{ "width": "15%", "targets": [1] }
+                ,{ "width": "1%", "targets": [2] }
+                ,{ "width": "1%", "targets": [3] }
+                ,{ "width": "58%", "targets": [4] }
+                ,{ "width": "15%", "targets": [5] }
+                ,{ "width": "10%", "targets": [6] }
+
+            ]
+            //,processing:true//display of a 'processing' indicator when the table is being processed
+            //,serverSide:true// where filtering, paging and sorting calculations are all performed by a server.
+            ,"columns": [
+                { "data": "fid" }
+                ,{ "data": "coef" }
+                ,{ "data": "sign" }
+                ,{ "data": "feat_sample_count" }
+                ,{ "data": "raw_string" }
+                ,{ "data": "n_gram" }
+                ,{ "data": "exclude" }
+
+            ] 
+            //,dom: 'Bfrtip'
+            //,buttons: [
+            //    {extend: 'csvHtml5', text: 'Download as CSV', className: "btn btn-primary btn-sm pull-right"}
+            //]
+
+        } );
+        
+        //toggle images
+        _feat_list.on( 'click', 'tr', function () {
+            var row= _feat_list.row(this);
+            var data = row.data();
+            var fid = data.fid;
+            if ($('#_img_'+fid).hasClass('img_checked_red')){
+                $('#_img_'+fid).html("&nbsp;");
+                $('#_img_'+fid).removeClass("img_checked_red");
+                $('#_img_'+fid).addClass("img_checked_grey");                
+            } else {
+                $('#_img_'+fid).text("*");
+                $('#_img_'+fid).removeClass("img_checked_grey");
+                $('#_img_'+fid).addClass("img_checked_red");                
+            }
+        });
+
+        //set id to URL for back to list page
+        $("#_home_link").attr("href",$("#_home_link").attr("href")+$("#doc_id").text()+"/");
+        //$("#_home_link").attr("href",$("#_home_link").attr("href")+"#"+$("#doc_id").text()+"");
+        if ($('#roc_chart').length>0 && !$('#roc_chart').hasClass('mlhide')){
+            add_roc_chart('roc_chart'); //'/atdml/graph/6/roc',
+        }
+        if($('#mrun_chart').length>0 && !$('#mrun_chart').hasClass('mlhide')){
+            add_mrun_chart('mrun_chart'); //'/atdml/graph/6/roc',
+        }
+        if($('#score_chart').length>0 && !$('#score_chart').hasClass('mlhide')){
+            add_score_chart('score_chart'); //'/atdml/graph/6/roc',
+        }
+        //click first tab by default
+        $("#_pred_src li a").first().click();
+        if($('#kmeans_chart').length>0 && !$('#kmeans_chart').hasClass('mlhide')){
+            add_kmeans_chart('kmeans_chart'); //'/atdml/graph/6/roc',
+        }
+        if($('#kmeans_tl_chart').length>0 && !$('#kmeans_tl_chart').hasClass('mlhide')){
+            add_kmeans_chart('kmeans_tl_chart'); 
+        }
+        // add dnn chart
+        if($('#dnn_chart').length>0 && !$('#dnn_chart').hasClass('mlhide')){
+            add_dnn_chart('dnn_chart','dnn_acc_chart'); 
+        }
+        
+        //didn't show the graph...
+        //$("#_f_clustering_2d").first().click();
+        get_false_pred_table_data();
+        //toggle images
+        _fp_tbl.on( 'click', 'tr', function () {
+            // get table row & its data
+            var row= _fp_tbl.row(this);
+            var rdata = row.data();
+           //get row id
+            var rid = null;
+            if ( rdata!=null && rdata.hasOwnProperty('rid')){
+                rid=rdata.rid;
+                if (rid == null) return; // not for inert table
+            } else return; // not for inert table
+
+            if ($('#_img_it_'+rid).hasClass('img_stop_red')){
+                row.child.hide();
+                // set open/close icons
+                $('#_img_it_'+rid).removeClass("img_stop_red");
+                $('#_img_it_'+rid).addClass("img_plus_green");            
+            } else {
+                if (rid in itable_html){
+                    row.child(itable_html[rid]).show();
+                } else {
+                    var html=formatChildTbl(rdata.feat, rid);
+                    itable_html[rid]=html
+                    row.child(html).show();
+                }//end if else
+                // need to set inner DataTable everytime?
+                $('#innerTbl_'+rid).DataTable({
+                     searching: false
+                    ,"order": [[ 1, "asc" ]]//Initial order (sort) to apply to the table
+                    ,paging: true
+                    ,bInfo: false
+                    ,scrollY: 300
+                    ,scrollX: false
+                    ,"columnDefs": [
+                         { "width": "5%", "targets": [0] }
+                        ,{ "width": "20%", "targets": [1] }
+                        ,{ "width": "1%", "targets": [2] }
+                        ,{ "width": "1%", "targets": [3] }
+                        ,{ "width": "73%", "targets": [4] }
+                    ]
+
+                });
+                // set open/close icons
+                $('#_img_it_'+rid).removeClass("img_plus_green");
+                $('#_img_it_'+rid).addClass("img_stop_red");   
+            }
+        });        
+    
+        //toggle chevron
+        $('.chevron_toggleable').on('click', function() {
+            $(this).toggleClass('glyphicon-chevron-down glyphicon-chevron-up');
+        });
+        // dnn button action
+        $('#_dnn_start_stop_btn').on('click', function() {
+            start_stop_dnn_action($(this));
+        }); 
+       
+        //set_timer4dnn_chart();        
+        //force to redraw to fix title width
+        $('#_t_roc').on( 'click', function () {
+            if (_roc_tbl != null){
+                drawTbl(_roc_tbl);
+            }
+        })
+        //force to redraw to fix title width
+        $('#_t_fp_list').on( 'click', function () {
+            if (_roc_tbl != null){
+                drawTbl(_fp_tbl);
+            }
+        })
+        
+        
+    }); 
+    // tbd. temp fix the title alignment issue for false pred feature table
+    function drawTbl(tbl){
+
+        var r_timer=setInterval(function(){
+            if (tbl != null){
+                tbl.draw(); // force to redraw 
+            }
+        }, 1000);
+        var r_timeout=setTimeout(function(){
+            clearInterval(r_timer);
+        }, 3000);
+        //}
+    }
+    //save excluded features
+    function save_excluded_features(){
+        var arr=$(".img_checked_red");
+        var id_list=""
+        var comma=""
+
+        $.each(arr, function(idx,obj){
+
+            id_list=id_list+comma+this.id.replace("_img_","")
+            comma=","
+        });
+        //set value to form
+        $("#hf_w_excl_feat").val(id_list)
+        
+        //submit form
+        submit_task("_feat_excl_frm", "_prg_img_excl_feat" , "_btn_excl_feat", $("#hf_w_id").val()
+            , "Updating excluded feature list...")
+    }
+
+    var run = false;
+    var curr_ptr=0;
+    var max_refresh=30;
+    var refresh_cnt=max_refresh;
+    var dnn_interval=null;
+    
+    function set_timer4dnn_chart(btn){
+        var interval=window.setInterval(function(){
+            if (!run){
+                return;
+            }
+            refresh_cnt =refresh_cnt-1;
+            // only allow a max value
+            if (refresh_cnt<=0){ 
+                start_stop_dnn_action(btn);
+                return;
+            }
+            var url="{% url 'get_gdata' document.id 'dnn' %}/"+curr_ptr+'/'
+            d3.json(url, function(data) {
+                if (data !=null && data.length>0 && data[0].values.length>=1 && dnn_acc_data.length>0 
+                        && "values" in dnn_acc_data[0] ){
+                    // set current ptr
+                    for (var i=0; i< data[0].values.length; i++){
+                        curr_ptr=data[0].values[i][0]
+                        dnn_data[0].values.push({
+                            x: data[0].values[i][0],
+                            y: data[0].values[i][1]
+                        });
+                        dnn_data[1].values.push({
+                            x: data[1].values[i][0],
+                            y: data[1].values[i][1]
+                        }); 
+                        dnn_acc_data[0].values.push({
+                            x: data[2].values[i][0],
+                            y: data[2].values[i][1]
+                        });
+                        dnn_acc_data[1].values.push({
+                            x: data[3].values[i][0],
+                            y: data[3].values[i][1]
+                        });                    
+                    }//end forloop
+                    //refresh_cnt=max_refresh;
+                    //update 2 charts
+                    if (dnn_acc_data != null && dnn_acc_chart!=null){
+                        dnn_chart.update();
+                        dnn_acc_chart.update();
+                    }
+                }// end if len >1
+                else {
+                    if (dnn_acc_data != null && dnn_acc_chart!=null){
+                        dnn_chart.update();
+                        dnn_acc_chart.update();
+                    } else {
+                    }
+                }
+                // check status and click stop button
+                if (data !=null && "status" in data[0] && data[0].status !="processing training"){
+                    //stop action 
+                    if (run) {
+                        start_stop_dnn_action($('#_dnn_start_stop_btn'));
+                    }
+                }
+                // set epoch state to label
+                if (data !=null && "epoch_state" in data[0]){
+                    $("#_epoch_state").text(data[0].epoch_state);
+                }else {
+                    $("#_epoch_state").text("");
+                }
+                
+            }); // end d3.json
+        }   , 7000); // end setinterval()
+           
+        dnn_interval=interval;
+    }// end set_timer4dnn_chart
+    
+    
+
+    // dnn button action
+    function start_stop_dnn_action(btn){
+        // set polling interval
+        if (dnn_interval==null || dnn_interval==undefined){
+            set_timer4dnn_chart(btn); 
+      
+        }
+        run = !run;
+        if (run){
+
+            $('#_prg_img_sts').removeClass('mlhide');
+            btn.text("Stop Checking");
+        } else { // stop the polling here
+            $('#_prg_img_sts').addClass('mlhide');
+            btn.text("Start Real-time Status Polling");
+            //window.clearInterval(dnn_interval);
+            //dnn_interval=null;
+            // reload refresh_cnt
+            refresh_cnt=max_refresh;
+        }
+    }
+    
+    // add dnn chart ==============================================================
+    function add_dnn_chart(chart_eid_err,chart_eid_acc){
+        var char_div=$('#'+chart_eid_err);
+        var xlabel=char_div.attr('xlabel');
+        var ylabel=char_div.attr('ylabel');
+        var xtformat=char_div.attr('xtformat');
+        var ytformat=char_div.attr('ytformat');
+        var url=char_div.attr('url');
+
+        d3.json(url, function(data) {
+
+          if ( data != null && data.length >0){
+              data.map(function(series) {
+        
+                    if (series != null && "values" in series && series.values.length>0){
+                        series.values = series.values.map(function(d) { 
+                            return {x: d[0], y: d[1] }             
+                        });
+                    }
+                    return series;
+              });          
+
+              dnn_data=data.slice(0,2);
+              dnn_acc_data=data.slice(2,4);
+              // set current ptr <- max x-axis value
+              for (i of dnn_data[0].values){
+                    curr_ptr=i.x
+              }
+          } // end data not null
+
+
+          // Add Error-Epoch Diagram =======================
+          nv.addGraph(function() {
+
+                var chart = nv.models.lineWithFocusChart();
+
+                chart.xAxis
+                  .axisLabel(xlabel)
+                  .tickFormat(d3.format(xtformat));
+                chart.yAxis
+                  .axisLabel(ylabel) 
+                  .tickFormat(d3.format(ytformat));
+                chart.y2Axis
+                   .tickFormat(d3.format(ytformat));
+
+                d3.select('#'+chart_eid_err+' svg')    
+                  .datum(dnn_data)
+                  .transition().duration(500)
+                  .call(chart);
+
+                //Update the chart when window resizes.
+                nv.utils.windowResize(chart.update); 
+                dnn_chart=chart
+                return chart;
+          });// end addGraph()
+          
+          var char_div_acc=$('#'+chart_eid_acc);
+          var xlabel_acc=char_div_acc.attr('xlabel');
+          var ylabel_acc=char_div_acc.attr('ylabel');
+          var xtformat_acc=char_div_acc.attr('xtformat');
+          var ytformat_acc=char_div_acc.attr('ytformat');
+          // Add Accuracy-Epoch Diagram =======================
+          nv.addGraph(function() {
+
+                var chart = nv.models.lineWithFocusChart();
+
+                chart.xAxis
+                  .axisLabel(xlabel_acc)
+                  .tickFormat(d3.format(xtformat_acc));
+                chart.yAxis
+                  .axisLabel(ylabel_acc) 
+                  .tickFormat(d3.format(ytformat_acc));
+                chart.y2Axis
+                   .tickFormat(d3.format(ytformat_acc));
+
+                d3.select('#'+chart_eid_acc+' svg')    
+                  .datum(dnn_acc_data)
+                  .transition().duration(500)
+                  .call(chart);
+
+                //Update the chart when window resizes.
+                nv.utils.windowResize(chart.update); 
+                dnn_acc_chart=chart
+                return chart;
+          });// end addGraph()
+          
+        });// end d3.json()
+
+    }// end add dnn chart    
+    // load ROC figure
+    function add_roc_chart(chart_eid){
+        var char_div=$('#'+chart_eid)
+        var xlabel=char_div.attr('xlabel');
+        var ylabel=char_div.attr('ylabel');
+        var xtformat=char_div.attr('xtformat');
+        var ytformat=char_div.attr('ytformat');
+        var url=char_div.attr('url');
+
+        
+        d3.json(url, function(data) {
+
+
+          data.map(function(series) {
+            if (series!=null && "values" in series){
+                series.values = series.values.map(function(d) { return {"x": d[0], "y": d[1] } });
+
+                // get only fp <= 0.5
+                var ret=[];
+                for(var i = 0; i < series.values.length; i++) {
+                    if ( parseFloat(series.values[i]["x"])<=0.5)
+                        ret.push(series.values[i]);
+                }
+                series.values=ret
+
+            }
+            return series;
+          });
+          roc_data=data;
+          
+          set_roc_table(roc_data);
+          
+          nv.addGraph(function() {
+            
+			var chart = nv.models.lineChart() //.lineChart() didn't work? .lineWithFocusChart() 
+						.margin({left: 120, right:130})  //Adjust chart margins to give the x-axis some breathing room.
+						.useInteractiveGuideline(true)  //tooltips and a guideline. but overwrite custom tooltip
+                        .color(d3.scale.category10().range()) 
+			;
+            //chart.x2Axis.tickFormat(d3.format(',f'))  // lineWithFocusChart
+            //chart.y2Axis.tickFormat(d3.format(',.2f')) // lineWithFocusChart
+			chart.xAxis     //Chart x-axis settings
+			  .axisLabel(xlabel)
+			  .tickFormat(d3.format(xtformat))
+                .showMaxMin(false);
+
+			chart.yAxis     //Chart y-axis settings
+			  .axisLabel(ylabel)
+			  .tickFormat(d3.format(ytformat))
+                 .showMaxMin(false);
+
+            chart.tooltip.gravity('n');
+			d3.select('#'+chart_eid+" svg")    //Select the <svg> element you want to render the chart in.   
+			  .datum(data)         //Populate the <svg> element with chart data...
+			  .call(chart);          //Finally, render the chart!
+              
+			//Update the chart when window resizes.
+			nv.utils.windowResize(chart.update); //function() { chart.update() });
+			return chart;
+          });
+        });
+
+	}
+
+    // set ROC table
+    function set_roc_table(roc_data){
+        var l_roc=roc_data[0].values;
+        var l_acc=roc_data[1].values;
+
+        
+        // format to [{"fpr":,"roc":,"acc":}]
+        var rdata = jQuery.map(l_roc , function(item, i) {
+
+            return [{"fpr":item.x.toFixed(6), "roc":item.y.toFixed(5), "acc":l_acc[i].y.toFixed(6)}];
+        });
+        
+
+        _roc_tbl=$('#_roc_list').DataTable( {
+             "data":  rdata
+            ,"columnDefs": [
+                 { "width": "33%", "targets": [0] }
+                ,{ "width": "33%", "targets": [1] }
+                ,{ "width": "34%", "targets": [2] }
+             ]
+            ,"columns": [
+                 { "data": "fpr" }
+                ,{ "data": "roc" }
+                ,{ "data": "acc" }
+            ] 
+            ,paging: false
+            ,searching: true
+            ,scrollY: 300
+            ,scrollX: false
+            ,select: 'single'
+            ,bInfo: false
+            ,"order": [[0,"asc" ],[1,"asc" ]]//Initial order (sort) to apply to the table
+            
+        });
+        
+    }
+    // load score figure
+    function add_score_chart(chart_eid){
+        var char_div=$('#'+chart_eid)
+        var xlabel=char_div.attr('xlabel');
+        var ylabel=char_div.attr('ylabel');
+        var xtformat=char_div.attr('xtformat');
+        var ytformat=char_div.attr('ytformat');
+        var url=char_div.attr('url');
+
+        d3.json(url, function(data) {
+          nv.addGraph(function() {
+            // map array into json and modify to percent
+            if (data!=null && data.length>0){
+            data =data.map(function(series) {
+                var d2=d3.format('.02f');
+                if (series != null && "values" in series){
+                    series.values = series.values.map(function(d) { 
+                        return {x: d[0] , y: d[1] } 
+                    });
+                }
+                return series;
+            });//
+            }
+
+			var chart = nv.models.multiChart()
+                .margin({left: 70,right: 100})  
+                //.useInteractiveGuideline(true)
+                .color(d3.scale.category10().range())           
+                ;
+            chart.xAxis.axisLabel(xlabel)
+                .tickFormat(d3.format(xtformat))
+                .showMaxMin(false)
+                ;
+            chart.yAxis1.axisLabel(ylabel)
+                .tickFormat(d3.format(ytformat))
+                .showMaxMin(false)
+                ;
+
+			d3.select('#'+chart_eid+' svg')    //Select the <svg> element you want to render the chart in.   
+			  .datum(data)         //Populate the <svg> element with chart data...
+			  .call(chart);          //Finally, render the chart!
+
+			//Update the chart when window resizes.
+			nv.utils.windowResize(chart.update); //function() { chart.update() });
+			return chart;
+          });
+        });    
+    }
+
+    // load mrun figure
+    function add_mrun_chart(chart_eid){
+        var char_div=$('#'+chart_eid)
+        var xlabel=char_div.attr('xlabel');
+        var ylabel=char_div.attr('ylabel');
+        var xtformat=char_div.attr('xtformat');
+        var ytformat=char_div.attr('ytformat');
+        var url=char_div.attr('url');
+
+        d3.json(url, function(data) {
+
+          nv.addGraph(function() {
+            // map array into json and modify to percent
+            data =data.map(function(series) {
+                var d2=d3.format('.02f');//d2(d[0]*100) 
+                series.values = series.values.map(function(d) { 
+
+                    return {x: d2(d[0]*100)==100?99.9999:d[0]*100 , y: d[1] } 
+                });
+                return series;
+            });//
+            
+			var chart = nv.models.multiChart()
+                .margin({left: 70,right: 100})  
+                //.useInteractiveGuideline(true)
+                .color(d3.scale.category10().range())           
+                //.interpolate('basis')
+                ;
+            chart.xAxis.axisLabel(xlabel)
+                .tickFormat(d3.format(xtformat))//function(d) {  return d3.format('.2f')(d) })
+                .showMaxMin(false)
+                ;
+            chart.yAxis1.axisLabel(ylabel)
+                .tickFormat(d3.format(ytformat))//function(d) { return d3.format('d')(d) })
+                .showMaxMin(false)
+                ;
+
+			d3.select('#'+chart_eid+' svg')    //Select the <svg> element you want to render the chart in.   
+			  .datum(data)         //Populate the <svg> element with chart data...
+			  .call(chart);          //Finally, render the chart!
+
+			//Update the chart when window resizes.
+			nv.utils.windowResize(chart.update); //function() { chart.update() });
+			return chart;
+          });
+        });    
+    }
+    function clean_mrun(id){
+        $("#sts_"+id).text("processing");
+        $("#pdate_"+id).text("tbd");
+        $("#by_"+id).text("tbd");
+        $("#mean_"+id).text("tbd");
+        $("#vari_"+id).text("tbd");
+
+    };
+
+    // load kmeans chart
+    function add_kmeans_chart(chart_eid){
+        var char_div=$('#'+chart_eid)
+        var xlabel=char_div.attr('xlabel');
+        var ylabel=char_div.attr('ylabel');
+        var zlabel=char_div.attr('zlabel');
+        var xtformat=char_div.attr('xtformat');
+        var ytformat=char_div.attr('ytformat');
+        var ztformat=char_div.attr('ztformat');
+        var url=char_div.attr('url');
+        var pwidth=char_div.attr('pwidth');
+        var pheight=char_div.attr('pheight');
+        
+        // get data by d3
+        d3.json(url, function(error, graph) {
+
+            if (graph==null){
+                return;
+            }
+
+            //raw=graph.data;
+            id_arr=graph.id
+            x_arr=graph.x
+            y_arr=graph.y
+            z_arr=graph.z
+            style_arr=graph.style
+            var arr=[];
+            var data={};
+            var dot_tooltip={}
+            var reduce=1
+            var f_count={}
+            if (x_arr.length>1999){
+                reduce=Math.floor(x_arr.length/1000);
+            }
+            // convert to json
+            for (var i in x_arr) {
+                if (reduce>1){
+                    if (f_count[style_arr[i]]==null){
+                        f_count[style_arr[i]]=1;
+                    } else {
+                        f_count[style_arr[i]]+=1;
+                    }
+                    //skip dots here
+                    if (id_arr[i]> 0 && f_count[style_arr[i]] % reduce != 1){
+                        continue;
+                    }
+                }
+                data={};
+                data["id"]=id_arr[i];
+                data["x"]=x_arr[i];
+                data["y"]=y_arr[i];
+                data["z"]=z_arr[i];
+                data["style"]=style_arr[i];
+                if (id_arr[i]<=0){
+                    data["filter"]=id_arr[i]*-1;
+                } else{
+                    data["filter"]=style_arr[i];
+                }
+                dot_tooltip[String(x_arr[i])+"_"+String(y_arr[i])+"_"+String(z_arr[i])]=id_arr[i];
+                arr.push(data);
+            }
+
+            graph_tooltips[chart_eid]=dot_tooltip
+            // with filter for animation
+            var dataset = new vis.DataSet(arr);
+            // avoid "filter" field to show all clusters
+            var ds_view = new vis.DataView(dataset, {
+                fields: ['id','x','y','z','style']
+
+            });
+            //graph_view[chart_eid]=ds_view  // tbd didn't used
+            graph_data[chart_eid]=dataset
+            drawVisualization(ds_view,chart_eid , pwidth, pheight);
+        }); //end d3.json() func
+    }//end add_kmeans_chart()
+    // Called when the Visualization API is loaded.
+    function drawVisualization(dataset, chart_eid, pwidth, pheight) {
+
+      // specify options
+      var options = {
+         width:  pwidth
+        ,height: pheight
+        ,style: 'dot-color'
+        ,showPerspective: true
+        ,showGrid: true
+        ,showShadow: true
+        ,keepAspectRatio: true
+        ,verticalRatio: 1.0
+        ,legendLabel: 'cluster number'
+        //tooltip: true,
+        ,tooltip: function (point) {
+          // parameter point contains properties x, y, z
+
+          var tip=graph_tooltips[chart_eid][String(point.x)+"_"+String(point.y)+"_"+String(point.z)]
+
+          if (tip<=0){ //cluster center
+            return 'cluster center <b>' + (tip*-1) + '</b>';
+          }else{
+            return 'cluster <b>' + point.value + '</b> id=' + tip;
+         }
+        }
+        ,cameraPosition: {
+          horizontal: -0.35,
+          vertical: 0.22,
+          distance: 1.8
+        }
+
+        ,xLabel: 'X' //1st Dimension'
+        ,yLabel: 'Y' //'2nd Dimension'
+        ,zLabel: 'Z' //'3rd Dimension'
+      };
+      //get target div by document only
+      var container = document.getElementById(chart_eid);
+      // create the graph
+      graph_list[chart_eid] = new vis.Graph3d(container, dataset, options);
+
+    }
+    //
+    function toggle_animation(g){
+        //add animation
+        if (graph_state[g]==null || graph_state[g]==1){
+            graph_state[g]=0; //start animation
+            var dataset=graph_data[g];
+            graph_list[g].setData(dataset);
+            graph_list[g].redraw()
+            graph_list[g].animationStart();
+        } 
+
+    }
+    // sample predict (force refresh to add table row)
+    function submit_task(formId, imgId, filnameId, btnId, initMsg){
+       
+        setMsgPanText(initMsg, "info",0);
+        var form = $("#"+formId);
+
+        setHideShow(imgId,"show")
+        setDisable(btnId,"true");
+        form.submit();
+        // will refresh
+        //setHideShow(imgId, "show");
+    };    
+
+    // upload predict upload only
+    function submit_upload(formId, imgId, filnameId, btnId, initMsg){
+        //'#_upload_btn_div' didn't work
+        if(!validate_highlight(null,filnameId,'#_upload_btn_div',"File name was not selected. Plesae click 'Choose File' button to select a file for predict.")) 
+           return false;        
+       
+        setMsgPanText(initMsg, "info",0);
+        var form = $(formId);
+
+        setHideShow(imgId,"show")
+        setDisable(btnId,"true");
+        form.submit();
+        // will refresh
+        //setHideShow(imgId, "show");
+    };
+
+    // hash predict 
+    function submit_hash(formId, imgId, btnId, initMsg){
+        //event.preventDefault(); 
+
+        if(!validate_highlight(null,'#_hash','#_hash_grp',"Hash was not specified. Plesae input Hash value for predict.")) 
+            return false;
+        
+        setMsgPanText(initMsg, "info",0);
+        var form = $(formId);
+
+        setHideShow(imgId,"show")
+        setDisable(btnId,"true");
+        form.submit();
+        // will refresh
+        //setHideShow(imgId, "show");
+
+    };
+    
+
+    // update table row after Ajax; TBD didn't work?
+    function postupdate_predict(data){
+        if (data.id>""){
+            //insert new row to prediction table
+            $('#pre_tbl > tbody > tr:first').after("<tr><td>"
+                    +data.id+"</td><td>"+data.filename+"</td><td>"
+                    +data.status+"</td><td>"+data.pdate+"</td><td>"
+                    +data.by+"</td><td>"+data.true_label+"</td><td>"
+                    +data.prediction+"</td>"+
+                    +"<td>View"
+                    +"</td> "               
+                    +"</tr>"
+            );
+            //TBD? force to show "view log" button 
+        //    setHideShow('._showlog_btn' ,"show");
+        }
+    }
+    function postupdate_file_record(data){
+        $("#sts_"+data.id).text(data.status);
+        $("#pdate_"+data.id).text(data.pdate);
+        $("#by_"+data.id).text(data.by);
+        $("#mean_"+data.id).text(data.mean);
+        $("#vari_"+data.id).text(data.vari);
+        // remove old mrum chart
+        d3.select("#mrun_chart svg").selectAll("*").remove();
+        //unhide
+        $("#_div_mrun").removeClass('mlhide');
+        $("#mrun_chart").removeClass('mlhide');
+        //create chart
+        add_mrun_chart('mrun_chart');
+        //set label
+        $('#_mrun_numb').text(data.src);
+    }
+    // create html for inner tables
+    function formatChildTbl ( rdata , rid) {
+        var html= '<div><table id="innerTbl_'+rid+'" cellspacing="0" width="90%" '
+        +'class="table table-striped table-bordered table-hover table-condensed table-scrollable">'
+        +'<thead><tr>'
+        +'<th>fid</th><th>absolute coefficient</th><th>+/-</th><th>count</th><th>raw string</th>'
+        +'</tr></thead><tbody>'
+        for(var i=0;i< rdata.length; i++){
+            if (! rdata[i]["feat_sample_count"]){
+                rdata[i]["feat_sample_count"]="n/a";
+            }            
+            html=html+'<tr><td>'+rdata[i]["fid"]
+                +'</td><td>'+rdata[i]["coef"]
+                +'</td><td>'+rdata[i]["sign"]
+                +'</td><td>'+rdata[i]["feat_sample_count"]
+                +'</td><td>'+rdata[i]["str"]
+                +'</td></tr>'
+        }
+        +'</tbody></table></div>';
+        return html;
+    }
+    // get data for table & inner table
+    function get_false_pred_table_data(){
+        _fp_tbl=$('#_fp_list').DataTable( {
+            "ajax": //'/atdml/api/jf/{{ document.id }}/{{ document.id }}_feat_coef.json/0/'
+            {
+            "type"   : "GET",
+            "url"    : '{% url "api_get_result_jfile" document.id "_false_pred.json" "1000,json" %}',
+            "dataSrc": function (json) {
+                      //convert into all positive
+                      for(var i=0;i< json.length; i++){
+                        //sign for feature weight
+                        if (json[i].score < 0.0){
+                            json[i].score= json[i].score * -1.0;
+                            json[i]["sign"]="-"
+                        }
+                        else json[i]["sign"]="+"
+                        // image for detail button
+                        json[i]["details"]="<span id='_img_it_"+i+"' class='img_plus_green' " + 
+                         " >&nbsp;</span>"
+                        //image for mnist
+                        if (json[i].hash.indexOf(".png")>0){
+                            json[i].hash="<img style='max-height:30px; max-width:30px;' src='/static/img/mnist/"+json[i].hash+"' />"+json[i].hash; 
+                            // link didn't work json[i].hash="<a  hurl='/static/img/mnist/"+json[i].hash+"'>"+json[i].hash+"</a>" 
+                        }
+                        // set id; tbd for hash
+                        json[i]["rid"]=i;
+                        // convert feat to json
+                        var feat_list=[]
+                        for(var key in json[i]["feat"]){
+                            var f={}
+                            f["fid"]=parseInt(key)
+                            if (json[i]["feat"][key][0]>0.0){
+                                f["coef"]=json[i]["feat"][key][0]
+                                f["sign"]="+"
+                            } else {
+                                f["coef"]=json[i]["feat"][key][0] * -1
+                                f["sign"]="-"
+                            }
+                            f["str"]=json[i]["feat"][key][1]
+                            f["feat_sample_count"]=json[i]["feat"][key][2]
+                            feat_list.push(f)
+                        }
+                        json[i]["feat"]=feat_list
+                      }// end for log
+
+                      return json; // return 
+                }
+            
+            } // end ajax
+            ,paging: false
+            ,searching: false
+            ,scrollY: 300
+            ,scrollX: false
+            //,bscrollcollapse : false
+            ,select: 'single'
+            ,bInfo: false
+            //,ordering: false //true didn't work...
+            ,"order": [[ 4, "desc" ]]//Initial order (sort) to apply to the table
+            ,"columnDefs": [
+                 { "width": "20%", "targets": [0] }
+                ,{ "width": "10%", "targets": [1] }
+                ,{ "width": "10%", "targets": [2] }
+                ,{ "width": "2%", "targets": [3] }
+                ,{ "width": "48%", "targets": [4] }
+                ,{ "width": "10%", "targets": [5] }
+
+            ]
+            //,processing:true//display of a 'processing' indicator when the table is being processed
+            //,serverSide:true// where filtering, paging and sorting calculations are all performed by a server.
+            ,"columns": [
+                 { "data": "hash" }
+                ,{ "data": "tlabel" }
+                ,{ "data": "plabel" }
+                ,{ "data": "sign" }
+                ,{ "data": "score" }
+                ,{ "data": "details" }
+            ] 
+            //,dom: 'Bfrtip'
+            //,buttons: [
+            //    {extend: 'csvHtml5', text: 'Download as CSV', className: "btn btn-primary btn-sm pull-right"}
+            //]
+
+        } )
+        ;
+    } // end get_false_pred_table_data()
+    
+</script>
+{% endblock javascript_extra %}
+

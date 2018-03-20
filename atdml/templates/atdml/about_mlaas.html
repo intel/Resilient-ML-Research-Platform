@@ -1,0 +1,140 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "base.html" %}
+
+{% load staticfiles %}
+
+{% block title %}
+    About Machine Learning as a Service
+{% endblock title %}
+
+{% block styling_extra %}
+{% endblock styling_extra %}
+
+
+
+{% block content %}       
+
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-10">
+                <h2><span class="label label-default">A Big Data Machine Learning as a Service:</span> </h2>
+            </div >
+        </div>
+        <div class="row">
+            <div class="col-md-10">
+            <div class="panel panel-default ">
+
+ 
+
+                <div class="panel-body">
+                    <h3>
+                    <ul  >
+                    <li >A scalable <strong>M</strong>achine <strong>L</strong>earning <strong>a</strong>s <strong>a S</strong>ervice (MLaaS) with Apache Spark and Hadoop.
+                    <ul>
+                        <li>Enable data owner of all skill levels to apply machine learning technology</li>
+                        <li>Allow flexible data sources: "LIBSVM" or "n-gram pattern" formats</li>
+                        <li>Visualized ML pipeline UI that guides user to generate model(s), optimize the performance and predict unknown samples</li>
+                        <li><strong>RESTful APIs</strong> enable ML pipeline automation and integration with external applications or services</li>
+                    </ul>
+                    </li>                        
+                    <li >Machine Learning Libraries and Algorithms:
+                        <ul>
+                        <li> Supervised and Unsupervised learnings: classification and clustering</li>
+                        <li>Customizable ML parameter user interface with grid search and cross validation</li>
+                        <li>Allow one dataset to exploit multiple training options</li>
+                        <li><strong>Deep Neural Network:</strong><ul>
+                            <li>Supported Theano or Tensorflow backend by Keras</li>
+                            <li>CNN/FFNN, Convolution Neural Network/FeedForward Neural Network: for image or LIBSVM data</li>
+                            <li>LSTM/RNN, Long Short-Term Memory/Recurrent Neural Network: for time series/sequential data</li> 
+                        </ul></li>
+
+                        <li ><strong>Spark MLlib: </strong><ul>
+                            <li>Classification: Linear SVM and Logistic Regression with Grid Search and Cross Validation. </li>
+                            <li>Clustering: Kmeans</li> 
+                        </ul></li>
+                        <li ><strong>SciKit-Learn: </strong><ul>
+                            <li>Classification: Linear SVM, Logistic Regression, SVM, Passive Aggressive Classifier and Perception </li>
+                            <li>Clustering: Kmeans</li> 
+                        </ul></li>
+                        
+                        <li><strong>Ensemble classifier</strong>: <ul>
+                            <li>Allow selectable multiple classifiers from different datasets</li>
+                            <li>Fast parallel processing</li>
+                        </ul></li>
+                        
+                        </ul>                    
+                    </li>
+                    <li><strong>Adversarial Machine Learning Research:</strong><ul>
+                        <li>Support pre-trained classifier/model for prediction: ImageNet/Inception or DarkNet/Yolo</li>
+                        <li>Adversarial image generation by predefined universal perturbation filter</li>
+                        <li>Fast processing: optimized by Intel KML or by GPU </li>
+                        </ul>
+                    </li>
+                    <li><strong>Android Malware Research:</strong><ul>
+                        <li>Dynamic study: link with Android Emulator Farm for APK execution and prediction</li>
+                        <li>Static study: extract static data from APK for prediction</li>
+                        </ul>
+                    </li>
+                    <li ><strong>Data format option 1:</strong> <ul>
+                        <li>Input pre-featured data as "<a href="https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/">LIBSVM</a>" format: (not for LSTM/RNN) 
+                        </li>
+                        <li>Each row for a sample</li>
+                        <li>Format for a data row:<span style='font-family: "Courier New";'>&lt;label&gt; &lt;index1&gt;:&lt;value1&gt; &lt;index2&gt;:&lt;value2&gt; …\n
+                            </span></li>
+                        <li>All data is numerical</li>
+                        <li>Each feature represented by <span style='font-family: "Courier New";'>&lt;indexN&gt;:&lt;valueN&gt;</span></li>
+                        <li>Meta Data: (optional)</li>
+                        <ul>
+                            <li>Label list:<span style='font-family: "Courier New";'>&lt;label name(string)&gt;:&lt;label(number)&gt; </span></li>
+                            <li>Feature list:<span style='font-family: "Courier New";'>&lt;feature description(string)&gt; : &lt;indexN(number)&gt;</span></li>
+                        </ul></ul> 
+                    </li>                            
+                    <li ><strong>Data format option 2:</strong> <ul>
+                        <li>Input raw data as "N-gram pattern" format with the Regular Expression pattern string specified
+                        </li>
+                        <li>Each data row for a sample. Allow "time sequence" data. e.g. execution log etc</li>
+                        <li>Each feature string for pattern matching separated by a "tab" char, <span style='font-family: "Courier New";'>"\t"</span></li>
+                        <li>Format for a data row example:<span style='font-family: "Courier New";'>&lt;label&gt;\t&lt;md5&gt;\t&lt;date&gt;\t
+                            &lt;string1 for pattern match&gt;\t&lt;string2 for pattern match&gt;\t …\n</span></li>
+                        <li>Pattern string example: <span style='font-family: "Courier New";'>'^I/AndroidATD\([ ]*[\d]+\): \[API\] <strong>(.*)</strong> \[.*'</span></li>
+                         substring(s) will be extracted as part of the feature in n-gram (e.g. highlighted in parenthesis)</li>
+                        <li>Extracted string will be hashed and n-gram-ized to the "LIBSVM" format</li>
+                        <li>Meta Data: (generated)</li>
+                        <ul>
+                            <li>Label list:<span style='font-family: "Courier New";'>&lt;label name(string)&gt;:&lt;label(number)&gt; </span></li>
+                            <li>Feature list:<span style='font-family: "Courier New";'>&lt;indexN(number)&gt; : &lt;feature description(string)&gt;</span></li>
+                        </ul>                        
+                        </ul>
+                    </li>
+
+                    </ul>
+                    </h3>
+                </div>
+            </div>
+            </div>
+        </div>
+
+
+        <div class="row">
+            <div class="col-md-10">
+                <h2><span class="label label-default">Overviews:</span> </h2>
+            </div >
+        </div>
+        <div class="row">
+            <div class="col-md-10">
+            <img class="col-md-10 img-responsive" src="{% static 'atdml/img/mlaas_arch_gpu.png' %}"  > 
+            <br />
+            </div>
+        </div>
+
+
+
+
+    <div>
+ 
+{% endblock content %}

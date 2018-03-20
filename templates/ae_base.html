@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+<html>
+    {% load staticfiles %}
+    {% load extra_tags %}
+	<head>
+		<meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewpoint" content="width=device-width, initial-scale=1">
+
+        <!-- CSS =======-->
+        {% block styling %}
+        <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap/css/bootstrap.css' %}" />
+        <link rel="stylesheet" type="text/css" href="{% static 'css/ae_base_style.css' %}" />
+        {% endblock styling %}
+
+        {% block styling_extra %}
+        {% endblock styling_extra %}
+
+        <!-- title =======-->
+		<title> 
+            {% block title %}
+                Portal for Android Emulator- AMI
+            {% endblock title %}
+        </title>	
+	</head>
+
+	<body>
+
+      <!-- Static navbar ======================================================================-->
+      <nav class="navbar" role="navigation">
+        <div class="container-fluid">     
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+              <!-- ==== Logo  ====== -->
+              <li><a id="_home_link" href="{% url 'ae_list' %}" data-toggle="tooltip"  
+                        title="Android Emulator - Anti-Malware Int.">
+                        <img  src="{% static 'img/ae_logo.png' %}" height="65" width="230" /></a></li>
+              <!--li><a href="/"></a></li-->
+            </ul>
+            <!--==== right===== -->
+            <ul class="nav navbar-nav navbar-right">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" 
+                            aria-expanded="false">Links <span class="caret"></span></a>
+                    <ul class="dropdown-menu" id="_links_dropdown" role="menu">
+                        <li><a href="/about_ae">About: Android Emulator</a></li>
+                        <li class="divider"></li>
+                        
+                        {% if user.is_authenticated %}
+                            
+                            <!-- TBD, avoid hard code -->    
+                            <!--li><a href="">xxx</a></li-->
+
+                            <li><a value="info_panel">Show Info Panel</a></li>
+                             
+                        {% endif %}
+
+                    </ul>
+                </li>
+                <li> <!-- logout user ==== -->
+                    {% if user.is_authenticated %}
+                        {% block logininfo %}
+                        <a href="/logout/">Logout {{ user }} </a>
+                        {% endblock logininfo %}
+                    {% else %}
+                        <a href="/login/">Login  </a>
+                    {% endif %}
+                </li>
+            </ul><!-- nav right -->
+
+          </div><!--/.nav-collapse -->
+        </div><!--/.container-fluid -->
+      </nav><!-- navbar ================================================================== -->
+
+      <div class="container-fluid">  <!-- msg boxes ====================================== -->    
+        <!-- success boxes ====================================== -->  
+        <div id="msg_success" class="row _msgpan_"
+            {% if not msg_success %} style="display:none" {% endif %} >
+            <div class="col-md-12">
+            <div class="alert alert-success alert-dismissible" role="alert" >
+            <img src="{% static 'img/msg_success1.png' %}" />
+            <strong><span id="msg_success_ph">{{ msg_success }}</span></strong>
+            <span id="_msg_success_timer" ></span>
+			<button type="button" class="btn btn-primary _showlog_btn" data-toggle="modal" data-target="#logModal"
+					id="_showlog_btn_s" style="display:none" onclick="show_log($('#_h_rid').val(),$('#_h_logtype').val()); ">
+			  View Log
+			</button>
+            <button type="button" class="close" onclick="$('#msg_success').hide(); ">X</button>
+            </div></div>
+        </div> 
+		<!-- info boxes ====================================== -->
+        <div id="msg_info" class="row _msgpan_"
+            {% if not msg_info %} style="display:none" {% endif %} >
+            <div class="col-md-12">
+            <div class="alert alert-info alert-dismissible" role="alert" >
+            <img src="{% static 'img/msg_info1.png' %}" />
+            <strong><span id="msg_info_ph">{{ msg_info }} </span></strong>
+            <span id="_msg_info_timer" ></span>
+			<!-- Button trigger modal -->
+			<button type="button" class="btn btn-primary _showlog_btn" data-toggle="modal" data-target="#logModal"
+					id="_showlog_btn_i" style="display:none" onclick="show_log($('#_h_rid').val(),$('#_h_logtype').val());">
+			  View Log
+			</button>
+            <button type="button" class="close" 
+                onclick="$('#msg_info').hide(); stop_timer('#_msg_info_timer');">X</button>
+            </div></div>
+        </div> 
+		<!-- error boxes ====================================== -->
+        <div id="msg_error" class="row _msgpan_"
+            {% if not msg_error %} style="display:none" {% endif %} >
+            <div class="col-md-12">
+            <div class="alert alert-danger alert-dismissible" role="alert" >
+            <img src="{% static 'img/msg_error1.png' %}" />
+            <strong><span id="msg_error_ph">{{ msg_error }}</span></strong>
+			<button type="button" class="btn btn-default _showlog_btn" data-toggle="modal" data-target="#logModal"
+					id="_showlog_btn_e" style="display:none" onclick="show_log($('#_h_rid').val(),$('#_h_logtype').val());">
+			  View Log
+			</button>
+            <button type="button" class="close" onclick="$('#msg_error').hide();">X</button>
+            </div></div>
+        </div> 
+
+        <div id="msg_warning" class="row _msgpan_"
+            {% if not msg_warning %} style="display:none" {% endif %} >
+            <div class="col-md-12">
+            <div class="alert alert-warning alert-dismissible" role="alert" >
+            <img src="{% static 'img/msg_warning1.png' %}" />
+            <strong><span id="msg_warning_ph">{{ msg_warning }}</span></strong>
+			<button type="button" class="btn btn-primary _showlog_btn" data-toggle="modal" data-target="#logModal"
+					id="_showlog_btn_w" style="display:none" onclick="show_log($('#_h_rid').val(),$('#_h_logtype').val());">
+			  View Log
+			</button>
+            <button type="button" class="close" onclick="$('#msg_warning').hide();">X</button>
+            </div></div>
+        </div> 
+        
+
+     </div> 
+ 
+		<!-- Log Modal  ====================================== -->
+		<div class="modal fade" id="logModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		  <div class="modal-dialog modal-lg">
+			<div class="modal-content">
+			  <div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="stop_log();">
+					<span aria-hidden="true">&times;</span></button>
+					
+							
+				<h4 class="modal-title" id="_logModalLabel" name="_logModalLabel"> Excution log for Id: 
+				</h4>
+					<span id="_h_rid" name="_h_rid" value="gotid?"></span>
+					<span id="_h_logtype" name="_h_logtype" value="gottype?"></span>
+					<span id="_h_lineid" name="_h_lineid" value="0"></span>
+				<img id="_prg_img_log" class="_progressCircle"  
+                            src="{% static 'img/progress.gif' %}" style="display:none" />
+                <span id="_log_timer" name='_log_timer' ></span>
+				
+			  </div>
+			  <div class="modal-body"  >
+				<textarea class="form-control logmodal" rows="25" id="_logtextbody" style="font-family: 'Lucida Console';" readonly></textarea>
+			  </div>
+			  <div class="modal-footer">
+				<button type="button" class="btn btn-primary" data-dismiss="modal"  onclick="stop_log();">Close</button>
+			  </div>
+			</div>
+		  </div>
+		</div>
+        
+		<!-- Confirm Modal  ====================================== -->
+		<div class="modal fade" id="confModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" 
+            aria-hidden="true" >
+		  <div class="modal-dialog modal-md" style="width: 30%;">
+			<div class="modal-content">
+			  <div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close" >
+					<span aria-hidden="true">&times;</span></button>
+
+				<h4 class="modal-title" id="confModalTitle" > Delete Confirmation for Id: 
+                <div id="confModalId"></div>
+				</h4>
+
+			  </div>
+			  <div class="modal-body"  >   
+                <div id="_confModalBody">
+                <p>You are about to DELETE this record, this procedure is irreversible.</p>
+                <p>Do you want to proceed?</p>
+                </div>
+			  </div>
+			  <div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal" >Cancel</button>
+				<button type="button" class="btn btn-danger btn-ok" onclick="ok_conf();">Ok</button>
+			  </div>
+			</div>
+		  </div>
+		</div><!--end confirm modal-->
+ 
+        <!-- Content  ======================================================================-->
+        <div class="container-fluid">
+            {% block content %}
+            {% endblock content %}
+        </div>     
+
+        <!-- js stuff ======================================================================-->
+        {% block javascript %}
+            <script src="{% static 'js/jquery.min.js' %}"></script>
+	        <script src="{% static 'css/bootstrap/js/bootstrap.min.js' %}"></script>	
+            <script src="{% static 'js/worker.js' %}"></script>
+			
+			<script>
+ 	$(document).ready(function(){
+	    // set text to hidden field for dropdown selection
+	    $("#_links_dropdown li a").click(function(){
+			if ($(this).text() == "Show Info Panel" ){
+				setHideShow('#msg_success', 'show')
+			}
+			
+	    });
+    });
+			</script>
+		{% endblock javascript %}
+        {% block javascript_extra %}
+        {% endblock javascript_extra %}
+	</body>
+
+</html> 

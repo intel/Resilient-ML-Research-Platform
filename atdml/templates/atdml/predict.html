@@ -1,0 +1,996 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "base.html" %}
+{% load staticfiles %}
+{% load extra_tags %}
+
+
+{% block title %}
+    Machine Learning Result
+{% endblock title %}
+
+{% block styling_extra %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/dataTables.bootstrap.min.css' %}" ></link>
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/select.jqueryui.min.css' %}" ></link>
+<link rel="stylesheet" type="text/css" href="{% static 'css/pipeline.css' %}" ></link>
+<style>
+
+</style>
+{% endblock styling_extra %}
+
+{% block content %}   
+
+<div class="container-fluid">
+  <div class="panel panel-default" id='_tbl_panel'>
+    <div class="panel-heading" style="padding-top:2px; padding-bottom:2px">
+    <h3 class="h3_packed">Prediction for <strong>DataSet Id:{% if document.train_id  %}{{ document.train_id }}, Option Id={% endif %}{{ document.id }}:
+    </strong>
+
+        <button type="button" class="close" data-toggle="collapse" data-target="#collapseOL">
+        <span class="chevron_toggleable glyphicon {% if 'image' in document.file_type %} glyphicon-chevron-down {% else %} glyphicon-chevron-up {% endif %}" 
+            data-placement="bottom" data-toggle="tooltip" title="toggle collapse/expand this panel"
+        ></span></button>
+        </h3> 
+    </div> 
+    <div class="panel-body {% if 'image' in document.file_type %} collapse {% else %} in {% endif %}" id="collapseOL" style="padding-top:2px; padding-bottom:1px">
+
+        <table class="table table-striped table-bordered table-hover table-condensed table-scrollable" >
+        <thead><tr>
+            <th >Id</th>
+            <th class="col-xs-1">Name</th>
+            <th class="col-xs-2">Type</th>
+            <th >Status</th>
+            <th class="col-xs-1">N-gram</th>
+            <th >Library</th>
+            <th >Accuracy</th>
+            <th class="col-xs-2">ML Parameters</th>
+            <th class="col-xs-2">PCA Parameters</th>
+            <th class="col-xs-2">Links</th>
+         </tr></thead>
+
+		<!-- List of uploaded documents -->
+	
+			<tr>
+                <td id="doc_id">{{ document.id  }}</td>
+				<td><!-- a href="{ document.docfile.url }"</a> -->
+                        {{ document.filename  }}</td>
+                <td id="type_{{ document.id }}">{{ document.file_type  }}</td>
+                <td id="sts_{{ document.id }}">{{ document.status  }}</td>
+                <!--td id="pdate_{{ document.id }}">{{ document.local_processed_date  }}</td-->
+                <!--td id="by_{{ document.id }}">{{ document.submitted_by  }}</td-->
+                <td id="n_gram_{{ document.id }}">{% if document.ml_n_gram == "-1"  %}
+                    N/A {% else %} {{ document.ml_n_gram  }} {% endif %}
+                
+                </td>
+                <td id="lib_{{ document.id }}">{{ document.ml_lib.title  }}</td>
+                <td>{{ document.accuracy_short  }}</td>
+                <td id="opt_{{ document.id }}"
+                >
+                {% for ki, val in jopts.items %}{{ ki.title }}:"{{ val }}" {% endfor %}
+                </td>                
+                <td id="pca_opt_{{ document.id }}"
+                >
+                {% for ki, val in pca_jopts.items %}{{ ki.title }}:"{{ val }}" {% endfor %}
+                </td>
+                <td> <a id="_vj_{{ document.id  }}" href="{% url 'job_logs' document.id %}"
+                    {% if document.status_code == 0 %}
+                        class="mlhide"
+                    {% endif %} 
+                    >Log</a>
+                    <a id="_vt_{{ document.id  }}" href="{% url 'train_opts' document.id %}"
+                    {% if document.status_code < 300 %}
+                        class="mlhide"
+                    {% endif %}
+                    >/Pipeline</a>
+                    <a id="_vf_{{ document.id  }}" href="{% url 'feature_impo_combs' document.id %}"
+                    {% if document.status_code < 1000 %}
+                        class="mlhide"
+                    {% endif %}
+                    >/Feature</a>
+                </td> 
+
+
+		    </tr>
+        </table>
+
+    </div><!--End panel-body-->
+    </div><!--End panel-->
+    
+<div class="panel panel-default" id='_list_panel'>
+  <div class="panel-heading" style="padding-top:2px; padding-bottom:2px">        
+    <h3 class="h3_packed"><strong>Source:</strong>
+    <button type="button" class="close" data-toggle="collapse" data-target="#collapseSrc">
+        <span class="chevron_toggleable glyphicon {% if 'image' in document.file_type %} glyphicon-chevron-down {% else %} glyphicon-chevron-up {% endif %}" 
+            data-placement="bottom" data-toggle="tooltip" title="toggle collapse/expand this panel"
+        ></span></button>
+    </h3>
+    </div>
+    <div class="panel-body {% if 'image' in document.file_type %} collapse {% else %} in {% endif %}" id="collapseSrc" style="padding-top:2px; padding-bottom:1px">
+ 
+        
+        <ul class="nav nav-tabs" id="_pred_src">
+    {% if 'queryxxx' in document.file_type %}
+            <li ><a class="tab_packed_bold" href="#_hashtp" data-toggle="tab" >Input Sample Hash & Retrieve</a></li>
+            <li ><a class="tab_packed_bold" href="#_sample" data-toggle="tab">Select Sample</a></li>
+    {% endif %}
+            <li ><a class="tab_packed_bold" href="#_upload" data-toggle="tab">Upload Sample</a></li>
+        </ul>
+    
+      <div id="tabContent" class="tab-content">
+    {% if 'queryxxx' in document.file_type %}
+        <div class="tab-pane" id="_hashtp"> 
+        <form 
+            id="f_hashForm"  action="{% url 'predict2' document.id %}"
+            method="post" enctype="multipart/form-data" class="form-inline"
+        >
+            {% csrf_token %}
+        <input type="hidden" id="_action_type" name="_action_type" value="hash_predict" />
+        
+        <div class="row"> 
+            <div class="col-md-3">
+                <span><h4><strong>Retrieve data and Predict:</strong></h4></span>
+            </div>
+        </div>
+        <div class="row"> 
+        <div class="col-md-10"  style="margin-bottom: 3px;">
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;">
+                <strong>Host:</strong>
+            </span> 
+            <input type="text" id="_dns" name="_dns" class="form-control" value="{{ document.db_host }}"></input>
+        </div>
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;">
+                <strong>Port:</strong>
+            </span>  
+            <input type="text" id="_port" name="_port" class="form-control _validate_hash_" value="{{ document.db_port }}" 
+                validate_rule="int gt0" >
+            </input>
+        </div>
+            <span id="_port_error_help_msg" class="help-block mlhide error_msg">Port should be greater than 0 integer</span>
+        </div>
+        </div><!--row-->
+        
+        <div class="row"> 
+        <div class="col-md-10" style="margin-bottom: 3px;">
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;;text-align:right;">
+                <strong>Database:</strong>
+            </span>  
+            <input type="text" id="_db" name="_db" class="form-control" value="{{ document.db_db }}"></input>
+        </div>
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;">
+                <strong>Collection:</strong>
+            </span>  
+            <input type="text" id="_tbl"  name="_tbl" class="form-control" value="{{ document.db_tbl }}"></input>
+        </div>
+        </div>
+        </div><!--row-->  
+        <div class="row"> 
+        <div class="col-md-10" style="margin-bottom: 3px;">
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;">
+                <strong>Username:</strong>
+            </span>
+            <input type="text" id="_username" name="_username" class="form-control" 
+                    placeholder="optional"        
+            ></input>
+        </div>
+        <div class="input-group"> 
+            <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;">
+                <strong>Password:</strong>
+            </span> 
+            <input type="password" id="_password"  name="_password" class="form-control" 
+                placeholder="optional" 
+            ></input>
+        </div>
+        </div></div>         
+        <div class="row"> 
+            <div class="col-md-7" style="margin-bottom: 3px;">
+            <div class="input-group" id="_hash_grp"> 
+                <span class="input-group-addon" align="right"  style="min-width: 100px;text-align:right;">
+                    <strong>Hash:</strong>
+                </span>  
+                <input type="text" id="_hash" name="_hash" class="form-control" style="min-width: 400px;"></input>
+            </div>                
+            </div>                
+            <div class="col-md-2"> 
+                <img id="_prg_img_hash" class="_progressCircle" 
+                            src="{% static 'img/progress.gif' %}" style="display:none" />
+                <!-- button type="submit" value="Upload" -->
+                <button type="submit" class="btn btn-primary _{{ document.id }}_" id="btn_pred"
+                     onclick="event.preventDefault(); submit_hash('#f_hashForm','#_prg_img_hash'
+                            ,'._{{ document.id }}_' 
+                            ,'Retrieve and predict data hash=['+$('#_hash').val()+'] for Id={{ document.id }}...');
+                      "
+            {{ disabled4reader }} 
+                    data-placement="bottom" data-toggle="tooltip"
+                    title='Retrieve data from db and predict'
+                                {{ disabled4reader }} 
+                            {% if 'processing' in document.status  %}
+                                disabled
+                            {% endif %}
+                >Retrieve and Predict</button>
+            <!-- formId, imgId, btnId, rid, initMsg, refreshCallback, logtype -->
+            </div> 
+            <!--<div class="col-md-2" >
+                 
+                <button type="submit" class="btn btn-default btn-sm _{{ document.id }}_" 
+                            id="btn_log_{{ document.id }}_2" name="action" value="viewlog" 
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="Go to log page"  onclick=" event.preventDefault();
+                            $('#f_predict_log').submit();
+                            "
+                >View Log</button>
+            </div>-->
+        </div><!--row--> 
+        </form>
+        </div> <!-- _hashtp pane -->
+
+        <div class="tab-pane" id="_sample">
+        <div class="row">     
+        <!-- Sample form. -->               
+            <form id="f_predict" class="form-inline"  
+                action="/atdml/predict/{{ document.id }}/"  
+                method="post">
+            {% csrf_token %}
+            <input type="hidden" id="h1_action_type" name="_action_type" value="sample_predict" />
+            <input type="hidden" id="hf_filename" name="filename" value="" />
+
+            <div class="col-md-5">
+                <h4><strong>Select a sample file for prediction (from testing dataset):</strong></h4>
+            </div>  
+            
+            <div class="col-md-3" style="padding: 10px 5px 5px 5px;">
+                <img id="prg_img_fpre" class="_progressCircle"  
+                        src="{% static 'img/progress.gif' %}" style="display:none" />                    
+                <div class="btn-group">                    
+                    <button class="btn btn-primary btn-sm dropdown-toggle _{{ document.id }}_" 
+                        type="button" id="f_list" 
+                        data-toggle="dropdown" aria-expanded="false" {{ disabled4reader }} 
+                        {% if 'processing' in document.status  %}
+                               disabled
+                        {% endif %}                        
+                    > Select & Predict
+                    <span class="caret"></span>
+                    </button>
+                    <ul id="f_list" class="dropdown-menu dropdown-menu-right scrollable-menu" role="menu" 
+                            aria-labelledby="dropdownMenu1">
+                    <!-- get first 1000 for sampling -->
+                    {% for choice in sflist|slice:"1000" %}
+                    <li role="presentation"><a role="menuitem" tabindex="-1" href="#">{{ choice }}</a></li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            </form>
+            <!--div class="col-md-2" style="padding: 10px 5px 0px 5px;">
+            <form id="f_predict_log" action="/atdml/job_logs/{{ document.id }}/"
+                    method="post"  class="form-inline">
+                {% csrf_token %}
+                <input type="hidden" id="_prd_id2" name="_prd_id" value="-1" />
+                
+                <button type="submit" class="btn btn-default btn-sm _{{ document.id }}_" 
+                            id="btn_log_{{ document.id }}" name="action" value="viewlog" 
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="Go to log page"  onclick=" event.preventDefault();
+                            $('#f_predict_log').submit();
+                            "
+                >View Log</button>
+            </form>
+            </div-->            
+        </div><!--row-->
+        </div><!--_sample pane-->
+        {% endif %}
+        
+        <div class="tab-pane {% if 'Format' in document.file_type%}active{% endif %}" id="_upload">             
+        <!-- Upload form. -->               
+            <form id="f_upload_predict" action="/atdml/predict/{{ document.id }}/"
+                method="post" enctype="multipart/form-data" class="form-inline">
+                {% csrf_token %}
+                <input type="hidden" id="_action_type" name="_action_type" value="upload_predict" />
+                <input type="hidden" id="_file_type" name="_file_type" 
+                    value="{% if 'image' in document.file_type %}{{ document.file_type }}{% else %}log{% endif %}" />
+                <input type="hidden" id="_pert_flag" name="_pert_flag" value="Y" />
+                
+                
+                {{ form.non_field_errors }}
+                <div class="row">
+                <div class="col-md-12">
+                    <h4><strong>Upload a file for prediction 
+                    {% if not 'Format' in document.file_type %}(raw data with or without gzip compressed)
+                    {% else %} ( *featured* data with or without gzip compressed){% endif %}:</strong></h4>
+                </div>
+                </div><!--row-->
+                <div class="row">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-addon"  style="min-width: 200px;text-align:right;">
+                            <strong>File:</strong>
+                        </span>
+                        <input type="text" class="form-control" id="_upload_f"  
+                            style="min-width: 500px; margin-right: 5px;font-weight: bold; cursor: pointer"
+                            placeholder="Click to select a file for upload" readonly
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="Upload a 'Log' file for prediction or a 'APK' file for execution and prediction"
+                        ></input>
+                    </div><!-- /input-group -->    
+                </div> 
+                <div class=" mlhide" id="x_upload_btn_div">
+                    {{ form.docfile }}
+                    {{ form.docfile.errors }}                    
+                    <!-- "Choose File" button-->
+                    <!--input id="id_docfile" name="docfile" type="file"  
+                        class="btn " {{ disabled4reader }} / -->
+                </div>
+                </div><!--row-->
+
+              
+        <div class="row">     
+            <div class="col-md-3 "  style="padding: 5px 5px 0px 15px">  
+                <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                    title="Select type of upload file">
+                    <span class="input-group-addon"  style="min-width: 200px;text-align:right;">
+                        <strong>Type:</strong></span>                          
+                    <div class="input-group-btn" > 
+                        <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
+                             <span id="_btn_f_type" default_val='Log' name="_btn_f_type">
+                            {% if 'image' in document.file_type %}{{ document.file_type }}{% else %}Log{% endif %}
+                             </span>&nbsp;<span class="caret"></span>
+                        </button>
+                        <ul id="_ul_f_type" class="dropdown-menu">
+                            {% if 'image' in document.file_type %}
+                            <li><a href="#">{{ document.file_type }}</a></li>
+                            {% else %}
+                            <li><a href="#">Log</a></li>
+                            <li><a href="#">APK-static</a></li>
+                            <li><a href="#">APK-dynamic</a></li>
+                            {% endif %}
+                        </ul>
+                    </div><!-- input-group-btn -->
+                </div>
+            </div> <!--end type-->                
+
+                
+                
+
+        </div><!--row-->
+
+        <div class="row">  
+            <div class="col-md-3 _n_img_ {% if 'image' in document.file_type %} mlhide {% endif %}"  
+                style="padding: 5px 5px 0px 15px">
+            <div class="input-group" id="_feat_thr" data-placement="bottom" data-toggle="tooltip"
+                    title="feature count threshold to allow to predict the label. if count is less than this number, 'not_enough_info' will be displayed.
+The default value shown is from the Featuring step"> 
+                <span class="input-group-addon"  style="min-width: 200px;text-align:right;">
+                    <strong>Feature Count Threshold</strong>
+                </span> 
+                <input type="text" id="_feat_threshold" name="_feat_threshold" class="form-control _validate_upload_" value="5" 
+                    default_val='5' validate_rule="int ge0" >
+                </input>
+
+            </div>
+            <span id="_feat_threshold_error_help_msg" class="help-block mlhide error_msg">threshold should be greater than 0 integer</span>
+            </div>
+
+            <div class="col-md-3 _img_ {% if not 'image' in document.file_type %} mlhide {% endif %}"  
+                style="padding: 5px 5px 0px 15px">  
+                <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                    title="optional to generate perturbation image">
+                    <span class="input-group-addon"  style="min-width: 200px;text-align:right;">
+                        <strong>Perturbation:</strong></span>                          
+                    <div class="input-group-btn" > 
+                        <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown">
+                             <span id="_btn_pert" default_val='Y' name="_btn_pert">Y</span>&nbsp;<span class="caret"></span>
+                        </button>
+                        <ul id="_ul_pert" class="dropdown-menu">
+                            <li><a href="#">N</a></li>
+                        </ul>
+                    </div><!-- input-group-btn -->
+                </div>
+            </div> <!--end type-->             
+            
+
+        </div><!-- row -->  
+        <div class="row">  
+          {% if 'Y' in use_recaptcha %}
+          <div class="col-md-3 " style="padding: 5px 5px 0px 15px;">
+        
+            <script src="{% get_settings_value 'GOOGLE_RECAPTCHA_JS' %}"></script>
+            <div class="g-recaptcha" data-sitekey="{% get_settings_value 'GOOGLE_RECAPTCHA_SITE_KEY' %}"></div>
+          </div>
+          {% endif %}
+          <div class="col-md-4 " style="padding: 5px 5px 0px 15px;">
+                {{ form.docfile.errors }}
+                <img id="prg_img_upload" class="_progressCircle"  
+                        src="{% static 'img/progress.gif' %}" style="display:none" />                    
+                <button type="submit" value="Upload" class="btn btn-primary btn-sm _{{ document.id }}_"
+                    name="btn_upload_predict" id="btn_upload_predict" 
+                    onclick="event.preventDefault(); submit_upload('#f_upload_predict','#prg_img_upload','#id_docfile'
+                        ,'._{{ document.id }}_' 
+                        ,'Uploading file ['+$('#id_docfile').val()+'] for Id={{ document.id }}...'); "
+                    data-placement="bottom" data-toggle="tooltip"
+                    title="Upload a file for prediction; may take some time to finish."
+                    {{ disabled4reader }} 
+                    {% if 'processing' in document.status  %}
+                        disabled
+                    {% endif %}
+                >Upload & Predict</button>
+          </div>
+        </div><!-- row -->  
+        </form>
+        </div><!--_upload file pane-->
+        
+        <!--/div><-->
+        
+      </div><!--tab-content-->
+
+  </div><!--End panel-body-->
+</div><!--End panel-->
+
+
+    
+<div class="panel panel-default" id='_list_panel'>
+  <div class="panel-heading" style="padding-top:2px; padding-bottom:2px">        
+    <h3 class="h3_packed"><strong>Result List:</strong>
+        <a style="font-size: 16px;" href="{% url 'api_get_top_predicts' document.id 1000 %}" 
+                download="{{ document.id }}_pred_list.json"
+                data-placement="bottom" data-toggle="tooltip"
+                title="download prediction result list"
+        ><span style="font-size: 16px;" class="glyphicon glyphicon-download-alt pull"></span></a>
+    <button type="button" class="close" data-toggle="collapse" data-target="#collapsePlist">
+        <span class="chevron_toggleable glyphicon {% if 'image' in document.file_type %} glyphicon-chevron-down {% else %} glyphicon-chevron-up {% endif %}" 
+            data-placement="bottom" data-toggle="tooltip" title="toggle collapse/expand this panel"
+        ></span></button>
+    </h3>
+    </div>
+    <div class="panel-body {% if 'image' in document.file_type %} collapse {% else %} in {% endif %}" 
+        id="collapsePlist" style="padding-top:2px; padding-bottom:1px">
+
+        <table class="table table-striped table-bordered table-hover table-condensed table-scrollable"
+        id = "pre_tbl" >
+
+        <thead><tr>
+            <th class="col-md-1">Id</th>
+            <th class="col-md-1">Name</th>
+            <th class="col-md-1">Label</th>
+            <th class="col-md-1">Prediction</th>
+            <th class="col-md-1">Score</th>
+            <th class="col-md-1">Status</th>
+            <th class="col-md-1">Processed Date</th>
+            <th class="col-md-1">By</th>
+
+            <!--th class="col-md-1">Host</th>
+            <th class="col-md-1">DB</th-->
+            <th class="col-md-1">Links</th>
+         </tr></thead>
+
+		<!-- List of preditions -->
+        <!--form class="form-inline" id="_f_view_log_" name="_f_view_log_"
+                        action="/atdml/job_logs/{{ document.id }}/"   predict2
+                        method="post" >
+            {% csrf_token %}
+            <input type="hidden" id="_prd_id" name="_prd_id" value="" />
+		{% if predictions %}
+			{% for prediction in predictions %}
+	
+			<tr>
+                <td>{{ prediction.id  }}</td>
+				<td><a href="{{ predition.docfile.url }}" </a>>
+                    {{ prediction.filename  }}</td>
+                <td>{{ prediction.true_label  }}</td>
+                <td>{{ prediction.prediction  }}</td>
+                <td>{{ prediction.predict_val_short  }}</td>
+                <td>{{ prediction.status  }}</td>
+                <td>{{ prediction.local_processed_date  }}</td>
+                <td>{{ prediction.submitted_by  }}</td>
+
+                <td>{{ prediction.db_host  }}</td>
+                <td>{{ prediction.db_db  }}</td>
+                <td>
+                    <button type="submit" class="btn btn-default btn-sm _{{ document.id }}_" 
+                                id="btn_log_{{ document.id }}" name="action" value="viewlog" 
+                                data-placement="bottom" data-toggle="tooltip"
+                                title="Go to log page"  onclick=" event.preventDefault();
+                                $('#_prd_id').val('{{ prediction.id }}');
+                                $('#_f_view_log_').submit();
+                                "
+                    >View</button>
+                </td>
+		    </tr>
+			{% endfor %}
+		{% endif %}
+        </form-->
+        </table>
+    </div><!--End panel-body-->
+    </div><!--End panel-->
+</div><!--End container-fluid-->
+
+
+<div class="container-fluid">  
+    <h3 class="h3_packed"><strong>Details:</strong></h3>
+  
+<div class="row">
+    <div class="panel panel-default " >
+    <div class="panel-body " style="min-height: 1000px; ">
+    <div class="tabbable boxed parentTabs">
+        <ul class="nav nav-tabs _flist_" id="_flist_">
+          {% if predictions %}
+			{% for prediction in predictions %}
+             <li class="" >
+             <a id="_lia_{{ prediction.id }}" href="#_t_{{ prediction.id }}" data-toggle="tab" value="{{ prediction.id }}"
+             class="tab_packed " fname="{{ prediction.id }}_feature_list.json">&nbsp;&nbsp;&nbsp;{{ prediction.id }}</a></li>
+			{% endfor %}
+		  {% endif %}
+        </ul>
+    </div>  <!--tabbable-->        
+    <div class="tab-content" id="_tc_">
+    
+
+          {% if predictions %}
+			{% for prediction in predictions %}
+
+              {% if prediction.file_type == "image_predict" %}
+      <div class="tab-pane"  id="_t_{{ prediction.id }}"  style="min-height: 1200px; max-height: 1200px;" >
+                <div class="row">
+                <div class="col-md-6"> <h4 class="h3_packed"><strong>Prediction of Uploaded Image:</strong></h4></div>
+                <div class="col-md-6"> <h4 class="h3_packed"><strong>Generated Adversarial Image:</strong></h4></div>
+                </div>
+                <div class="row">
+                    <img class="col-md-6 img-responsive" src="{{ MEDIA_URL }}result/{{ document.id }}/{{ prediction.id }}.png/" 
+                            style="max-height:550px; max-width:45%;"> 
+                    <img class="col-md-6 img-responsive" src="{{ MEDIA_URL }}result/{{ document.id }}/{{ prediction.id }}_pert.png/"  
+                            style="max-height:550px; max-width:45%; "> 
+                </div> 
+                
+              {% else %}
+      <div class="tab-pane"  id="_t_{{ prediction.id }}"  style="min-height: 610px; max-height: 610px;" >
+              
+          <h4 class="h3_packed"><strong>Feature List:</strong></h4>
+            <table class="table table-striped table-bordered table-hover table-condensed table-scrollable"
+            id = "_tbl_feat_{{ prediction.id }}" >
+            <thead><tr>
+                <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+            title="Feature Id">Fid</th>
+                <th class="col-md-2"" data-placement="bottom" data-toggle="tooltip"
+            title="Absolute value of coefficient/weight, combined with +/- column">Absolute Coefficient</th>
+                <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+            title="Positive/negative sign for coefficient">+/-</th>
+                <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+            title="Total sample count in whole dataset for this feature">Count</th>
+                <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+            title="Raw string of the feature before feature engineering">Raw String</th>
+                <th class="col-md-1" data-placement="bottom" data-toggle="tooltip"
+            title="List of items for N-gram">N-gram</th>
+            </tr></thead>      
+            </table>      
+              {% endif %}
+                
+      </div>
+            {% endfor %}
+		  {% endif %}      
+    </div><!--tab-content-->  
+    </div></div>
+</div><!--row-->  
+
+
+
+    <div class="container-fluid">
+    {% if document.status_code >= 0 %}
+    <label class="col-lg-4"><a href="{% url 'train_opts' document.id %}">BACK to ML Pipeline</a></label>
+    {% else %}
+    <label class="col-lg-4"><a href="{% url 'list' %}/#{{ document.id }}">BACK to Dataset List Page</a></label>
+    {% endif %}
+    </div>
+{% endblock content %}
+{% block javascript_extra %}
+<script src="{% static 'js/d3.min.js' %}"></script>
+<script src="{% static 'js/nv.d3.min.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'css/nv.d3.css' %}" />
+<style>
+.mlhide {
+    display:none
+}
+</style>
+<script src="{% static 'css/datatables/js/jquery.dataTables.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.bootstrap.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.select.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.buttons.min.js' %}" ></script>
+<!--script src="{% static 'css/datatables/js/buttons.bootstrap.min.js' %}" ></script-->
+<script src="{% static 'css/datatables/js/buttons.html5.min.js' %}" ></script>
+
+<script>
+    var pred_tbl=null;
+    var dict_feat={}
+	$(document).ready(function(){
+        //predict action for sample list dropdown
+        $('#f_list li a').click( function(){
+            var selText= $(this).text();
+            var doc_id=$("#doc_id").text();
+            $("#hf_filename").val(selText);
+            submit_sample('#f_predict','#prg_img_fpre', doc_id , '._'+doc_id+'_'  
+                ,'Processing prediction. Sample "'+selText+'" for Id='+doc_id+'...');
+        });
+        // action for file type dropdown
+        $("#_ul_f_type li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_f_type").text(sel); //display only 
+			$("#_file_type").val(sel.toLowerCase()); //hidden field
+            if (sel=="Log" || sel.match(/^APK*/)){
+                $('._img_').addClass('mlhide');
+                $('._n_img_').removeClass('mlhide');
+            } else {
+                $('._n_img_').addClass('mlhide');
+                $('._img_').removeClass('mlhide');
+            }
+
+	    }); 
+        // action for perturbation dropdown
+        $("#_ul_pert li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_pert").text(sel); //display only 
+			$("#_pert_flag").val(sel.toLowerCase()); //hidden field
+	    }); 
+        // get data for prediction list table
+        set_pred_tbl();
+        // for tab to get feature list
+        $('#_flist_ a').click(function (e) {
+          e.preventDefault();
+          //hide success pane
+          $('#msg_success').hide();
+          var id=$("#doc_id").text()
+          var pid=$(this).text().trim(); // remove spaces
+          // get pred data only when no text
+          
+          // fix ltype here for pl_nnn
+          
+          // get data for feat table if no data yet
+          var feat_tbl_id="_tbl_feat_"+pid;
+          var fname=$(this).attr("fname");
+          if ( dict_feat[pid] == null ){
+                dict_feat[pid] =fill_feat_tbl(feat_tbl_id,fname);
+          }
+          $('.tab_active').removeClass('tab_active');
+          $(this).closest("li").addClass('tab_active');
+        });
+
+        //set id to URL for back to list page
+        $("#_home_link").attr("href",$("#_home_link").attr("href")+$("#doc_id").text()+"/"); //back to option
+        
+        $("#_pred_src li a").first().click();
+
+        //set file selection for "fake" upload button
+        $('#id_docfile').on('change', function ()
+        {
+            if(this.files[0] != null) {
+                $('#_upload_f').val(this.files[0].name);
+            }
+        });
+        // action for "fake" File selection input group
+        $("#_upload_f").on('click', function ()
+        {
+            $('#id_docfile').click(); //click real file upload control
+        });  
+        // setup input validation
+        set_input_validation()
+        //toggle chevron
+        $('.chevron_toggleable').on('click', function() {
+            $(this).toggleClass('glyphicon-chevron-down glyphicon-chevron-up');
+        });
+        // click 1st tab after loading
+        $("ul._flist_ li:first-child a").click();
+        // table row onclick to select details tab
+        pred_tbl.on('click','tr',function () {
+            var row= pred_tbl.row(this);
+            var id = row.data().id;
+            //var idx = row.index();
+            $('#_lia_'+id).click();
+        } );        
+        //confirm modal for deletion
+        $('#confModal').on('show.bs.modal', function(e) {
+            var rid = $(e.relatedTarget).data('rid');
+            $('#confModalId').text(rid);  
+        })        
+    }); // end ready()
+    //Handler for input_validation #######################################
+    function set_input_validation(){ 
+        // input validation
+        $('._validate_hash_').change(function(){
+            validate_panel($(this),'hash')
+        });
+        $('._validate_upload_').change(function(){
+            validate_panel($(this),'upload')
+        });
+
+    }
+
+    // Validate user inputs per panel and disable buttons #######################################
+    function validate_panel(element, type){
+        // check both
+        var err=0;
+        // find element by id and const. str
+        var msg_eid=element.attr('id')+"_error_help_msg"
+        
+        //Disable buttons
+        if (validate_by_rule(element,$('#'+msg_eid)) ){
+            if (type=='hash')
+                $('#btn_pred').removeAttr("disabled");//enable
+            else if (type=='upload')
+                $('#btn_upload_predict').removeAttr("disabled");//enable  
+        }else { //error occur
+            if (type=='hash')
+                $('#btn_pred').attr("disabled","disabled"); // disable button
+            else if (type=='upload')
+                $('#btn_upload_predict').attr("disabled","disabled"); // disable button
+
+        }    
+    }//end validate_panel
+    
+    // get feature list for prediction
+    function fill_feat_tbl(feat_tbl_id, fname){
+        feat_tbl=$('#'+feat_tbl_id).DataTable( {
+            "ajax": //'/atdml/api/predlist/{{ document.id }}/
+           {
+            "type"   : "GET",
+            "url"    : '{% url "api_get_result_jfile4tbl" document.id %}'+fname+'/0/',
+            "dataSrc": function (json) {
+                  for(var i=0;i< json.length; i++){
+                    // sign for feature weight
+                    if (json[i].coef < 0.0){
+                        json[i].coef= json[i].coef * -1.0;
+                        json[i]["sign"]="-"
+                    }
+                    else json[i]["sign"]="+"
+                    //escape angle quote for html display
+                    if (json[i].desc.indexOf('<')>0){
+                        json[i]["desc"]=json[i].desc.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    }
+                    // set n/a if no count
+                    if (! json[i]["feat_sample_count"]){
+                        json[i]["feat_sample_count"]="n/a";
+                    }
+                  }// END for
+ 
+                  return json; // return an array
+                }
+            }
+            ,paging: false
+            ,searching: false
+            ,scrollY: 550
+            ,scrollX: false
+            //,bscrollcollapse : false
+            ,select: 'single'
+            ,bInfo: false
+            //,ordering: false //true didn't work...
+            ,"order": [[ 1, "desc" ]]//Initial order (sort) to apply to the table
+            ,"columnDefs": [
+                 { "width": "1%", "targets": [0] }
+                 ,{ "width": "15%", "targets": [1] }
+                 ,{ "width": "1%", "targets": [2] }
+                 ,{ "width": "1%", "targets": [3] }
+                 ,{ "width": "58%", "targets": [4] }
+                 ,{ "width": "25%", "targets": [5] }
+            ]
+            ,"aoColumns": [
+                { "data": "fid" },
+                { "data": "coef" },
+                { "data": "sign" },
+                { "data": "feat_sample_count" },                
+                { "data": "desc" },                
+                { "data": "ngram" }
+            ]
+            ,dom: 'Bfrtip'
+            ,buttons: [
+                {extend: 'csvHtml5', text: 'Download as CSV' 
+                 , className: "btn btn-primary btn-sm pull-right"}
+            ]
+        } );
+
+        return feat_tbl;
+    } // end fill_feat_tbl()
+    
+    // get prediction info
+    function set_pred_tbl(){
+        pred_tbl=$('#pre_tbl').DataTable( {
+            "ajax": //'/atdml/api/predlist/{{ document.id }}/
+           {
+            "type"   : "GET",
+            "url"    : '{% url "api_get_top_predicts" document.id 1000 %}',
+            "dataSrc": function (json) {
+                for(var i=0;i< json.length; i++){  
+                    var id=json[i]["id"];
+                    //var json=json.data; may modify data here
+                    if (json[i].filename!=null){ 
+                        if ( json[i].filename.indexOf(".png.libsvm")>0){ //special case for MNIST
+                        json[i].filename="<img style='max-height:30px; max-width:30px;' src='/static/img/mnist/"
+                            +json[i].filename.substring(0,json[i].filename.indexOf(".png")+4)+"' />"+json[i].filename; 
+                        } else if (json[i].filename.indexOf(".png")>0 || json[i].filename.indexOf(".jpeg")>0
+                            || json[i].filename.indexOf(".gif")>0 || json[i].filename.indexOf(".jpg")>0 ){
+                        json[i].filename="<img style='max-height:30px; max-width:30px;' src='{{ MEDIA_URL }}result/{{ document.id }}/"+json[i].id+"_ico.png/'"
+                            +"' />"+json[i].filename; 
+                            
+                        }
+                    };
+                    json[i]["DT_RowId"]="_tr_"+id;
+                }
+                return json; // return an array
+            }
+            }
+            ,paging: false
+            ,searching: true
+            ,scrollY: 450
+            ,scrollX: false
+            //,bscrollcollapse : false
+            ,select: 'single'
+            ,bInfo: false
+            //,ordering: false //true didn't work...
+            ,"order": [[ 0, "desc" ]]//Initial order (sort) to apply to the table
+            ,"columnDefs": [
+                 { "width": "1%", "targets": [0] }
+            ]
+            ,"aoColumns": [
+                { "data": "id" },
+                { "data": "filename" },
+                { "data": "true_label" },
+                { "data": "prediction" },
+                { "data": "predict_val" },
+                { "data": "status"},
+                { "data": "processed_date" },
+                { "data": "submitted_by" },
+                //{ "data": "db_host" },
+                //{ "data": "db_db" }
+                { "data": "id", "render": function(data,type,full,meta){
+                    if (full.status=="apk_queued"){ // 
+                        return  '<a href="#" id="_a_'+data+'" onClick="refresh_pred('+data+');" >Refresh</a>/'
+                            + '<a href="{% url "job_logs" document.id %}'+data+'/">Log</a>/'
+                            + '<a id="_vd_'+data+'" href="#" data-toggle="modal" data-target="#confModal" data-rid="'+data+'">Delete</a>';
+                    }
+                    else if (full.status=="ensemble predicted"){ // 
+                        return  '<a href="{% url "api" %}jf/'+data+'/'+data+'_predict_output.json/0/" download='+data+'_predict_output.json" >Download</a>/'
+                            + '&nbsp;<a href="{% url "job_logs" document.id %}'+data+'/">Log</a>/'
+                            + '<a id="_vd_'+data+'" href="#" data-toggle="modal" data-target="#confModal" data-rid="'+data+'">Delete</a>';
+                    }
+                    else {
+                        return '<a href="{% url "job_logs" document.id %}'+data+'/">Log</a>/'
+                            + '<a id="_vd_'+data+'" href="#" data-toggle="modal" data-target="#confModal" data-rid="'+data+'">Delete</a>';
+                    }
+                 } 
+                }
+            ]
+
+        } );
+        pred_tbl.on('init.dt', function () {
+                set_tbl_height();
+            } 
+        );
+    } // end set_pred_tbl()
+    
+    // delete action for confModal
+    function ok_conf(){
+        var rid=$('#confModalId').text();
+        
+        $.ajax({
+          url: '{% url "rm_data4pred" %}'+rid+'/',
+        }).success(function(data, textStatus, strErrorThrown) {
+            $('#msg_success_ph').text(data.msg);
+            setHideShow('#msg_success', 'show');
+            $('#confModal').modal('hide');
+            pred_tbl.row( '#_tr_'+rid ).remove().draw();
+            // clean up working table
+            
+        }).error(function( jqXHR, textStatus, strErrorThrown) {
+            var jobj=JSON.parse(jqXHR.responseText);
+            $('#msg_error_ph').text(jobj.msg);
+            setHideShow('#msg_error', 'show');
+            $('#confModal').modal('hide');
+        });
+        
+    }    
+    
+    // refresh DataTable
+    function refresh_pred(id){
+        // reload the whole table
+        pred_tbl.ajax.reload();
+        // ajax here
+    }
+    
+    // set table height #######################################
+    function set_tbl_height(){
+        var row_count=pred_tbl.data().length;
+        var hi=60; 
+        if (row_count <= 5){
+            hi=row_count* hi;
+            $('.dataTables_scrollBody').css('height', hi);
+        } else if (row_count > 5){
+            $('.dataTables_scrollBody').css('height', 450);
+        }
+    }
+    // sample predict (force refresh to add table row)
+    function submit_sample(formId, imgId, filnameId, btnId, initMsg){
+       
+        setMsgPanText(initMsg, "info",0);
+        var form = $(formId);
+
+        setHideShow(imgId,"show")
+        setDisable(btnId,"true");
+        form.submit();
+        // will refresh
+        //setHideShow(imgId, "show");
+    };    
+
+    // upload predict upload only
+    function submit_upload(formId, imgId, filnameId, btnId, initMsg){
+        //'#_upload_btn_div' didn't work
+        if(!validate_highlight(null,filnameId,'#_upload_btn_div',"File name was not selected. Plesae click 'Choose File' button to select a file for predict.")) 
+           return false;        
+       
+        setMsgPanText(initMsg, "info",0);
+        var form = $(formId);
+
+        setHideShow(imgId,"show")
+        setDisable(btnId,"true");
+        form.submit();
+        // will refresh
+        //setHideShow(imgId, "show");
+    };
+
+    // hash predict 
+    function submit_hash(formId, imgId, btnId, initMsg){
+        if(!validate_highlight(null,'#_hash','#_hash_grp',"Hash was not specified. Plesae input Hash value for predict.")) 
+            return false;
+        
+        setMsgPanText(initMsg, "info",0);
+        var form = $(formId);
+
+        setHideShow(imgId,"show")
+        setDisable(btnId,"true");
+        form.submit();
+        // will refresh
+        //setHideShow(imgId, "show");
+
+    };
+    
+
+    // update table row after Ajax; TBD didn't work?
+    function postupdate_predict(data){
+        if (data.id>""){
+            //insert new row to prediction table
+            $('#pre_tbl > tbody > tr:first').after("<tr><td>"
+                    +data.id+"</td><td>"+data.filename+"</td><td>"
+                    +data.status+"</td><td>"+data.pdate+"</td><td>"
+                    +data.by+"</td><td>"+data.true_label+"</td><td>"
+                    +data.prediction+"</td>"+
+                    +"<td>View"
+                    +"</td> "               
+                    +"</tr>"
+            );
+            //TBD? force to show "view log" button 
+        //    setHideShow('._showlog_btn' ,"show");
+        }
+    }
+    function postupdate_file_record(data){
+        $("#sts_"+data.id).text(data.status);
+        $("#pdate_"+data.id).text(data.pdate);
+        $("#by_"+data.id).text(data.by);
+        $("#mean_"+data.id).text(data.mean);
+        $("#vari_"+data.id).text(data.vari);
+        // remove old mrum chart
+        d3.select("#mrun_chart svg").selectAll("*").remove();
+        //unhide
+        $("#_div_mrun").removeClass('mlhide');
+        $("#mrun_chart").removeClass('mlhide');
+        //create chart
+        add_mrun_chart('mrun_chart');
+        //set label
+        $('#_mrun_numb').text(data.src);
+    }
+    
+</script>
+{% endblock javascript_extra %}
+

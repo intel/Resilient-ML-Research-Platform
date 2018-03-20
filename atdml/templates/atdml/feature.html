@@ -1,0 +1,253 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "base.html" %}
+{% load staticfiles %}
+
+
+
+{% block title %}
+    Feature Importance 
+{% endblock title %}
+
+{% block styling_extra %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/pipeline.css' %}" ></link>
+{% endblock styling_extra %}
+
+{% block content %}   
+
+<div class="container-fluid">
+  <div class="panel panel-default" id='_tbl_panel'>
+    <div class="panel-heading" style="padding-top:2px; padding-bottom:2px">
+    <h3 class="h3_packed">Feature Selection for <strong>DataSet Id={% if document.train_id %}{{ document.train_id }}, Option Id={% endif %}{{ document.id }}:
+    </strong>
+        <button type="button" class="close" data-toggle="collapse" data-target="#collapseOL">
+        <span class="chevron_toggleable glyphicon glyphicon-chevron-up" 
+            data-placement="bottom" data-toggle="tooltip" title="toggle collapse/expand this panel"
+        ></span></button>
+    </h3> 
+    </div> 
+    <div class="panel-body in" id="collapseOL" style="padding-top:2px; padding-bottom:1px">
+    
+        <table class="table table-striped table-bordered  table-condensed " >
+
+        <thead><tr>
+            <th class="col-md-1">Id</th>
+            <th class="col-md-1">Name</th>
+            <th class="col-md-1">Type</th>
+            <th class="col-md-1">Status</th>
+            <!--th class="col-md-1">Processed Date</th-->
+            <th class="col-md-1">N-gram</th>
+            <th class="col-md-1">ML Library</th>
+            <th class="col-md-3">ML Parameters</th>
+            <th class="col-md-1">Variance</th>
+            <th class="col-md-2">Links</th>
+         </tr></thead>
+	
+			<tr>
+                <td id="doc_id">{{ document.id  }}</td>
+				<td><!-- a href="{{ document.docfile.url }"</a> -->
+                        {{ document.filename  }}</td>
+                <td id="type_{{ document.id }}">{{ document.file_type  }}</td>
+                <td id="sts_{{ document.id }}">{{ document.status  }}</td>
+                <!--td id="pdate_{{ document.id }}">{{ document.local_processed_date  }}</td-->
+                <!--td id="by_{{ document.id }}">{{ document.submitted_by  }}</td-->
+                <td id="n_gram_{{ document.id }}">{% if document.ml_n_gram == "-1"  %}
+                    N/A {% else %} {{ document.ml_n_gram  }} {% endif %}
+                
+                </td>
+                <td id="lib_{{ document.id }}">{{ document.ml_lib.title  }}</td>
+                <td id="opt_{{ document.id }}"
+                >
+                {% for ki, val in jopts.items %}{{ ki.title }}:"{{ val }}" {% endfor %}
+                </td>
+                <td>{{ document.accuracy_short  }}</td>
+                <td> <a id="_vj_{{ document.id  }}" href="{% url 'job_logs' document.id %}"
+                    {% if document.status_code == 0 %}
+                        class="mlhide"
+                    {% endif %} 
+                    >Log</a>
+                    <a id="_vt_{{ document.id  }}" href="{% url 'train_opts' document.id %}"
+                    {% if document.status_code < 300 %}
+                        class="mlhide"
+                    {% endif %}
+                    >/Pipeline</a>
+                    <a id="_vp_{{ document.id  }}" href="{% url 'predict2' document.id %}"
+                    {% if document.status_code < 500 %}
+                        class="mlhide"
+                    {% endif %}
+                    >/Predict</a>                    
+
+                    <a id="_vp_{{ document.id  }}" href="{% url 'feature_impo_combs' document.id %}"
+                    {% if document.status_code < 500 %}
+                        class="mlhide"
+                    {% endif %}
+                    >/Feature</a>
+                </td>                
+		    </tr>
+        </table>
+
+    </div><!--End panel-body-->
+</div><!--End panel-->                  
+
+
+        <div class="row">
+
+        <!-- Combined table ==============================================        -->
+        <div class="col-md-6">
+
+        <form id="f_click_fid" class="form-inline"  
+            action="/atdml/{{ document.id }}/set_feature/"  
+            method="post">
+ 		{% csrf_token %}
+        <input type="hidden" id="hf_{{ document.id }}" name="action" value="vote_fid" />
+        <input type="hidden" id="hf_rid"  value="{{ document.id }}" />
+
+        <table class="table table-striped table-bordered table-hover table-condensed table-scrollable"
+            id = "fid_tbl" >
+
+        <h3><strong>Combined Feature List</strong></h3>
+        <tr>
+        <div style="padding-bottom: 5px;">
+        <img id="prg_img_click" class="_progressCircle"  
+                                src="{% static 'img/progress.gif' %}" style="display:none" /> 
+        <button class="btn btn-primary btn-sm _{{ document.id }}_" 
+                type="button" id="bclick_fid"  name="action"  value="click_fid"
+                data-placement="bottom" data-toggle="tooltip"
+                title="Select item and submit to increase the vote count. [Verified Features] only show items over certain vote count" {{ disabled4reader }} 
+                onclick="event.preventDefault(); submit_fidclick('#f_click_fid','#prg_img_click'
+                                ,'._{{ document.id }}_' 
+                                ,'Updating feature importance list for Id={{ document.id }}...'); "
+                    {{ disabled4reader }} 
+                    {% if 'processing' in document.status or no_feature == 'Y' %}
+                        disabled
+                    {% endif %}
+        > Submit Selected Feature(s)
+        </button>
+        <input type="checkbox" class="checkbox" name="to_verified" value="1">Moved to [Verified Features] list directly</input>
+        
+        
+
+        </div>
+        </tr>
+      
+        <thread><tr>
+            <th class="col-md-1">Verify Feature</th>
+            <th class="col-md-1">Feature Id</th>
+            <th class="col-md-1">Score</th>
+            <th class="col-md-1">Description</th>
+            <th class="col-md-1">Id</th>
+         </tr></thread>
+
+		<!-- List of preditions -->
+		{% if flist1 %}
+			{% for feature in flist1 %}	
+			<tr id="ck_{{ forloop.counter }}_">
+                {{ feature | safe }}
+		    </tr>
+			{% endfor %}
+		{% endif %}
+        
+
+        
+        </table>
+        </form>
+        </div> <!--col-md-6-->
+
+        <div class="col-md-6">
+        <!-- Verified table ==============================================        -->
+        <form id="f_drop_fid" class="form-inline"  
+            action="/atdml/{{ document.id }}/set_feature/"  
+            method="post">
+ 		{% csrf_token %}
+        <input type="hidden" id="hf_{{ document.id }}" name="action" value="drop_fid" />
+
+        <table class="table table-striped table-bordered table-hover table-condensed table-scrollable"
+        id = "pre_tbl" >
+
+        <h3><strong>Verified Features:</strong></h3>
+
+        <tr>
+        <div style="padding-bottom: 5px;">
+        <img id="prg_img_drop" class="_progressCircle"  
+                                src="{% static 'img/progress.gif' %}" style="display:none" /> 
+        <button class="btn btn-primary btn-sm _{{ document.id }}_" 
+                type="button" id="bclick_fid"  name="action"  value="drop_fid"
+                data-placement="bottom" data-toggle="tooltip"
+                title="Drop selected item(s) from current table" {{ disabled4reader }} 
+                onclick="event.preventDefault(); submit_fidclick('#f_drop_fid','#prg_img_drop'
+                                ,'._{{ document.id }}_' 
+                                ,'Dropping feature importance list for Id={{ document.id }}...'); "
+                {{ disabled4reader }} 
+                {% if 'processing' in document.status or no_feature == 'Y' %}
+                    disabled
+                {% endif %}
+        > Drop Selected Feature(s)
+        </button>
+        </div>
+        </tr>
+
+        <thread><tr>
+            <th class="col-md-1">Select to Drop</th>
+            <th class="col-md-1">Feature Id</th>
+            <th class="col-md-1">Vote Count</th>
+            <th class="col-md-1">Id</th>
+         </tr></thread>
+
+		<!-- List of preditions -->
+		{% if vflist %}
+			{% for feature in vflist %}
+	
+			<tr>
+                <td ><input type="checkbox" class="checkbox" name="vf_fid" value="{{ feature.fid }}"></input></td>
+                <td>{{ feature.fid }}</td>
+                <td>{{ feature.vote }}</td>
+                <td>{{ forloop.counter }}</td>
+		    </tr>
+			{% endfor %}
+		{% endif %}
+        </table>
+        </form>        
+        </div><!--col-md-6-->
+        </div> <!--row-->
+
+    </div>
+   
+
+
+
+
+    <div class="container-fluid">
+    <!--label class="col-lg-4"><a href="javascript:history.go(-1)">BACK</a></label-->
+    <label class="col-lg-4"><a href="/atdml/list/{{ document.id }}/">BACK to ML Pipeline</a></label>
+    </div>
+{% endblock content %}
+{% block javascript_extra %}
+<script>
+	$(document).ready(function(){
+        //set id to URL for back to list page
+        $("#_home_link").attr("href",$("#_home_link").attr("href")+$("#hf_rid").val()+"/0/");
+        //$("#_home_link").attr("href",$("#_home_link").attr("href")+"#"+$("#hf_rid").val()+"");
+        //toggle chevron
+        $('.chevron_toggleable').on('click', function() {
+            $(this).toggleClass('glyphicon-chevron-down glyphicon-chevron-up');
+        });        
+        
+    }); 
+    function submit_fidclick(formId, imgId, btnId, initMsg){
+        //event.preventDefault();         
+        setMsgPanText(initMsg, "info",0);
+        var form = $(formId);
+
+        setHideShow(imgId,"show")
+        setDisable(btnId,"true");
+        form.submit();
+        // will refresh
+        //setHideShow(imgId, "show");
+
+    };    
+</script>
+{% endblock javascript_extra %}
+

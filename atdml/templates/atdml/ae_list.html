@@ -1,0 +1,438 @@
+<!--
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
+-->
+{% extends "ae_base.html" %}
+{% load staticfiles %}
+{% load extra_tags %}
+
+
+{% block title %}
+    Machine Learning DataSet List
+{% endblock title %}
+
+{% block styling_extra %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/dataTables.bootstrap.min.css' %}" ></link>
+<link rel="stylesheet" type="text/css" href="{% static 'css/datatables/css/select.jqueryui.min.css' %}" ></link>
+<link rel="stylesheet" type="text/css" href="{% static 'css/pipeline.css' %}" />
+
+<style>
+
+</style>
+{% endblock styling_extra %}
+
+
+{% block content %}    
+
+        <div class="container">
+            <div class="row" id="_site_info"> 
+                <div class="col-md-10">
+                <div class="jumbotron" style="padding: 10px 20px 10px 20px; margin-bottom:15px;">
+                <button type="button" class="close" onclick="$('#_site_info').hide();">x</button>
+                  
+                    <h4>This website demos the portal for Android Emulator. It executes the uploaded APK in the emulator farm and collects its behaviour data.
+                  <a class="btn btn-default btn-xs" href="/about_ae" role="button">Learn More</a>
+                    </h4>
+                </button>
+
+                </div>
+                </div>
+
+            </div><!--row-->  
+        </div>
+ 
+        <!-- if perm > '1' --> 
+
+
+<div class="container-fluid ">  
+
+    <div class="panel panel-default">
+    <div class="panel-heading" style="padding-top:2px; padding-bottom:2px; margin-bottom:2px; margin-top:2px">
+    <div class="panel-title"><h4 style="margin: 2px 1px 2px 1px; "><strong>Upload Area for Emulator :</strong> 
+    <button type="button" class="close" data-toggle="collapse" data-target="#collapseWT"><span class="chevron_toggleable  glyphicon glyphicon-chevron-up" /></button>
+    </h4>
+    </div></div>
+    <div class="panel-body in" id="collapseWT" style="padding: 5px 10px 0px 10px"> 
+               
+       
+<div class="panel panel-default" style="padding: 5px 10px 0px 10px; margin-bottom:3px;">
+  <!--div class="panel-heading">
+    <h3 class="panel-title"><strong>Machine Learning Pipeline: </strong></h3>
+  </div-->
+<div class="panel-body" style="padding: 5px 5px 5px 5px">  
+
+<div class="tabbable boxed parentTabs">
+
+            
+    <div id="tc_all" class="tab-content" >
+          
+        <div id="_t_upload" class="tab-pane active">
+        
+         <!--  form.  -->
+		<form 
+            id="uploadForm"  action="{% url 'ae_list' %}"
+            method="post" enctype="multipart/form-data" class="form-inline"
+        >
+			{% csrf_token %}
+
+            <input type="hidden" id="hf_uploadtype" name="hf_uploadtype" value="apk"></input>
+            <input type="hidden" id="hf_train_id" name="hf_train_id" value=""></input>
+            
+          <div class="tabbable" style="padding: 5px 5px 5px 0px;">
+            <!--ul class="nav nav-tabs" >
+                <li class="active tab_bgc">
+                    <a href="#_upload"  data-toggle="tab" class="tab_packed_bold">File Upload </a></li>
+            </ul-->
+            
+            <div id="uploadtc" class="tab-content">
+         
+
+                <div class="tab-pane active" id="_upload">
+                <div class="row"> 
+                    <div class="col-md-5">
+                        {{ form.docfile.help_text }}
+                    </div>
+                    <div  class="col-md-5">{{ form.non_field_errors }}
+                    </div>
+                </div>
+                
+                <div class="row mlhide"> <!-- hidden for style-->
+                    <div class="col-md-5" id="_upload_btn_div">
+                        {{ form.docfile }} 
+                        <!--input id="id_docfile" name="docfile" type="file" class="_btn_upload_" {{ disabled4reader }}  /--> 
+                        {{ form.docfile.errors }}
+                    </div>
+                </div><!--row -->
+
+
+                
+                <div class="row " id="_f_selector" style="margin-top: 5px;">  <!-- fake upload control for style-->  
+				<div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                            <strong>APK File:</strong>
+                        </span>
+                        <input type="text" class="form-control" id="_out_f"  
+                            style="min-width: 500px; margin-right: 5px;font-weight: bold; cursor: pointer"
+                            placeholder="Click to select an APK file for upload" readonly
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="Upload hash list, raw data or featured data with libsvm format."
+                        ></input>
+                    </div><!-- /input-group -->    
+                </div>       
+                </div><!--row _f_selector -->
+
+
+                <div class="row"> 
+                    <div class="col-md-8"  style="margin-top: 5px;">
+                        <div class="input-group"> 
+                            <span class="input-group-addon"  style="min-width: 125px;text-align:right;">
+                                <strong>Description:</strong>
+                            </span>  
+                            <textarea type="text" class="form-control _query_act" rows="1" id="_desc"  name="_desc"
+                                style="min-width: 505px;font-family: 'Lucida Console'; " placeholder="description for this file"
+                                data-placement="bottom" data-toggle="tooltip"
+                                title="description for the uploaded file."
+                            ></textarea>
+                                    
+                        </div>
+                    </div>
+                </div> <!--row -->
+                
+                <div class="row">
+                      <div class="col-md-3"  style="margin-top: 5px;">
+                       <div class="input-group" data-placement="bottom" data-toggle="tooltip"
+                                title="Optional ML model id for classification 6:APK dynamic, 101:ensemble APK dynamic, 201:ensemble APK static"> 
+                        <span class="input-group-addon"  style="min-width: 125px;max-width: 125px;text-align:right;">
+                            <strong>ML Model ID:</strong>
+                        </span> 
+                        <!--input type="text" id="_n_gram" name="_n_gram" class="form-control" value="{% get_settings_value 'FEAT_N_GRAM' %}"></input-->
+                        <div class="input-group-btn" >
+                              <button id="_btn_train_id" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                 <span id="_btn_train_id_s">No Classification</span>
+                                 <span class="caret"></span>
+                              </button>
+                              <ul id="_ul_train_id" class="dropdown-menu">
+                                 <li><a href="#">No Classification</a></li>
+                                 <li><a href="#">6 Apk-Dynamic</a></li>
+                                 <li><a href="#">101 Apk-Dynamic Ensemble</a></li>
+                                 <li><a href="#">201 Apk-Static Ensemble</a></li>
+                              </ul>
+                        </div><!-- input-group-btn -->
+                       </div><!-- input-group -->
+                      </div>                
+                
+
+
+                </div> <!--row -->
+                <div class="row">
+                      {% if 'Y' in use_recaptcha %}
+                      <div class="col-md-4 " style="padding: 5px 5px 0px 15px;">
+                    
+                        <script src="{% get_settings_value 'GOOGLE_RECAPTCHA_JS' %}"></script>
+                        <div class="g-recaptcha" data-sitekey="{% get_settings_value 'GOOGLE_RECAPTCHA_SITE_KEY' %}"></div>
+                      </div>
+                      {% endif %}
+                    <div class="col-md-3" style="margin-top: 5px;"> 
+                        <img id="prg_img_upload" class="_progressCircle" 
+                                    src="{% static 'img/progress.gif' %}" style="display:none" />
+                        <!-- button type="submit" value="Upload" -->
+                        <button type="button" class="btn btn-primary _btn_upload_" id="btn_upload"
+                            onclick="event.preventDefault(); 
+                            submit_upload('#uploadForm','#prg_img_upload','#id_docfile','._btn_upload_');" 
+                            data-placement="bottom" data-toggle="tooltip"
+                            title="Upload a APK files for dynamic analysis."
+                        >Upload to Emulator</button>
+                    </div>
+                </div> <!--row -->
+                
+                </div> <!--_upload tpane-->
+            </div> <!--_t_upload tc-->
+            </div><!--_t_upload tabbable-->
+        </form><!-- upload form -->
+        </div><!--id=_t_upload tab-pane ############################################################  -->
+    </div> <!--tc_all-->      
+</div><!--tabbable boxed parentTabs-->
+
+
+
+</div><!--panel-body-->
+</div><!--panel panel-default PIPELINE -->
+</div></div> 
+</div><!--container-fluid-->
+        
+       
+        <!-- endif --> <!-- perm > 1 ################################################################ -->
+
+        <div class="container-fluid">
+        <h3 class="h3_packed"><strong>File List:</strong></h3>
+        <table class="table table-striped table-bordered table-hover table-condensed table-scrollable" 
+            id="_ds_tbl" 
+        >
+
+        <thead><tr data-placement="bottom" data-toggle="tooltip"
+            title=""
+            >
+            <!--th class="col-xs-1">Select</th-->
+            <th class="col-xs-1">Id</th>
+            <th class="col-xs-1">Name</th>
+            <th class="col-xs-1">Status</th>
+            <th class="col-xs-1">Prediction</th>
+            <th class="col-xs-1">Created Date</th>
+            <th class="col-xs-1">By</th>
+            <th class="col-xs-1">Description</th>
+            <th class="col-xs-1" data-placement="bottom" data-toggle="tooltip"
+                        title="Last processed date">Processed Date</th>
+
+
+            <th class="col-xs-1">Links:</th>
+        </tr></thead>
+        <tbody></tbody>
+
+        </table>
+        </div>
+
+{% endblock content %}
+
+    
+{% block javascript_extra %}
+<script src="{% static 'css/datatables/js/jquery.dataTables.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.bootstrap.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.select.min.js' %}" ></script>
+<script src="{% static 'css/datatables/js/dataTables.buttons.min.js' %}" ></script>
+
+    <script>
+    // dataset list
+    var _apk_list=null;
+ 
+
+
+    // TBD for file upload only #######################################
+    function submit_upload(formId, imgId, filnameId, btnId){
+        //event.preventDefault(); 
+        if(!validate_highlight(null,filnameId,'#_upload_btn_div',"File name was not selected. Plesae click 'File selection box' to select a file for upload.")) 
+           return false;        
+
+        setMsgPanText("Uploading "+$(filnameId).val()+"... ", "info",0);
+        var form = $(formId);
+
+        setHideShow(imgId,"show");// somehow it works reverse way...?
+        setDisable(btnId,"true");
+        form.submit();
+        //setHideShow(imgId, "show");
+
+    };
+
+     // Hook up actions #######################################
+	$(document).ready(function(){
+        _apk_list=$('#_ds_tbl').DataTable( {
+            "ajax": 
+           {
+            "type"   : "GET",
+            "url"    : '{% url "get_apk_list" %}',
+            "dataSrc": function (json) {
+                  for(var i=0;i< json.length; i++){
+                    var id=json[i]["id"];
+                    // links for each dataset
+                    var status=json[i]["status"];
+                    var has_zip=json[i]["has_zip"];
+                    //var has_log=json[i]["has_log"];
+                    // always show Log
+                    //if (has_log!=null && has_log!=undefined){
+                    json[i]["links"]='<a href="{% url "ae_logs4tbl" %}'+id+'/">Log</a>' 
+                    if (status=="apk_queued" || status=="submitted") {
+                        json[i]["links"]='<a href="#" id="_a_'+id+'" onClick="refresh_tbl('+id+');" >Refresh </a>/'+json[i]["links"] 
+                    }
+                    if (has_zip!=null && has_zip!=undefined) {
+                        json[i]["links"]=json[i]["links"]+'/<a href="{% url "api_download_exezip4tbl" %}'+id+'/">Download</a>' 
+                    }
+                    //del link
+                    json[i]["links"]=json[i]["links"]+'/<a id="_vd_'+id+'" href="#" data-toggle="modal" data-target="#confModal" data-rid="'+id+'">Delete</a>'
+                    // add id attr to table row
+                    json[i]["DT_RowId"]="_tr_"+id;
+                  }
+                  return json; // return an array
+                }    
+            }
+            ,paging: true
+            //,scrollCollapse: true
+            ,scrollY: 600
+            ,searching: true
+            ,scrollX: false
+            //,bscrollcollapse : false
+            ,select: 'single'
+            ,bInfo: true
+            ,"iDisplayLength": 50
+            ,"order": [[ 0, "desc" ]]//Initial order (sort) to apply to the table
+            ,"columnDefs": [
+                 { "width": "1%", "targets": [0] }
+                ,{ "width": "10%", "targets": [1] }
+                ,{ "width": "1%", "targets": [2] }
+                ,{ "width": "1%", "targets": [3] }
+                ,{ "width": "15%", "targets": [4] }
+                ,{ "width": "1%", "targets": [5] }
+                ,{ "width": "5%", "targets": [6] }
+                ,{ "width": "15%", "targets": [7] }
+                ,{ "width": "15%", "targets": [8] }
+            ]
+            ,"columns": [
+                 { "data": "id" }
+                ,{ "data": "filename" }
+                ,{ "data": "status" }
+                ,{ "data": "prediction" }
+                ,{ "data": "local_created_date" }
+                ,{ "data": "submitted_by" }
+                ,{ "data": "desc" }
+                ,{ "data": "local_processed_date" }
+                ,{ "data": "links" }
+                //,{ "data": "links" }
+                /*
+                ,{ "data": "id", "render": function(data,type,full,meta){
+                    var links="";
+                    if (full.status=="apk_queued" || full.status=="submitted"){ // 
+                        links='<a href="#" id="_a_'+data+'" onClick="refresh_tbl('+data+');" >Refresh </a>/'
+                    }
+                    // add download link
+                    if (full.status!="apk_queued" && full.status!="submitted"){ // 
+                        links=links+'<a href="{% url "api_download_exezip4tbl" %}'+data+'/">Download</a>/'
+                    } 
+                    return links+'<a href="{% url "ae_logs4tbl" %}'+data+'/">Log</a>' 
+                  }
+                 }*/
+                
+            ] 
+        } ); // End datatable    
+	    // dropdown action to set upload file type
+
+        
+        //toggle chevron
+        $('.chevron_toggleable').on('click', function() {
+            $(this).toggleClass('glyphicon-chevron-down glyphicon-chevron-up');
+        });
+        
+        var hash_rid = window.location.hash.substr(1);
+
+        // click the dataset table row by default, if id was set in hidden field
+        //auto click the row based on URL ===========
+        _apk_list.on('init.dt', function() {
+            click_the_row();
+            set_tbl_height();
+        }); 
+
+        // model id
+        $("#_ul_train_id li a").click(function(event){
+            if (event!=null && (typeof event.preventDefault === 'function'))  event.preventDefault();
+			var sel=$(this).text();
+			$("#_btn_train_id_s").text(sel); //display only
+            if (sel==="No Classification")
+                $("#hf_train_id").val("");
+            else
+                $("#hf_train_id").val(sel); // hidden field		
+	    });
+        
+        //set file selection for "fake" upload button
+        $('#id_docfile').on('change', function ()
+        {
+            if(this.files[0] != null) {
+                $('#_out_f').val(this.files[0].name);
+            }
+        });
+        // action for "fake" File selection input group
+        $("#_out_f").on('click', function ()
+        {
+            //event.preventDefault(); 
+            $('#id_docfile').click(); //click real file upload control
+        });
+        //confirm modal for deletion
+        $('#confModal').on('show.bs.modal', function(e) {
+            var rid = $(e.relatedTarget).data('rid');
+            $('#confModalId').text(rid);
+        })
+    }); // End $(document).ready()
+    
+    // click action for _apk_list.on('init.dt',)
+    function click_the_row(){
+        var hash_rid = window.location.hash.substr(1);
+  
+    }
+    // set table height #######################################
+    function set_tbl_height(){
+        var row_count=_apk_list.data().length;
+        var hi=35; 
+        if (row_count <= 10){
+            hi=row_count* hi+20;
+            $('.dataTables_scrollBody').css('height', hi);
+        } else if (row_count > 5){
+            $('.dataTables_scrollBody').css('height', 600);
+        }
+    }
+    // refresh table
+    function refresh_tbl(id){
+        _apk_list.ajax.reload();
+    }
+    // delete action for confModal
+    function ok_conf(){
+        var rid=$('#confModalId').text();
+        $.ajax({
+          url: '{% url "rm_data4pred" %}'+rid+'/',
+        }).success(function(data, textStatus, strErrorThrown) {
+            $('#msg_success_ph').text(data.msg);
+            setHideShow('#msg_success', 'show');
+            $('#confModal').modal('hide');
+            _apk_list.row( '#_tr_'+rid ).remove().draw();
+            // clean up data
+
+            
+        }).error(function( jqXHR, textStatus, strErrorThrown) {
+            var jobj=JSON.parse(jqXHR.responseText);
+            $('#msg_error_ph').text(jobj.msg);
+            setHideShow('#msg_error', 'show');
+            $('#confModal').modal('hide');
+        });
+        
+    }
+    
+
+    </script>
+{% endblock javascript_extra %}
