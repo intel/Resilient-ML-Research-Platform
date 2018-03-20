@@ -18,11 +18,11 @@ It demos adversarial ML and countermeasures.
 * Copy git folder tree to Django website folder 'myml'
 * Modify app.config, myml/settings.py, atdml/settings.py for Hadoop/Spark/web/MongoDB hostnames
 
-## Design
-### Architecture
-![arch](../master/atdml/static/atdml/img/mlaas_arch_gpu.png)
-### Software Stack
-![arch](../master/atdml/static/atdml/img/sw_stack.png)
+## Design Diagrams:
+### Architecture:
+![arch](../master/atdml/static/atdml/img/mlaas_arch_gpu.png | width=250)
+### Software Stack:
+![sw](../master/atdml/static/atdml/img/sw_stack.png | width=200)
 
 
 ## License
