@@ -22,8 +22,7 @@ It demos adversarial ML and countermeasures.
 ### Architecture:
 ![arch](../master/atdml/static/atdml/img/mlaas_arch_gpu.png | width=250)
 ### Software Stack:
-![sw](../master/atdml/static/atdml/img/sw_stack.png | width=200)
-
+<img src="../master/atdml/static/atdml/img/sw_stack.png" height="200">
 
 ## License
 This project is licensed under the Apache 2.0 
