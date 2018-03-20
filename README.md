@@ -1,8 +1,8 @@
 # Resilient-ML-Research-Platform 
 (This doc is under construction)
 
-This is a web platform to demo Machine Learning as-a Service on security researches. 
-It has machine learning (ML) pipeline to analyze data and also is a portal for backend robot to emulate uploaded binaries.
+This is a web platform to demo Machine Learning as a Service (MLaaS) on security researches. 
+It has a machine learning (ML) pipeline to analyze data and also is a portal for backend user to emulate uploaded binaries.
 It demos adversarial ML and countermeasures.
 
 ## Getting Started
@@ -11,6 +11,7 @@ It demos adversarial ML and countermeasures.
 * MongoDB
 * Scikit-Learn, Numpy, Keras and related Python packages
 * Django & SQLite
+* for Python 2.7 only
 
 ### Installing
 * Please follow the [Setup_Guide_CentOS7.pdf](Setup_Guide_CentOS7.pdf) for installation
@@ -22,6 +23,8 @@ It demos adversarial ML and countermeasures.
 
 ### Software Stack:
 <img src="../master/atdml/static/atdml/img/sw_stack.png" height="200">
+
+Note: backend robots and DNN worker are not included in this project.
 
 ## License
 This project is licensed under the Apache 2.0 
