@@ -13,21 +13,18 @@ It demos adversarial ML and countermeasures.
 * Django & SQLite
 
 ### Installing
-* Please follow the Setup_Guide_CentOS7.pdf for installation
+* Please follow the [Setup_Guide_CentOS7.pdf]("../master/Setup_Guide_CentOS7.pdf") for installation
 * Create Django project 'myml' and application 'atdml'
 * Copy git folder tree to Django website folder 'myml'
 * Modify app.config, myml/settings.py, atdml/settings.py for Hadoop/Spark/web/MongoDB hostnames
 
 ## Design Diagrams:
 ### Architecture:
-<img src="../master/atdml/static/atdml/img/mlaas_arch_gpu.png" height="250">
+<img src="../master/atdml/static/atdml/img/mlaas_arch_gpu.png" height="300">
 ### Software Stack:
 <img src="../master/atdml/static/atdml/img/sw_stack.png" height="200">
 
 ## License
 This project is licensed under the Apache 2.0 
 
-
-## Acknowledgements
-* TBD
 
