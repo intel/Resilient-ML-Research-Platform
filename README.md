@@ -17,6 +17,7 @@ It demos adversarial ML and countermeasures.
 * for Python 2.7 only
 
 ### Installing
+* (TBD) One-click installation by Docker containers...
 * Please follow the [Setup_Guide_CentOS7.pdf](Setup_Guide_CentOS7.pdf) for installation
 * Modify web files app.config, myml/settings.py, atdml/settings.py for Hadoop/Spark/web/MongoDB hostnames
 
