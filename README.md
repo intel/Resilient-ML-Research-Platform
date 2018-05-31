@@ -1,4 +1,7 @@
 # Resilient-ML-Research-Platform 
+
+[![Black Hat Arsenal](https://raw.githubusercontent.com/toolswatch/badges/master/arsenal/usa/2018.svg)](http://www.toolswatch.org/2018/05/black-hat-arsenal-usa-2018-the-w0w-lineup/)
+
 (This doc is under construction)
 
 This is a web platform to demo Machine Learning as a Service (MLaaS) on security researches. 
