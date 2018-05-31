@@ -1,4 +1,4 @@
-[![Black Hat Arsenal](https://raw.githubusercontent.com/toolswatch/badges/master/arsenal/usa/2017.svg)](http://www.toolswatch.org/2018/05/black-hat-arsenal-usa-2018-the-w0w-lineup/)
+[![Black Hat Arsenal](https://github.com/toolswatch/badges/blob/master/arsenal/usa/2018.svg)](http://www.toolswatch.org/2018/05/black-hat-arsenal-usa-2018-the-w0w-lineup/)
 
 # Resilient-ML-Research-Platform 
 
