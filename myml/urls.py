@@ -17,7 +17,7 @@ admin.autodiscover()
 
 urlpatterns = [#'',
 	url(r'^atdml/', include('atdml.urls') ),
-	url(r'^$', RedirectView.as_view(url='/atdml/ae_list/') ), 
+	url(r'^$', RedirectView.as_view(url='/atdml/list/') ), 
     
 ] 
 
@@ -54,7 +54,7 @@ urlpatterns += [
 	url(r'^logout$', logout, {'next_page': 'myml_login'}, name="myml_logout"), # point back to login page
         
 
-    url(r'.*', ae_list , name='default'),
+    url(r'.*', list , name='default'),
 
 	
 ] 

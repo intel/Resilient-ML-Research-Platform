@@ -152,7 +152,7 @@
 Starting from New Training option: Reuse featured data from dataset and try different training options   
 Starting from New Featuring: Re-feature data with different parameter and then try different training options  
 "
-                     data-toggle="dropdown" aria-expanded="true" value="xxx-dynamic">
+                     data-toggle="dropdown" aria-expanded="true" value="New Training">
                     <span id="_option_state">New Training</span>
                     <span class="caret"></span>
                 </button>
@@ -200,21 +200,21 @@ Starting from New Featuring: Re-feature data with different parameter and then t
       <div id="_t_feature" class="tab-pane ">
         <div data-placement="bottom" data-toggle="tooltip"
                 title="Feature Extraction Method :
-Predefined: Feature extraction for traditional ML, Feed-forward or Recurrent Neural Network
+Predefined: Feature extraction by N-gram for traditional ML or Deep Neural Network
 Customized: User provided custom featuring module
 ">
         <ul class="nav nav-tabs" style="margin-top: 5px;" id="_ul_fea">
-            <li class="tab_bgc _ml_tbs active" id="_li_fea">
-                <a href="#_fea_pre"  data-toggle="tab" id="_a_fea_pre" tag="predefined" class="tab_packed_bold">
-                Predefined</a></li>
-            <li class="tab_bgc _ml_tbs"  id="_li_pca_scikit">
-                <a href="#_fea_cus" data-toggle="tab" id="_a_fea_cus" tag="customized"  class="tab_packed_bold">
-                User Customized</a></li>
+            <li class="tab_bgc _ml_tbs " id="_li_fea">
+                <a href="#_fea_pre"  data-toggle="tab" id="_a_fea_pre" tag="predefined" class="tab_packed_bold"
+                >Predefined</a></li>
+            <li class="tab_bgc _ml_tbs "  id="_li_fea_cus">
+                <a href="#_fea_cus" data-toggle="tab" id="_a_fea_cus" tag="customized"  class="tab_packed_bold"
+                >Custom</a></li>
         </ul>
         </div><!--end feat method tabs-->
        <div id="_fea_methods" class="tab-content" >
        <!--=== feat pre ===-->
-       <div id="_fea_pre" class="tab-pane active">
+       <div id="_fea_pre" class="tab-pane ">
         <div class="row" id="_n_gram_row"> 
           <div class="col-md-2"  style="margin-top: 5px;">
            <div class="input-group" data-placement="bottom" data-toggle="tooltip"
@@ -324,12 +324,13 @@ Customized: User provided custom featuring module
             </span> 
             <div class="input-group-btn" >
                   <button id="_btn_ml_cust" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                     <span id="_btn_ml_cust_s">android_static</span>
+                     <span id="_btn_ml_cust_s"></span>
                      <span class="caret"></span>
                   </button>
                   <ul id="_ul_cust_feat" class="dropdown-menu">
-                     <li><a href="#">android_static</a></li>
-                     <li><a href="#">android_static2</a></li>
+                     <li><a href="#">csv</li>
+                     <li><a href="#">fsw</li>
+                     <li><a href="#">procmon</a></li>
                   </ul>
             </div><!-- input-group-btn -->
            </div><!-- input-group -->
@@ -346,8 +347,8 @@ Customized: User provided custom featuring module
                     <input type="text" class="form-control" id="_ml_cust_params" name="_ml_cust_params" 
                         style="min-width: 500px; margin-right: 5px; font-family: 'Lucida Console';" 
                         placeholder='Optional parameters in JSON format: e.g. {"n-gram":2}' 
-                        data-placement="bottom" data-toggle="tooltip"
-                        title='Optional parameters in JSON format: e.g. {"n-gram":2}' />
+                        data-placement="bottom" data-toggle="tooltip" value="{{ custom_jstr }}"
+                        title='Optional parameters in JSON format: e.g. {"n-gram":2}' ></input>
                 </div><!-- /input-group -->    
             </div>              
         </div><!--end row-->
@@ -582,8 +583,13 @@ LSTM: Long Short-Term Memory/ Recurrent Neural Network (time series data; eg. n-
                             </button>
                             <ul id="_ul_dnn_optimizer" class="dropdown-menu">
                                 <li><a href="#">Adadelta</a></li>
+                                <li><a href="#">Adagrad</a></li>
+                                <li><a href="#">Adam</a></li>
+                                <li><a href="#">Adamax</a></li>
+                                <li><a href="#">Nadam</a></li>
                                 <li><a href="#">RMSprop</a></li>
                                 <li><a href="#">SGD</a></li>
+                                <li><a href="#">TFOptimizer</a></li>
                             </ul>
                         </div><!-- input-group-btn -->
                     </div><!--input grp-->
@@ -595,12 +601,24 @@ LSTM: Long Short-Term Memory/ Recurrent Neural Network (time series data; eg. n-
                             <strong>Loss:</strong></span>                          
                         <div class="input-group-btn" > 
                             <button id="_btn_dnn_loss" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                                 <span id="_btn_dnn_loss_s" default_val='categorical_crossentropy' name="_dnn_t_loss">categorical_crossentropy</span><span class="caret"></span>
+                                 <span id="_btn_dnn_loss_s" default_val='binary_crossentropy' name="_dnn_t_loss">categorical_crossentropy</span><span class="caret"></span>
                             </button>
                             <ul id="_ul_dnn_loss" class="dropdown-menu">
-                                <li><a href="#">categorical_crossentropy</a></li>
                                 <li><a href="#">binary_crossentropy</a></li>
+                                <li><a href="#">categorical_crossentropy</a></li>
+                                <li><a href="#">sparse_categorical_crossentropy</a></li>
+                                <li><a href="#">cosine_proximity</a></li>
+                                <li><a href="#">kullback_leibler_divergence</a></li>
+                                <li><a href="#">hinge</a></li>
+                                <li><a href="#">categorical_hinge</a></li>
+                                <li><a href="#">squared_hinge</a></li>
+                                <li><a href="#">kullback_leibler_divergence</a></li>
+                                <li><a href="#">logcosh</a></li>
                                 <li><a href="#">mean_squared_error</a></li>
+                                <li><a href="#">mean_absolute_error</a></li>
+                                <li><a href="#">mean_absolute_percentage_error</a></li>
+                                <li><a href="#">mean_squared_logarithmic_error</a></li>
+                                <li><a href="#">poisson</a></li>
                             </ul>
                         </div><!-- input-group-btn -->
                     </div><!--input grp-->
@@ -635,10 +653,10 @@ LSTM: Long Short-Term Memory/ Recurrent Neural Network (time series data; eg. n-
  ,{"class_name": "Activation", "config":{"activation": "softmax", "name": "12"}}
 ]} '
                         lstm_def='{  "class_name": "Sequential", "config": [
-  {"class_name": "Embedding", "config":{"name": "01", "input_dim": 160, "output_dim": 100, "mask_zero": true}}
-, {"class_name": "LSTM", "config":{"name": "02", "input_dim": 100, "output_dim": 100, "return_sequences": false}}
-, {"class_name": "Dropout", "config": {"name": "03","p": 0.5}}
-, {"class_name": "Dense", "config": {"name": "04", "output_dim": 2}}
+  {"class_name": "Embedding", "config":{"name": "01", "input_dim": 50, "output_dim": 100, "mask_zero": true}}
+, {"class_name": "LSTM", "config":{"name": "02", "units": 100, "batch_input_shape": [null, null, 100]
+    , "dropout": 0.5, "recurrent_dropout": 0.5, "return_sequences": false}}
+, {"class_name": "Dense", "config": {"name": "04", "units": 2}}
 , {"class_name": "Activation", "config":{"name": "05", "activation": "sigmoid"}}
 ]}'
                     >
@@ -1781,6 +1799,18 @@ Distributed: calculated by Spark cluster;">
 			$("#_btn_ml_cust_s").text(sel); //display only
 			$("#hf_w_ml_cust").val(sel); // hidden field		
 	    });
+        // set action for feature mode
+	    $("#_ul_fea li a").click(function(event){
+			var sel=$(this).text();
+            //clean up data
+			if(sel=="Predefined"){
+                $("#hf_w_ml_cust").val(""); // hidden field	
+            } else {
+                // set selected value to hidden field
+                $("#hf_w_ml_cust").val($("#_btn_ml_cust_s").text()); // hidden field		
+            }
+            
+	    });
 
         // ML library tab action; library selection
 	    $("#_ul_ml_lib li a").click(function(event){
@@ -2026,15 +2056,24 @@ Distributed: calculated by Spark cluster;">
         $('#hf_w_ml_has_cv').val(data["ml_has_cv"]);
         $('#hf_w_class_numb').val(data["class_numb"]);
         $('#hf_w_ml_model').val(data["ml_model"]);
-        $('#_dnn_model').val(data["ml_model"]);
+        if (data["ml_model"] !=null && data["ml_model"]>""){
+            $('#_dnn_model').val(data["ml_model"]);
+        }
         $('#learning_algorithm').val(data["ml_alg"]);
         $('#hf_w_sts_cde').val(sts_cde); // for GUI colors
+        $('#hf_w_ml_cust_params').val(data["ml_feat_opts"]);
+        // for custom feature
+        if (data["ml_feat_opts"] !=null && data["ml_feat_opts"]>""){
+            jo=JSON.parse(data["ml_feat_opts"]);
+            $('#hf_w_ml_cust').val(jo["custom"]);
+        } else {
+            $('#hf_w_ml_cust').val("");
+        }
 
         if (data["mrun_numb"]>"" && data["mrun_numb"] !="None" )
             $('#_mrun_numb').val(data["mrun_numb"]);
         else
             $('#_mrun_numb').val("");
-
 
         //set 'checked' image
         var active_img=$(".img_checked");
@@ -2045,14 +2084,13 @@ Distributed: calculated by Spark cluster;">
         $("#_img_"+id).addClass("img_checked");//set img src in css didn't work for IE/Firefox...
         $("#_img_"+id).attr("src",img_checked)
 
-
-
         set_all_tabs(sts_cde);//chg color for tabs
         click_next_tab(sts_cde); //auto click tab based on status
         set_4_special_type(sts_cde);//for special types
         set_pca_options(sts_cde);//load value to pca
         toggle_pca_button(); // enable or disable pca button
         set_training_options(sts_cde); //load value to all options
+        set_featuring_options(sts_cde);//load value to featuring pane
         //save id to URL for BACK button
         document.location.hash = $("#hf_w_oid").val();
         $("#oid").text(id); //set title label
@@ -2116,6 +2154,38 @@ Distributed: calculated by Spark cluster;">
             $('#_pca_k').val($('#_pca_k').attr('default_val')); //clean up
         }        
     
+    }
+    // Load all featuring options to UI #######################################
+    function set_featuring_options(sts_cde){
+        // get opts from hidden field
+        var opts=$("#hf_w_ml_cust_params").val();
+        var cust=$("#hf_w_ml_cust").val();
+        var ngram=$("#_btn_n_gram_s").text();
+
+        if (cust==null || cust=="" || cust=="Predefined" || cust=="predefined"){
+       
+            // set values
+            $('#_btn_n_gram_s').val(ngram); 
+                // $('#_feat_threshold').val(ngram);
+                //$('#_filter_ratio').val("");
+                
+            //clean up
+            $('#_btn_ml_cust_s').text("");
+            $('#_ml_cust_params').val("");
+            // click _li_fea.a tab
+            $('#_a_fea_pre').trigger("click");
+        } else {
+        
+            // set values custom featuring
+            $('#_btn_ml_cust_s').text(cust);
+            $('#_ml_cust_params').val(opts);
+            
+            //clean up
+            $('#_btn_n_gram_s').text("");
+            // click tab
+            $('#_a_fea_cus').trigger("click");
+        }
+        
     }
     // Load all training options to UI #######################################
     function set_training_options(sts_cde){
@@ -2506,6 +2576,8 @@ Distributed: calculated by Spark cluster;">
         var id=data.id; 
         var tdata=opt_list_tbl.row("#"+id).data();       
         var sts_cde=data.status_code;
+//alert("before");
+//console.log(data);
         //dataset table
         //$("#sts_"+data.id).text(data.status);
       
@@ -2519,6 +2591,8 @@ Distributed: calculated by Spark cluster;">
         tdata.ml_pca_opts=data.ml_pca_opts;
         tdata.ml_alg=data.ml_alg;
         tdata.ml_has_cv=data.ml_has_cv;
+        tdata.ml_feat_opts=data.ml_feat_opts
+        
         tdata.accuracy_short=data.accuracy_short;
         tdata.mrun_numb=data.mrun_numb;
         tdata.pattern=data.pattern;

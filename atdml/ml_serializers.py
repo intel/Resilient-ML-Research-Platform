@@ -7,7 +7,7 @@
 #from rest_framework import serializers
 #from atdml.models import *
 
-#============================================================= Doc2json ==================
+#==== EOLed ... ========================================================= Doc2json ==================
 def doc2json(documents):        
     ret=[]
     for doc in documents:
@@ -24,9 +24,12 @@ def doc2json(documents):
         jd['status_code']=doc.status_code
         jd['submitted_by']=doc.submitted_by
         jd['class_numb']=doc.class_numb
+        
         jd['ml_n_gram']=doc.ml_n_gram
         jd['ml_lib']=doc.ml_lib
         jd['ml_opts']=doc.ml_opts
+        jd['ml_feat_opts']=doc.ml_feat_opts
+        
         jd['db_host']=doc.db_host
         jd['db_port']=doc.db_port
         jd['db_db']=doc.db_db

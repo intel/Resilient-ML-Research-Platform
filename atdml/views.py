@@ -105,7 +105,7 @@ def api_get_pred(request,rid):
 @login_required
 #============================================================= api_get_model ==================
 def api_get_model(request,rid):
-    print "in api_get_optlist, user=", request.user
+    print "in api_get_model, user=", request.user
     uname,grp,perm,disabled4reader=get_perm(request)
     return _api.get_model(request, rid, perm,disabled4reader)
     
@@ -335,34 +335,49 @@ def get_gdata(request, rid, gname, tick=None):
             # find last line
             with open(log_fname, "rb") as f:
                 last_ln = f.readline()
-                #seek(offset, from 2=end of file)
-                f.seek(-2, 2)
-                while f.read(1) != b"\r":
-                    try: # from current
-                        f.seek(-2, 1)
-                    except:
-                        pass
-                last_ln = f.readline()
-                # found the state row
-                if "ETA:" in last_ln and "loss:" in last_ln:
-                    epoch_state=last_ln
-                    f.seek(-2, 1)
-                    # find prior 2nd \n
-                    while f.read(1) != b"\n":
-                        f.seek(-2, 1)
-                    f.seek(-2, 1)
-                    while f.read(1) != b"\n":
-                        f.seek(-2, 1)
-                    # read the "Epoch n/n" line 
-                    epoch_cnt = f.readline()
-                    #print "epoch_cnt=",epoch_cnt
-                    if "Epoch " in epoch_cnt:
-                        epoch_state=epoch_cnt.replace("\n",": ")+epoch_state
+                #print "1st_ln=",last_ln
+                #find last line "ETA"; seek(offset, from 2=end of file; SEEK_SET=0 SEEK_CUR=1 SEEK_END=2)
+                f.seek(-2, os.SEEK_END)
+                leng=0
+                # find prior \n
+                while f.tell() > 0:
+                    if leng>0: 
+                        f.seek((-leng-2),os.SEEK_CUR)
+                        
+                    #print f.tell()
+                    while f.read(os.SEEK_CUR) != b"\n":
+                        f.seek(-2, os.SEEK_CUR)
+                    last_ln=f.readline()
+                    leng=len(last_ln)
+                    if "ETA:" in last_ln and "loss:" in last_ln:
+                        #print last_ln
+                        
+                        epoch_state=last_ln
+                        # end at beginning of file
+                        while f.tell() > 0:
+                            if leng>0: 
+                                f.seek((-leng-2),os.SEEK_CUR)
+                            #find prior line
+                            while f.read(os.SEEK_CUR) != b"\n":
+                                f.seek(-2, os.SEEK_CUR)
+                            epoch_cnt=f.readline()
+                            leng=len(epoch_cnt)
+                            if 'Epoch ' in epoch_cnt:
+                                epoch_state=epoch_cnt.replace("\n",": ")+epoch_state
+                                #print "epoch_state=",epoch_state
+                                break
+                        break
+                    # end IF
+                # end while
+            # end with
+        # end IF
+
+        # get points for graph
         try:
             fname=os.path.join(result_folder,str(rid),str(rid)+'_logger.csv')
             #print "cnn fname=",fname
             with open(fname) as log_file:
-                #print "in dnn"
+                #print "in dnn=",fname
                 title=None
                 cnt=0
                 for line in log_file:

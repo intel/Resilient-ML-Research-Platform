@@ -4,7 +4,7 @@
 #
 #SPDX-License-Identifier: Apache-2.0
 '''
-
+# TBD for review/clean up
 # python libraries
 import os
 import os.path
@@ -60,6 +60,7 @@ training_portion = eval(config.get("machine_learning","training_portion"))
 mtx_name_list = config.get("machine_learning","mtx_name_list")
 mtx_libsvm = config.get("machine_learning","mtx_libsvm")
 mtx_stat = config.get("machine_learning","mtx_stat")
+hdfs_file_name = 'libsvm_data'
 
 def data_seperation_date(name_l):
     date_list = []
@@ -215,10 +216,23 @@ def feat_importance_2way(row_id_str, ds_id, hdfs_feat_dir, score_file_IT, score_
     #print "hash_Folders=",hash_Folders
     folder_list = [x.encode('UTF8') for x in hash_Folders]
     #print "INFO: dirFile_loc=",dirFile_loc,", folder_list=",folder_list
-        
-    row_num_training = 0
-
     
+    # source libsvm filename  
+    libsvm_data_file = os.path.join(hdfs_feat_dir , hdfs_file_name)
+    print "INFO: libsvm_data_file=", libsvm_data_file
+    
+    # load sample RDD from text file   
+    #samples_rdd, feature_count = zip_feature_util.get_sample_rdd(sc, libsvm_data_file, feature_count \
+    #    , excluded_feat_cslist=None)
+    samples_rdd=sc.textFile(libsvm_data_file).cache()
+
+    # collect all data to local for processing ===============
+    all_data = samples_rdd.collect()
+    all_list = [ ln.split(' ') for ln in all_data ]
+    sample_count=len(all_data)
+    
+    
+    row_num_training = 0
     sample_numbers = []
     sparse_mtx_list = []
     features_list = []
@@ -226,18 +240,21 @@ def feat_importance_2way(row_id_str, ds_id, hdfs_feat_dir, score_file_IT, score_
     col_list = []
     max_feat_list = []
     
-    for folder in folder_list:
+    # loop through hdfs folders; TBD 
+    for idx, folder in enumerate(folder_list):
         print "INFO: folder:", folder
         label = folder_list.index(folder) + 1
         print 'INFO: label=', label
+        
         # md5 list
-        logFile_name = os.path.join(hdfs_feat_dir,folder, mtx_name_list)
+        #logFile_name = os.path.join(hdfs_feat_dir,folder, mtx_name_list)
         # libsvm data
-        logFile_data = os.path.join(hdfs_feat_dir, folder, mtx_libsvm)
+        #logFile_data = os.path.join(hdfs_feat_dir, folder, mtx_libsvm)
         #logFile_data = hdfs_feat_dir + folder + mtx_stat
         #print "INFO: logFile_name=",logFile_name
         #print "INFO: logFile_data=",logFile_data
 
+        '''
         logNames = sc.textFile(logFile_name).cache()
         logData = sc.textFile(logFile_data).cache()
         
@@ -247,13 +264,19 @@ def feat_importance_2way(row_id_str, ds_id, hdfs_feat_dir, score_file_IT, score_
         feature_l = [x.encode('UTF8') for x in data]
         name_list = [names.strip() for names in name_l]
         feature_list = [features.strip() for features in feature_l]
-
+        '''
+        feature_list = [ l[2:] for l in all_list if int(l[1])==idx]
+        # hash array
+        name_list = [ l[2] for l in all_list if int(l[1])==idx ]
+        #print "feature_list=",feature_list
+        #print "name_list=",name_list
+        
+        
         num_names = len(name_list)
         sample_numbers.append(num_names)
         print 'INFO: sample_numbers=', sample_numbers
         print 'INFO: name_list count=', num_names
 
-        
         ########generate list for csc_matrix creation #########
         i = 0;
         
@@ -266,8 +289,9 @@ def feat_importance_2way(row_id_str, ds_id, hdfs_feat_dir, score_file_IT, score_
 
             features = feature_list[i]
             
-            features = features.strip()
-            feature_array = features.split(' ')
+            #features = features.strip()
+            #feature_array = features.split(' ')
+            feature_array=features
             labels_training.append(label)
             
             length = len(feature_array)
@@ -374,7 +398,8 @@ def feat_importance_2way(row_id_str, ds_id, hdfs_feat_dir, score_file_IT, score_
         for ii in range (0, len(sorted_score)):
             (feat, score) = sorted_score[ii]
             #print feat, score, dic_all_columns[feat]
-                        
+            description_str=""
+            
             str01 = str(feat)+"\t"+str(score)+"\t"+description_str+"\n"
             with open(score_file_prob, "a") as f:
                 f.write(str01)
@@ -434,7 +459,7 @@ def feat_importance_2way(row_id_str, ds_id, hdfs_feat_dir, score_file_IT, score_
         
         for ii in range (0, len(sorted_IT_gain)):
             (feat, score) = sorted_IT_gain[ii]
-                        
+            description_str=""           
             str01 = str(feat)+"\t"+str(score)+"\t"+description_str+"\n"
             with open(score_file_IT, "a") as f:
                 f.write(str01)

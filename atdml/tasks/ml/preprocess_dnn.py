@@ -197,6 +197,9 @@ def preprocess(row_id_str, ds_id, hdfs_feat_dir, local_out_dir, ml_opts_jstr #, 
     , dnn_data_suffix=config.get("machine_learning","dnn_data_suffix")
     , dnn_label_suffix=config.get("machine_learning","dnn_label_suffix")
     , dnn_info_suffix=config.get("machine_learning","dnn_info_suffix")
+	# add param for chunk size, multivariant etc.
+	#     , cust_featuring=None, cust_featuring_params=None
+	
     ): 
  
     ### generate data folder and out folder, clean up if needed

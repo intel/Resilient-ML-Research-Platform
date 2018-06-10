@@ -9,11 +9,14 @@ import os
 #import mongoengine
 
 # upload control for prediction
-RECAPTCHA_PREDICT="Y"
+# need to setup your RECAPTCHA from google
+RECAPTCHA_PREDICT="N"
 RECAPTCHA_URL='https://www.google.com/recaptcha/api/siteverify'
-PROXY='?'
-LIMIT_UPLOAD_PREDICT="Y"
-LIMIT_UPLOAD_DATASET="Y"
+# ? optional
+PROXY=''
+# limit the upload file count for predition or dataset
+LIMIT_UPLOAD_PREDICT="N"
+LIMIT_UPLOAD_DATASET="N"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -43,9 +46,6 @@ EXEC_PRED_FOLDER='/home/django/nfs/prediction'
 EXEC_LOG_FNAME='*.only.log.xposed'
 TMP_DATA_DIR=MEDIA_ROOT+'/tmpdata'
 PREPROC_DEC_DIR=TMP_DATA_DIR
-# for HDFS
-FEATURE_DES_DIR='/user/hadoop/upload'
-HDFS_RETR_DIR='/user/hadoop/upload/data_retrieved'
 
 TASK_EXE='/bin/bash'
 HDFS_SCRIPT=BASE_DIR+'/'+APP_NAME+'/tasks/hdfs_util.sh'
@@ -115,10 +115,15 @@ STS_900_PREDICT=900
 STS_1000_FEATURE_IMPO=1000
 
 # for links in menu bar <<******************
-HDFS_STATUS_URL="http://?hdfs dns:50070/explorer.html#/path2/dir"
-SPARK_STATUS_URL="http://?spark dns:8080/"
+# ?
+HDFS_STATUS_URL="http://localhost:50070/explorer.html#/path2/dir"
+SPARK_STATUS_URL="http://localhost:8080/"
+# for HDFS
+FEATURE_DES_DIR='/user/hadoop/upload2'
+HDFS_RETR_DIR='/user/hadoop/upload2/data_retrieved'
 # for input dataset; for web only
-MONGO_DNS="?mongo in dns"
+#  optional data source
+MONGO_DNS="mongodb"
 MONGO_PORT=27017
 MONGO_DB="?tbdsource"
 MONGO_TBL="?table"
@@ -129,7 +134,7 @@ MONGO_IN_ST_FL='{"?":{"$exists":1}}'
 FEATURE_N_GRAM=2
 
 # for output data; for web only
-MONGO_OUT_DNS="?mongo outdns"
+MONGO_OUT_DNS="mongodb"
 MONGO_OUT_PORT=27017
 MONGO_OUT_DB="myml"
 MONGO_OUT_TBL="dataset_info"
@@ -141,7 +146,7 @@ MONGO_OUT_PWD=""
 # See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret! <<******************
-SECRET_KEY = '?? key string'
+SECRET_KEY = 'plEasE sEt kEY h323!'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -234,6 +239,7 @@ LOGIN_REDIRECT_URL = 'default'
 ALLOWED_HOSTS = ['*']
 
 # GOOGLE_RECAPTCHA <<******************
-GOOGLE_RECAPTCHA_SECRET_KEY = '?se key'
-GOOGLE_RECAPTCHA_SITE_KEY = '?si key'
+# ?
+GOOGLE_RECAPTCHA_SECRET_KEY = 'your recaptcha secret key'
+GOOGLE_RECAPTCHA_SITE_KEY = 'your recaptcha site key'
 GOOGLE_RECAPTCHA_JS = 'https://www.google.com/recaptcha/api.js'

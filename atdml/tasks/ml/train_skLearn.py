@@ -125,10 +125,10 @@ def main():
         hdfs_feat_dir = args.folder
     else:
         hdfs_feat_dir  = config.get('app', 'HADOOP_MASTER')+'/user/hadoop/hdfs_feat_dir'
-    #if args.name:
-    #    file_name_given = args.name
-    #else:
-    #    file_name_given  = 'aaaa'
+    if args.name:
+        hdfs_file_name = args.name
+    else:
+        hdfs_file_name = 'libsvm_data'
     if args.out:
         local_out_dir = args.out
     else:
@@ -190,7 +190,7 @@ def main():
 
     return train(row_id_str, ds_id, hdfs_feat_dir, local_out_dir, ml_opts_jstr, excluded_feat_cslist
     , args.sp_master,config.get('spark', 'spark_rdd_compress'),config.get('spark', 'spark_driver_maxResultSize'), args.exe_memory, args.core_max
-    , zipout_dir, zipcode_dir, zip_file_name
+    , zipout_dir, zipcode_dir, zip_file_name, hdfs_file_name
     , mongo_tuples, labelnameflag, fromweb
     , training_fraction, 'train_sklearn:'+row_id_str, model_data_folder , random_seed=config.get('machine_learning', 'random_seed'))
     
@@ -198,7 +198,7 @@ def main():
 # ================================================================================== train () ============ 
 def train(row_id_str, ds_id, hdfs_feat_dir, local_out_dir, ml_opts_jstr, excluded_feat_cslist
     , sp_master, spark_rdd_compress, spark_driver_maxResultSize, sp_exe_memory, sp_core_max
-    , zipout_dir, zipcode_dir, zip_file_name
+    , zipout_dir, zipcode_dir, zip_file_name, hdfs_file_name
     , mongo_tuples, labelnameflag, fromweb
     , training_fraction, jobname, model_data_folder , random_seed=None ): 
     
@@ -238,7 +238,7 @@ def train(row_id_str, ds_id, hdfs_feat_dir, local_out_dir, ml_opts_jstr, exclude
     print "INFO: excluded_feat_cslist=",excluded_feat_cslist
 
     # source libsvm filename  
-    libsvm_data_file = os.path.join(hdfs_feat_dir , "libsvm_data")
+    libsvm_data_file = os.path.join(hdfs_feat_dir , hdfs_file_name)
     print "INFO: libsvm_data_file=", libsvm_data_file
 
     # load feature count file

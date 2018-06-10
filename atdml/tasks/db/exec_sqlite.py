@@ -9,15 +9,16 @@
 import os
 import os.path
 import sys, ConfigParser
-from argparse import ArgumentParser
-
-#####import for django database####
+import mysql.connector
 import sqlite3
+from argparse import ArgumentParser
 
 CONF_FILE='../../app.config' # at the base dir of the web
 config=ConfigParser.ConfigParser()
 config.read(CONF_FILE)
+# the flag to use sqlite or mysql if empty
 DEFAULT_SQLITE=config.get('app', 'DEFAULT_SQLITE') #"/home/django/myml/db.sqlite3"
+conn_params={}
 
 def main():
     parser = ArgumentParser(description=__description__)
@@ -25,6 +26,7 @@ def main():
     parser.add_argument("-s", "--str_sql", type=str, metavar="sql command", help="sql command string", required=False)
     args = parser.parse_args()
 
+    sqlite_file=None
     if args.sqlite_file:
         sqlite_file = args.sqlite_file
     else:
@@ -33,19 +35,98 @@ def main():
         str_sql = args.str_sql
     else:
         str_sql  = None
+    
+    if sqlite_file == "" or sqlite_file is None:
+        conn_params["host"]=config.get('mysql', 'ip_address')
+        conn_params["port"]=config.get('mysql', 'port')
+        conn_params["db"]=config.get('mysql', 'db_name')
+        conn_params["username"]=config.get('mysql', 'username')
+        conn_params["password"]=config.get('mysql', 'password')
         
     #print "INFO: sqlite_file=",sqlite_file
     #print "INFO: str_sql=",str_sql
+    #print "INFO: conn_params=",conn_params
 
+    conn, type=get_conn(sqlite_file,conn_params)
+    ret=0
+    #print "conn=",conn,",type=",type
     # call func
-    return exec_sql(str_sql,sqlite_file)
+    ret=exec_sql(str_sql,conn, type)
+    #ret=query_db(str_sql,conn, type)
+    #a,b=get_dict("3",conn, type)
+    #print "a=",a,",b=",b
+    #print "ret=",ret
+    return ret
+
+# get connection: return conn and type
+def get_conn(sqlite_file=DEFAULT_SQLITE, in_params=None):
+    #print "XXXXXXXXXXXXXXXXXX in get_conn()"
+    if sqlite_file == "" or sqlite_file is None:
+        if in_params is None:
+            in_params={}
+            in_params["host"]=config.get('mysql', 'ip_address')
+            in_params["port"]=config.get('mysql', 'port')
+            in_params["db"]=config.get('mysql', 'db_name')
+            in_params["username"]=config.get('mysql', 'username')
+            in_params["password"]=config.get('mysql', 'password')
+        if in_params is None or len(in_params)==0:
+            return None
+    # for sqlite
+    if sqlite_file and sqlite_file>"":
+        try:
+            conn = sqlite3.connect(sqlite_file)
+            return conn, "sqlite"
+        except:
+            print "ERROR: Sqlite db connection error! ", sys.exc_info()
+            if conn:
+                conn.close()
+    else:
+        try:
+            #print "in_params=",in_params
+            conn = mysql.connector.connect(
+                user=in_params["username"], password=in_params["password"]
+                , host=in_params["host"], port=in_params["port"], database=in_params["db"])
+            return conn, "mysql"
+        except:
+            print "ERROR: Mysql db connection error! ", sys.exc_info()
+            if conn:
+                conn.close()
+    return None, None
     
-def exec_sql(str_sql, sqlite_file=DEFAULT_SQLITE ):
+# mysql: execute the str_sql
+def mysql_exec_sql(str_sql, conn):
     ret=-1
+    try:
+        cursor = conn.cursor()
+        cursor.execute(str_sql)
+        conn.commit()
+        ret=cursor.rowcount
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+    except:
+        print "ERROR: Db update error! ", sys.exc_info()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+        return None
+        
+    return ret
+# sqlite: execute the str_sql    
+def exec_sql(str_sql , conn=None, type=None):
+    ret=-1
+    if conn is None:
+        conn, type =get_conn()
+    
+    if type == "mysql":
+        return mysql_exec_sql(str_sql,conn)
+        
     #print "INFO: Update db '"+sqlite_file+"'"
     if str_sql:
         try:
-            conn = sqlite3.connect(sqlite_file)
+            #conn = sqlite3.connect(sqlite_file)
             #print "Opened database successfully";
             conn.execute(str_sql)
             conn.commit()
@@ -62,14 +143,53 @@ def exec_sql(str_sql, sqlite_file=DEFAULT_SQLITE ):
         
     return ret
 
-# return dictionary from feature importance
-def get_dict(rid, sqlite_file=DEFAULT_SQLITE ):
+# mysql: return dictionary from feature importance========================
+def mysql_get_dict(rid, conn=None, type=None):
+    #print "in mysql_get_dict"
+    ret=-1
     all_verified=dict()
     human_verified=dict()
-    #print "INFO: Get dictionay from db '"+sqlite_file+"'"
+    try:
+        cursor = conn.cursor()
+        cursor.execute("select fid, vote from atdml_feature_click " \
+                +" where rid='"+str(int(rid))+"' and vote >0;")
+        #ret=cursor.rowcount
+        #create dictionary
+        
+        for record in cursor:
+            #print "record=",record
+            all_verified[str(record[0])]=record[1]
+            if record[1] > 5:
+                human_verified[str(record[0])]=record[1]
+
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+    except:
+        print "ERROR: Db get dict error! ", sys.exc_info()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+        return None, None
+        
+    return all_verified, human_verified
+# sqlite: return dictionary from feature importance
+def get_dict(rid , conn=None, type=None):
+    if conn is None:
+        conn, type =get_conn()
+    #print "in get_dict; type=",type    
+    if type == "mysql":
+        return mysql_get_dict(rid,conn)
+
+
+    all_verified=dict()
+    human_verified=dict()
+    print "INFO: Get dictionay from db rid='"+str(rid)+"'"
 
     try:
-        conn = sqlite3.connect(sqlite_file)
+        #conn = sqlite3.connect(sqlite_file)
         #print "Opened database successfully";
         cursor= conn.cursor()
         cursor.execute("select fid, vote from atdml_feature_click " \
@@ -88,13 +208,40 @@ def get_dict(rid, sqlite_file=DEFAULT_SQLITE ):
             conn.close()
     return all_verified, human_verified     
 
-# query sqlite3 and return a list of tuple ========================
-def query_db(sql, sqlite_file=DEFAULT_SQLITE):
-    #sqlite_file="../../db.sqlite3"
+# mysql: return a list of tuple ========================
+def mysql_query_db(sql, conn=None, type=None):
+    ret=-1
+    try:
+        cursor = conn.cursor()
+        cursor.execute(sql)
+        rows=cursor.fetchall() # return a list of tuple
+        ret=len(rows)
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+    except:
+        print "ERROR: Db query error! ", sys.exc_info()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+        return None
+        
+    return ret    
+# sqlite: query sqlite3 and return a list of tuple ========================
+def query_db(sql, conn=None, type=None):
+    if conn is None:
+        conn, type =get_conn()
+
+    if type == "mysql":
+        return mysql_query_db(sql,conn)
+
+        #sqlite_file="../../db.sqlite3"
     #print "INFO: Query db file='"+sqlite_file+"'"
     ret=None
     try:
-        conn = sqlite3.connect(sqlite_file)
+        #conn = sqlite3.connect(sqlite_file)
         cursor= conn.cursor()
         ret=cursor.execute(sql).fetchall() # return a list of tuple
 
@@ -107,5 +254,5 @@ def query_db(sql, sqlite_file=DEFAULT_SQLITE):
     return ret    
     
 if __name__ == '__main__':
-    __description__ = "update sqlite for web"
+    __description__ = "update db for web"
     main()

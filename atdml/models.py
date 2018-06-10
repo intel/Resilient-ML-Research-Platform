@@ -23,7 +23,7 @@ class User_profile(models.Model):
     # for apk upload 
 
     count_upload = models.IntegerField(default=0)
-    count_upload_max = models.IntegerField(default=5)
+    count_upload_max = models.IntegerField(default=6)
     count_upload_period = models.IntegerField(default=24)
     count_upload_date = models.DateTimeField('started date',default=datetime.now)
 #'''
@@ -38,7 +38,7 @@ class Document(models.Model):
     docfile = models.FileField(upload_to=settings.UPLOAD_DIR)
 
     filename=models.CharField(max_length=200, null=True) # remove "upload/"
-    status = models.CharField(max_length=10, default='new')
+    status = models.CharField(max_length=30, default='new')
     status_code=models.IntegerField(default=0)
 
     created_date = models.DateTimeField('created date',default=datetime.now)
@@ -46,17 +46,17 @@ class Document(models.Model):
     submitted_by = models.CharField(max_length=200, null=True)
 
     # accuracy after train
-    accuracy=models.CharField(max_length=10, null=True)
-    roc_auc= models.CharField(max_length=10, null=True)
-    fscore= models.CharField(max_length=15, null=True)
+    accuracy=models.CharField(max_length=20, null=True)
+    roc_auc= models.CharField(max_length=20, null=True)
+    fscore= models.CharField(max_length=20, null=True)
     perf_measures= models.CharField(max_length=500, null=True)
 
     # mean for mrun
-    mean=models.CharField(max_length=10, null=True)
+    mean=models.CharField(max_length=20, null=True)
     # variance for mrun
-    variance=models.CharField(max_length=10, null=True)
+    variance=models.CharField(max_length=20, null=True)
     # multi run count
-    mrun_numb=models.CharField(max_length=10, null=True)
+    mrun_numb=models.CharField(max_length=20, null=True)
 
     # for train or predition
     file_type=models.CharField(max_length=50, null=True)
@@ -92,6 +92,7 @@ class Document(models.Model):
     ml_feat_threshold= models.CharField(max_length=10, null=True)
     ml_model= models.CharField(max_length=1000, null=True)
     ml_state= models.CharField(max_length=1000, null=True)
+    ml_feat_opts= models.CharField(max_length=1000, null=True)
     
     # desc for dataset
     desc= models.CharField(max_length=1000, null=True)
@@ -103,10 +104,10 @@ class Document(models.Model):
     # feature extraction verification
     label_arr= models.CharField(max_length=2000, null=True)
     # evaluation numbers of model
-    roc_auc= models.CharField(max_length=10, null=True)
+    roc_auc= models.CharField(max_length=20, null=True)
     
     # output of hypothesis/prediction function
-    predict_val=models.CharField(max_length=10, null=True)
+    predict_val=models.CharField(max_length=20, null=True)
     feat_list=models.CharField(max_length=1000, null=True)
     
     # ensemble ds id list

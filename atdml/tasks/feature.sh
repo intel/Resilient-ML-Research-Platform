@@ -138,6 +138,32 @@ then
         echo "ERROR: $FEATURE_NG_PATTERN failed. Please check log for details ret=${ret}" >> $logfile 2>&1
         exit $ret
     fi
+
+elif [[ "$uploadtype" == "Custom"* ]] 
+then
+    #N-gram pattern text, TBD
+    # filename may be a list
+    IN_DIR=$filename
+    idx=`expr index "$filename" '[,]'`
+    # single folder found, not a list
+    if [ $idx -eq 0 ]
+    then
+        IN_DIR=$RETRIEVE_DATA_DIR/$filename/
+    fi
+    
+    # clean up pca data at /result/
+    PCA_DIR=$TRAIN_DES_DIR
+    OUT_DIR=""
+    echo Invoke Spark: $spark_cmd $FEATURE_NG_PATTERN -d "$IN_DIR" -o $PCA_DIR -r $rid -ng $n_gram -w $fromweb -ptn "$pattern" -lba "$label_arr" -ft "$feat_threshold" -cf "$feat_cust" -cfp "$feat_cust_params" -fr "$filter_ratio"
+    echo Invoke Spark: $spark_cmd $FEATURE_NG_PATTERN -d "$IN_DIR" -o $PCA_DIR -r $rid -ng $n_gram -w $fromweb -ptn "$pattern" -lba "$label_arr" -ft "$feat_threshold" -cf "$feat_cust" -cfp "$feat_cust_params" -fr "$filter_ratio" >> $logfile 2>&1
+
+    $spark_cmd $FEATURE_NG_PATTERN -d "$IN_DIR" -o $PCA_DIR -r $rid -ng $n_gram -w $fromweb -ptn "$pattern" -lba "$label_arr" -ft "$feat_threshold" -cf "$feat_cust" -cfp "$feat_cust_params" -fr "$filter_ratio" >> $logfile  2>&1
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        echo "ERROR: $FEATURE_NG_PATTERN failed. Please check log for details ret=${ret}" 
+        echo "ERROR: $FEATURE_NG_PATTERN failed. Please check log for details ret=${ret}" >> $logfile 2>&1
+        exit $ret
+    fi
 elif [[ "$uploadtype" == *"JSON"* ]] 
 then
     #for N-gram JSON format, get data from HDFS

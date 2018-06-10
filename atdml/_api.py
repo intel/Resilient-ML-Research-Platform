@@ -55,7 +55,8 @@ def get_eslist(request, perm,disabled4reader):
     if documents and len(documents)>0:
         return Response(ml_serializers.doc2json(documents))
     else:
-        return Response({"error":"data not found"},status=404)
+        #return Response({"error":"data not found"},status=404)
+        return Response({"warning":"data not found!"})
         
 #============================================================= get_apk_list for android emulator records ==================
 def get_apk_list(request, perm,disabled4reader):        
@@ -635,7 +636,7 @@ def create_ds(request, perm,disabled4reader):
 
     
 #============================================================= extract_feature ==================
-# featuring by ai
+# featuring by api
 def extract_feature(request, perm, disabled4reader):
     action=request.POST.get('action')
     rid=request.POST.get('hf_w_id')

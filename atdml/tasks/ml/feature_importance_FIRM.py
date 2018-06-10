@@ -5,7 +5,7 @@
 #SPDX-License-Identifier: Apache-2.0
 '''
 
-
+# TBD for review/clean up
 # python libraries
 import os
 import os.path
@@ -51,6 +51,7 @@ import matplotlib.mlab as mlab
 sys.path.append('./db')
 import query_mongo
 import ml_util
+import zip_feature_util
 
 
 ####global constant
@@ -61,6 +62,7 @@ training_portion = eval(config.get("machine_learning","training_portion"))
 mtx_name_list = config.get("machine_learning","mtx_name_list")
 mtx_libsvm = config.get("machine_learning","mtx_libsvm")
 mtx_stat = config.get("machine_learning","mtx_stat")
+hdfs_file_name = 'libsvm_data'
 
 def data_seperation_date(name_l):
     date_list = []
@@ -246,6 +248,57 @@ def feat_importance_firm(row_id_str, ds_id, hdfs_feat_dir, local_score_file
     folder_list = [x.encode('UTF8') for x in hash_Folders]
     print "INFO: hdfs folder_list=",folder_list #['dirty/', 'clean/']
     
+    # source libsvm filename  
+    libsvm_data_file = os.path.join(hdfs_feat_dir , hdfs_file_name)
+    print "INFO: libsvm_data_file=", libsvm_data_file
+    
+    # load feature count file
+    #feat_count_file=libsvm_data_file+"_feat_count"
+    #feature_count=zip_feature_util.get_feature_count(sc,feat_count_file)
+    #print "INFO: feature_count=",feature_count
+
+    # load sample RDD from text file   
+    #samples_rdd, feature_count = zip_feature_util.get_sample_rdd(sc, libsvm_data_file, feature_count \
+    #    , excluded_feat_cslist=None)
+    samples_rdd=sc.textFile(libsvm_data_file).cache()
+
+    # collect all data to local for processing ===============
+    all_data = samples_rdd.collect()
+    all_list = [ ln.split(' ') for ln in all_data ]
+    sample_count=len(all_data)
+
+    # label array
+    #labels_list_all = [x.label for x,_ in all_data]
+    #print "INFO: labels_list_all=",labels_list_all
+
+    # get feature seq : ngram hash mapping ==================================
+    key = "dic_seq_hashes"  #{"123":"136,345"}
+    jstr_filter='{"rid":'+row_id_str+',"key":"'+key+'"}'
+
+    jstr_proj='{"value":1}'
+    
+    # get parent dataset's data
+    if ds_id != row_id_str:
+        jstr_filter='{"rid":'+ds_id+',"key":"'+key+'"}'
+            
+    doc=query_mongo.find_one_t(mongo_tuples, jstr_filter, jstr_proj)
+    dic_list = doc['value']
+    
+    dic_all_columns = dic_list
+    feature_count = len(dic_list)
+
+    # get hash : raw string mapping ==================================
+    key = "dic_hash_str"  #{"123":"openFile"}
+    jstr_filter='{"rid":'+row_id_str+',"key":"'+key+'"}'
+    jstr_proj='{"value":1}'
+    # get parent dataset's data
+    if ds_id != row_id_str:
+        jstr_filter='{"rid":'+ds_id+',"key":"'+key+'"}'
+        
+    doc=query_mongo.find_one_t(mongo_tuples, jstr_filter, jstr_proj)
+    dic_hash_str = doc['value']
+    
+    
     
     features_training = []
     labels_training = []
@@ -263,25 +316,34 @@ def feat_importance_firm(row_id_str, ds_id, hdfs_feat_dir, local_score_file
     row_num_testing = 0
     
     # loop through hdfs folders; TBD 
-    for folder in folder_list:
+    for idx, folder in enumerate(folder_list):
         print "INFO: folder=", folder
         label = folder_list.index(folder) + 1
         print 'INFO: label=', label
 
-        logFile_name = os.path.join( hdfs_feat_dir, folder , mtx_name_list)
-        #print "logFile_name=",logFile_name
-        logFile_data = os.path.join( hdfs_feat_dir , folder , mtx_libsvm)
-        #print "logFile_data=",logFile_data
+        #logFile_name = os.path.join( hdfs_feat_dir, folder , mtx_name_list)
+        #print "XXXXXXXXXXlogFile_name=",logFile_name
+        #logFile_data = os.path.join( hdfs_feat_dir , folder , mtx_libsvm)
+        #print "XXXXXXXXXXlogFile_data=",logFile_data
 
+        '''
         logNames = sc.textFile(logFile_name).cache()
         logData = sc.textFile(logFile_data).cache()
         
         names = logNames.collect()
         data = logData.collect()
+        
         name_l = [x.encode('UTF8') for x in names]
         feature_l = [x.encode('UTF8') for x in data]
         name_list = [names.strip() for names in name_l]
         feature_list = [features.strip() for features in feature_l]
+        '''
+        
+        feature_list = [ l[2:] for l in all_list if int(l[1])==idx]
+        # hash array
+        name_list = [ l[2] for l in all_list if int(l[1])==idx ]
+        #print "feature_list=",feature_list
+        #print "name_list=",name_list
         
         ##########data seperation######
         id_perm = data_seperation_random(name_list)
@@ -301,8 +363,9 @@ def feat_importance_firm(row_id_str, ds_id, hdfs_feat_dir, local_score_file
             #print i, id_perm[i]
             features = feature_list[id_perm[i]]
             
-            features = features.strip()
-            feature_array = features.split(' ')
+            #features = features.strip()
+            #feature_array = features.split(' ')
+            feature_array=features
             labels_training.append(label)
             
             length = len(feature_array)
@@ -328,8 +391,9 @@ def feat_importance_firm(row_id_str, ds_id, hdfs_feat_dir, local_score_file
   
             features = feature_list[id_perm[i]]
 
-            features = features.strip()
-            feature_array = features.split(' ')
+            #features = features.strip()
+            #feature_array = features.split(' ')
+            feature_array=features
             labels_testing.append(label)
             
             length = len(feature_array)
@@ -478,7 +542,13 @@ def feat_importance_firm(row_id_str, ds_id, hdfs_feat_dir, local_score_file
     
     for ii in range (0, len(dic_importance_label)):
         (feat, score) = sorted_importance[ii]
-                
+
+        if dic_hash_str:
+            description_str = feats2strs(dic_all_columns[str(feat)],dic_hash_str)
+        else:
+            description_str="N/A"
+            print "Warning: No mapping found for feature number"
+        
         str01 = str(feat)+"\t"+str(score)+"\t"+description_str+"\n"
         with open(local_score_file, "a") as f:
             f.write(str01)
@@ -489,6 +559,17 @@ def feat_importance_firm(row_id_str, ds_id, hdfs_feat_dir, local_score_file
     print 'INFO: Finished!'
     return 0
     
+# convert feature numb to string
+def feats2strs(str_feats, dic_hash_str):
+    ret=""
+    comma=""
+    #print "str_feats=",str_feats
+    # get string from dic_hash_str
+    for f in str_feats.split(','):
+        if f in dic_hash_str:
+            ret = ret + comma + dic_hash_str[f]
+            comma=","
+    return ret    
     
 if __name__ == '__main__':
     __description__ = "feature importance: FIRM"

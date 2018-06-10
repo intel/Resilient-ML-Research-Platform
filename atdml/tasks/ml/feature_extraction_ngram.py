@@ -190,7 +190,7 @@ def main():  # ============= =============  ============= =============
     if args.pattern_str:
         pattern_str = args.pattern_str
     else:
-        pattern_str  = r'^I/AndroidATD\([ ]*[\d]+\): \[API\] (.*) \[.*' # 
+        pattern_str  = r'(.*) ' # 
     if args.ln_delimitor:
         ln_delimitor = args.ln_delimitor
     else:
@@ -198,7 +198,7 @@ def main():  # ============= =============  ============= =============
     if args.folder:
         hdfs_feat_dir = args.folder
     else:
-        hdfs_feat_dir  = config.get('app', 'HADOOP_MASTER')+'/user/hadoop/upload/data_out/'+row_id_str
+        hdfs_feat_dir  = config.get('app', 'HADOOP_MASTER')+config.get('app','FEATURE_DES_DIR')+'/'+row_id_str
     if args.label_arr and len(args.label_arr)>0:
         try: # convert to array
             label_arr = eval(args.label_arr)
@@ -230,7 +230,7 @@ def main():  # ============= =============  ============= =============
     else:
         cust_featuring  = None
     if args.cust_featuring_params:
-        cust_featuring_params = json.loads(args.cust_featuring_params)
+        cust_featuring_params = args.cust_featuring_params
     else:
         cust_featuring_params  = None
     if args.filter_ratio:
@@ -304,14 +304,14 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
         
         # check each folder
         for dr in hdfs_dir_list.split(','):
-            print "****=",dr
+            #print "****=",dr
             if not len(dr)>0:
                 continue
             try:
                 # remove space etc.
                 dr=dr.strip()
                 fdr=os.path.join(HDFS_RETR_DIR, dr)
-                print "fdr=",fdr
+                #print "fdr=",fdr
                 # ls didn't like "*"
                 if '*' in fdr:
                     #gz_list=hdfs.ls(fdr.replace("*",""))
@@ -399,13 +399,31 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
             user_module=modules[0]
             user_func=getattr(user_module,CUSTOM_FUNC)
         except Exception as e:
+            print "ERROR: module=",CUSTOM_PREFIX+cust_featuring
             print "ERROR: user module error.", e.__doc__, e.message
             return -101
-        # prepare for dnn, output as feat in an array    
+        try:
+            jparams=json.loads(cust_featuring_params)
+            if jparams and 'n-gram' in jparams:
+                num_gram=jparams['n-gram']
+            elif jparams and 'ngram' in jparams:
+                num_gram=jparams['ngram']
+        except Exception as e:
+            print "ERROR: user params error.", e.__doc__, e.message
+            return -200    
+            
+        # convert feast into array. output format: [ meta1,meta2,..., [feat1,feat2,...]]   
         tmp_rdd = txt_rdd.map(lambda x: user_func(x, cust_featuring_params)) \
             .filter(lambda x: len(x) > metadata_count) \
             .filter(lambda x: type(x[metadata_count]) is list).cache()
+        print " tmp_rdd cnt=", tmp_rdd.count(),",ix=",data_idx,",max f=",MAX_FEATURES,"ngram=",num_gram
+        print "take(1) rdd=",tmp_rdd.take(1)
+		
+		# TBD for multivariant output format: [ meta1,meta2,..., [[feat1,feat2,...],[feat1,feat2,...],...]]
+		
+		# TBD only for num_gram available
         # for traditional ML, feat in a dict 
+		# output format: [ meta1,meta2,..., [[feat1,feat2,...],[feat1,feat2,...],...]]
         featured_rdd = tmp_rdd \
             .map(lambda x: feature_extraction_ngram(x, data_idx, MAX_FEATURES, num_gram)) \
             .filter(lambda x: len(x) > metadata_count) \
@@ -413,7 +431,8 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
             .filter(lambda x: type(x[metadata_count+1]) is dict) \
             .filter(lambda x: len(x[metadata_count])> int(feature_count_threshold) ) \
             .cache()
-                
+        #print " f_rdd cnt=", featured_rdd.count()      
+        #print featured_rdd.take(1)
         all_hashes_cnt_dic=None
         all_hash_str_dic=None
         all_hashes_seq_dic = None
@@ -497,7 +516,7 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
         # will force "clean" be 0 here
         label_arr=sorted(featured_rdd.map(lambda x: x[label_idx].lower()).distinct().collect())
         # debug only
-        print "INFO: label_arr=",json.dumps(sorted(label_arr))
+        print "INFO: label_arr.=",json.dumps(sorted(label_arr))
     
     # save labels to hdfs as text file==================================== ============
     hdfs_folder = hdfs_feat_dir #+ "/"   # "/" is needed to create the folder correctly
@@ -605,15 +624,15 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
         print "INFO:   ,max feature count=",feat_count_max
         print "INFO: Non-Duplicated Label count list=",cnt_list
         
-    # save libsvm data ==================================== ============
+    # clean up libsvm data ==================================== ============
     libsvm_data_file = os.path.join(hdfs_folder , libsvm_alldata_filename) #"libsvm_data"
     print "INFO: libsvm_data_file=", libsvm_data_file
     try:
         #hdfs.ls(save_dir)
         #print "find hdfs folder"
         hdfs.rmr(libsvm_data_file)
-        if num_gram == 1: 
-            hdfs.rmr(dnn_data_file)
+        #if num_gram == 1: 
+        #   hdfs.rmr(dnn_data_file)
         #print "all files removed"
     except IOError as e:
         print "WARNING: I/O error({0}): {1} at libsvm_data_file clean up".format(e.errno, e.strerror)
@@ -633,6 +652,7 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     except:
         print "WARNING: Unexpected error at libsvm feature count clean up:", sys.exc_info()[0]     
     sc.parallelize([total_feature_numb],1).saveAsTextFile(feat_count_file)
+
 
     label_dic = {}
     # assign label a number
@@ -660,6 +680,7 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
             #.cache()
             # filter duplication here
         #print dnn_rdd.take(3)
+        
         dnn_data_file = os.path.join(hdfs_folder , dnn_alldata_filename) #"dnn_data"
         print "INFO: dnn_data_file=", dnn_data_file
         try:
@@ -668,11 +689,24 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
             print "WARNING: I/O error({0}): {1} at dnn_data_file clean up".format(e.errno, e.strerror)
         except:
             print "WARNING: Unexpected error at libsvm file clean up:", sys.exc_info()[0]
+        
+        # clean up data
+        dnn_npy_gz_file=os.path.join(hdfs_folder , row_id_str+"_dnn_")
+        print "INFO: dnn_npy_gz_file=", dnn_npy_gz_file
+        try:
+            hdfs.rmr(dnn_npy_gz_file+"data.npy.gz")
+            hdfs.rmr(dnn_npy_gz_file+"label.npy.gz")
+            hdfs.rmr(dnn_npy_gz_file+"info.npy.gz")
+        except IOError as e:
+            print "WARNING: I/O error({0}): {1} at dnn_npy clean up".format(e.errno, e.strerror)
+        except:
+            print "WARNING: Unexpected error at dnn_npy file clean up:", sys.exc_info()[0]
+        # save new data
         try:
             dnn_rdd.saveAsTextFile(dnn_data_file)
         except:
             print "WARNING: Unexpected error at saving dnn data:", sys.exc_info()[0]
-                
+        # show data statistics        
         try:
             stats= dnn_rdd.map(lambda p: len(p[metadata_count])).stats()
             feat_count_max=stats.max()
@@ -758,13 +792,13 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
         print "WARNING: save all_seq_hashes_dic to local"
         ml_util.ml_pickle_save(all_seq_hashes_dic, fn_sh)
 
-
+    '''
     label_dic = {}
     # assign label a number
     for idx, label in enumerate(sorted(label_arr)):
         if not label in label_dic:
             label_dic[label] = idx      #starting from 0, value = idx, e.g., clean:0, dirty:1
-
+    '''
     # insert label_dic mongoDB ================ =======
     print "INFO: label_dic=", label_dic
     filter='{"rid":'+row_id_str+',"key":"dic_name_label"}'
@@ -797,6 +831,7 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
             +"', dataset_info='"+json.dumps(dataset_info) \
             +"', ml_pca_opts=null" \
             +", label_arr='"+ json.dumps(sorted(label_arr))+"'" \
+            +", ml_n_gram='"+ str(num_gram)+"'" \
             +" where id="+row_id_str
         #print "str_sql=",str_sql
         ret=exec_sqlite.exec_sql(str_sql)

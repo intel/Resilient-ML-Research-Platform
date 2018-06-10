@@ -13,7 +13,9 @@ export HADOOP_USER_NAME=hadoop
 export HADOOP_HOME=/home/hadoop/hadoop_latest 
 export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 export YARN_HOME=$HADOOP_HOME
+
 export JAVA_HOME=/usr/java/default
+
 export PATH=$PATH:$HADOOP_HOME/bin:$JAVA_HOME/bin:/home/hadoop/spark_latest/bin
 #export _JAVA_OPTIONS="-Xmx2g"
 export THEANO_FLAGS=mode=FAST_RUN,floatX=float32

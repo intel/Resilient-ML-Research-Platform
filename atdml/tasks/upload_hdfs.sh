@@ -39,7 +39,7 @@ export HADOOP_USER_NAME=$HADOOP_USER_NAME
 
 
 # from ngram gz file
-if [ "$uploadtype" == "$FTYPE_NGRAM_GZ" ]
+if [ "$uploadtype" == "$FTYPE_NGRAM_GZ" ] || [[ "$uploadtype" == *"Custom"* ]]
 then
     #source
     OUT_DIR=$UPLOAD_FULL_DIR/$filename

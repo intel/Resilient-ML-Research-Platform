@@ -131,7 +131,7 @@ urlpatterns = [
     url(r'^test/(?P<rid>\d+)/$', get_test, name='get_test'),
 
     # default page
-    url(r'^$', ae_list, name='default'),
+    url(r'^$', list, name='default'), 
     # not found. go default
-    url(r'.+', ae_list, name='default'), 
+    url(r'.+', list, name='default'),
 ]

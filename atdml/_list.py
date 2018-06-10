@@ -126,6 +126,8 @@ def insert_empty_record(request,perm,action):
     newdoc.acl_list=perm
     newdoc.submitted_by=request.user.username
     newdoc.desc=request.POST.get('hf_desc')
+
+
     folder=""
     if action == "query":
         newdoc.filename='q_'+random_string_generator()
@@ -155,6 +157,8 @@ def insert_empty_record(request,perm,action):
         newdoc.docfile=folder
         newdoc.status_code=settings.STS_100_RETRIEVE
         newdoc.status="new hdfs data"
+ 
+
         print "newdoc.file_type=",newdoc.file_type
         print "request.POST.get('label_arr')=",request.POST.get("label_arr")
         
@@ -162,6 +166,13 @@ def insert_empty_record(request,perm,action):
             print "request.POST.get('ptn_str')=",request.POST.get("ptn_str")
             newdoc.status="new hdfs pattern"
             newdoc.pattern=request.POST.get("ptn_str")
+        elif "Custom" in uploadtype:
+            # custom type
+            cust=request.POST.get("hf_customtype")
+            print "cust=",cust
+            if uploadtype.lower()=="custom" and cust and cust > "":
+                newdoc.ml_feat_opts='{"custom":"'+cust.lower()+'"}'
+            newdoc.status="new custom"
         else:
             print "request.POST.get('json_keys_arr')=",request.POST.get("json_keys_arr")
             newdoc.status="new hdfs json"
@@ -313,6 +324,7 @@ def uploadFile(request,form,perm):
         newdoc.acl_list=perm
         newdoc.file_type=uploadtype
         newdoc.desc=desc
+        
         # no n_gram for static data and 
         if "static" in uploadtype or "Libsvm" in uploadtype:
             newdoc.ml_n_gram="-1"
@@ -338,7 +350,7 @@ def uploadFile(request,form,perm):
             if "pattern" in uploadtype:
                 print "ptn_str=",request.POST.get("ptn_str")
                 newdoc.pattern=request.POST.get("ptn_str")
-            else:
+            else: #?
                 print "json_keys_arr=",request.POST.get("json_keys_arr")
                 newdoc.json_keys_arr=request.POST.get("json_keys_arr")
 
@@ -362,7 +374,8 @@ def uploadFile(request,form,perm):
         new_id=newdoc.id
 
 		
-        if 'libsvm' in uploadtype.lower() or "n-gram pattern gz"==uploadtype.lower():
+        if 'libsvm' in uploadtype.lower() or "n-gram pattern gz"==uploadtype.lower() \
+            or 'custom' in uploadtype.lower():
             print 'upload to HDFS !! fname=',realname
 			# upload to HDFS; call upload_hdfs.sh
             ret=subprocess.call([settings.TASK_EXE,
@@ -407,7 +420,23 @@ def train_opts(request, rid, perm,disabled4reader):
     if document and not document.ml_pca_opts is None and "threshold" in document.ml_pca_opts:
         has_pca="y"
     print "has_pca=",has_pca #,document.ml_pca_opts
-
+    
+    # for custom featuring
+    '''
+    custom=""
+    custom_jstr=document.ml_feat_opts
+    if custom_jstr > "":
+        try:
+            jfeat_opts=json.loads(custom_jstr)
+            if jfeat_opts and "custom" in jfeat_opts:
+                custom=jfeat_opts["custom"]
+        except:
+            e = sys.exc_info()[0]
+            print ("Exception at train_opts(). e=%s" % e)
+    else:
+        custom_jstr=""
+    '''
+    
     if options is None:
         options=[]
     if options:
@@ -421,6 +450,7 @@ def train_opts(request, rid, perm,disabled4reader):
             ,'disabled4reader':disabled4reader, 'perm':perm
             ,"jopts":jopts, "has_pca":has_pca
             ,"options":options
+
         }, 
     ) 
 # train opts page's action handler======================================= Learn&Predict ==================
@@ -462,10 +492,13 @@ def ml_opts(request,perm,disabled4reader):
             newdoc.filename=document.filename
             newdoc.docfile=document.docfile
             newdoc.file_type=document.file_type
+            
             newdoc.ml_n_gram=document.ml_n_gram
             newdoc.ml_feat_threshold=document.ml_feat_threshold
             newdoc.ml_lib=document.ml_lib
             newdoc.ml_opts=document.ml_opts
+            newdoc.ml_feat_opts=document.ml_feat_opts
+            
             newdoc.class_numb=document.class_numb
             newdoc.db_host=document.db_host
             newdoc.db_port=document.db_port
@@ -508,9 +541,12 @@ def ml_opts(request,perm,disabled4reader):
             if filter_ratio is None or filter_ratio=="":
                 filter_ratio="0"
             print "n_gram=",n_gram,",feat_threshold=",feat_threshold,"filter_ratio=",filter_ratio
+            
+            # custom featuring
             cust=request.POST.get('hf_w_ml_cust')
             cust_params=request.POST.get('hf_w_ml_cust_params')
             print "cust=",cust,",cust_params=",cust_params
+            
             ptn=""
             lbl=""
             json_keys_str=""
@@ -537,6 +573,7 @@ def ml_opts(request,perm,disabled4reader):
                     odoc.json_keys_arr=json_keys_str
                     odoc.label_arr=lbl
                     odoc.ml_feat_threshold=feat_threshold
+                    odoc.ml_feat_opts=feat_threshold
                     odoc.save()
                     
             # FEATURING here  ===================   
@@ -741,6 +778,7 @@ def get_ret_json(doc, msg_id):
         , "ml_has_cv": doc.ml_has_cv
         , "ml_alg" :alg
         , "ml_model" :doc.ml_model
+        , "ml_feat_opts" :doc.ml_feat_opts
         , "class_numb": str(doc.class_numb) 
         , "accuracy_short":str(doc.accuracy_short())
         , "mrun_numb":str(doc.mrun_numb)
@@ -794,20 +832,39 @@ def mrun(document,mrun_numb, ds_id):
     return msg_id
     
 #============================================================= featuring ==================
-def featuring(document, n_gram, pattern, label_arr,json_keys_str, feat_threshold=5, cust=None,cust_params=None,filter_ratio=None):
+def featuring(document, n_gram, pattern, label_arr,json_keys_str, feat_threshold=5
+        , cust=None, cust_params=None, filter_ratio=None):
     #print 'In featuring()'
     
     rid=str(document.id)
     filename=document.filename
     uploadtype=document.file_type
     
+    # check if custom 
+    jf_opts={}
+    if cust.lower() == "predefined":
+        cust=""
+        cust_params=""
+    elif cust and cust>"":
+        try: # add cust to opts
+            if cust_params and cust_params>"":
+                jf_opts=json.loads(cust_params)
+            jf_opts["custom"]=cust
+            document.ml_feat_opts=json.dumps(jf_opts)
+        except:
+            pass
+
+        
     # set default if null, default should be set in upload...
-    if not n_gram:
+    if 'n-gram' in jf_opts:
+        n_gram=jf_opts["n-gram"]
+    elif not n_gram:
         n_gram=settings.FEATURE_N_GRAM
     elif n_gram=="N/A":
         n_gram="-1"
     #print "n_gram=",n_gram
     
+        
     #update db 
     document.status='processing feature'
     document.processed_date=datetime.datetime.now()
@@ -817,6 +874,7 @@ def featuring(document, n_gram, pattern, label_arr,json_keys_str, feat_threshold
     document.label_arr=label_arr
     document.json_keys_arr=json_keys_str
     document.save()
+    
     
     print "rid=",rid,",filename=",filename,",uploadtype=",uploadtype,",pattern=",pattern
     print ",n_gram=",n_gram,",filter_ratio=",filter_ratio,",feat_threshold=",feat_threshold,",json_keys_str=",json_keys_str
@@ -1369,8 +1427,8 @@ def get_ds_doclist(perm):
         if not documents or len(documents)==0:
             return None
         return documents
-    except : 
-        print "Can't find record. perm=", perm
+    except Exception as e:
+        print "ERROR: Can't find record. perm=", perm, str(e)
 
     return None
 

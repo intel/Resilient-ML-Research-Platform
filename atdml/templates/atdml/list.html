@@ -150,7 +150,7 @@
             <input type="hidden" id="hf_query" name="action" value="" />
             <input type="hidden" id="hf_querytype" name="hf_querytype" value="Query in-dynamic" />
             <input type="hidden" id="hf_uploadtype" name="hf_uploadtype" value="Libsvm Format"></input>
-            <input type="hidden" id="hf_customtype" name="hf_customtype" value="dnn_text"></input>
+            <input type="hidden" id="hf_customtype" name="hf_customtype" value=""></input>
             <!--input type="hidden" id="h_uploadsubtype" name="h_uploadsubtype" value="gotsub?"></input-->
             
           <div class="tabbable" style="padding: 5px 5px 5px 0px;">
@@ -278,11 +278,11 @@ IN-static: static data from MongoDB
 				  </button>
 				  <ul class="dropdown-menu multi-level dropdown-menu-right" id="uploadtype_dropdown" role="menu" aria-labelledby="dropdownMenu1">
 					<li role="presentation" class="drowdown-header"><strong>&nbsp;&nbsp;Featured Data</strong>:(for upload)</li>
-					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_upload_">Libsvm Format</a></li>
+					<li role="presentation" ><a role="menuitem" tabindex="-1" href="#" class="_upload_">Libsvm Format</a></li>
 					<li role="presentation" class="divider"></li>
 					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;<strong>Raw Data in HDFS:</strong>(preloaded)</li>
 					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_ptn_ _hdfs_">N-gram pattern</a></li>
-					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_json_ _hdfs_">N-gram JSON</a></li>
+					<!--li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_json_ _hdfs_">N-gram JSON</a></li-->
 					<li class="dropdown-submenu">
                       <a href="#" class="_hdfs_ _custom_">Custom</a>                   
                       <!--submenu didn't work here??-->
@@ -293,6 +293,7 @@ IN-static: static data from MongoDB
 					<li role="presentation" class="divider"></li>
 					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;Raw Data:(for upload)</li>
 					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_ptn_ _gz_" >N-gram pattern gz</a></li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_customgz_ _gz_" >Custom gz</a></li>
 					<li role="presentation" class="divider"></li>
 					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;Hash List:(for data retrieval)</li>
 					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_upload_">MD5 List IN-dynamic</a></li>
@@ -308,12 +309,12 @@ IN-static: static data from MongoDB
 				    <button class="btn btn-default dropdown-toggle form-control " type="button" 
                      title="help here"
                      data-toggle="dropdown" aria-expanded="true" >		
-					<span id="customtype">dnn_text</span>
+					<span id="customtype"></span>
 					<span class="caret"></span>
 				  </button>
 				  <ul class="dropdown-menu dropdown-menu-right" id="ul_custom_type" role="menu" aria-labelledby="dropdownMenu1">
-					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_dnn_text_">dnn_text</a></li>
-					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_dnn_assembly_">dnn_assembly</a></li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_dnn_text_">fsw</a></li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_dnn_assembly_">procmon</a></li>
 				  </ul>
 				</div> <!--input-group -->
                 </div> <!--col -->
@@ -989,7 +990,8 @@ IN-static: static data from MongoDB
         if (for_new_upload){
             //hide table 
             //$("#_working_tb").css({"display":"none"});                                 
-            $("#_working_tb").addClass('mlhide');                                 
+            $("#_working_tb").addClass('mlhide');
+            // need to revalidate buttons here
         } else  {
             $("#_working_tb").removeClass('mlhide');          
             //$("#_working_tb").css({"display":"inline"});            
@@ -1339,6 +1341,7 @@ IN-static: static data from MongoDB
               ptn:   hdfs,     RE, labels, desc     
               json:  hdfs, json,   labels, desc
               custom:hdfs,         labels, desc
+              custom gz:file sel
               ensemble: id list, desc
             */
             // 
@@ -1355,7 +1358,13 @@ IN-static: static data from MongoDB
                 $('._4ensemble_').addClass('mlhide');
             } 
             // has "RE pattern", "label list"
-            if ($(this).hasClass('_ptn_') || $(this).hasClass('_gz_')){
+            if ($(this).hasClass('_customgz_')){
+                $('._4label_').addClass('mlhide');
+                $('._4ptn_').addClass('mlhide');                
+                $('._4json_').addClass('mlhide');
+                $("#_ptn_str").val("") //clean up pattern
+                $("#_label_arr").val("") //clean up             
+            } else if ($(this).hasClass('_ptn_') || $(this).hasClass('_gz_')){
                 $('._4label_').removeClass('mlhide');
                 $('._4ptn_').removeClass('mlhide');                
                 $('._4json_').addClass('mlhide');
