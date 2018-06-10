@@ -43,7 +43,7 @@ else
 fi
 
 # hdfs & spark  slave1 
-if [ -z $container ] || [ $container=="slave1" ]; then
+if [ -z $container ] || [ "$container" == "slave1" ]; then
     cntr=$(docker ps -a | grep slave1 | awk '{print $1}') 
     if ! [ -z $cntr ]; then
         echo "INFO: Remove container slave1"
@@ -60,7 +60,7 @@ if [ -z $container ] || [ $container=="slave1" ]; then
 fi
         
 # hdfs & spark  master    
-if [ -z $container ] || [ $container=="master" ]; then
+if [ -z $container ] || [ "$container" == "master" ]; then
     cntr=$(docker ps -a | grep master | awk '{print $1}') 
     if ! [ -z $cntr ]; then
         echo "INFO: Remove container master"
@@ -78,7 +78,7 @@ if [ -z $container ] || [ $container=="master" ]; then
 fi
 
 # mongodb
-if [ -z $container ] || [ $container=="mongodb" ]; then
+if [ -z $container ] || [ "$container" == "mongodb" ]; then
     cntr=$(docker ps -a | grep mongodb | awk '{print $1}') 
     if ! [ -z $cntr ]; then
         echo "INFO: Remove container mongodb"
@@ -94,7 +94,7 @@ fi
 
 
 # web
-if [ -z $container ] || [ $container=="web" ]; then
+if [ -z $container ] || [ "$container" == "web" ]; then
     cntr=$(docker ps -a | grep web | awk '{print $1}') 
     if ! [ -z $cntr ]; then
         echo "INFO: Remove container web"
