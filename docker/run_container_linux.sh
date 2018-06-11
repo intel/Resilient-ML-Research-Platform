@@ -8,12 +8,17 @@ export HADOOP_DIR=/home/$HADOOP_USER/docker
 export WEB_DIR=/home/$DJANGO_USER/myml
 export mlversion=0.1.1 
 export mongoversion=3.6.4 
-export DOCKER_REG='hub.docker.com'
 export DOCKER_REPO=$DOCKER_REG/myml
 export MLAAS_IMG=$DOCKER_REPO/mlservice
 export MONGO_IMG=$DOCKER_REPO/mongo
 
 container=$1
+
+# check if $DOCKER_REG set
+if [ -z $DOCKER_REG ]; then
+    echo "INFO: Set DOCKER_REG='hub.docker.com'"
+    export DOCKER_REG='hub.docker.com'
+fi
 
 # check if web folder exits
 #if ! [ -d $WEB_DIR/atdml ]; then
