@@ -63,21 +63,22 @@ export JAVA_HOME=$JAVA_HOME
 export HADOOP_HOME=$HADOOP_HOME
 export HADOOP_USER_NAME=$HADOOP_USER_NAME
 
+# TBD pass refresh flag from web
 #check if pca file exists, exit when refresh flag is off ========================
-if [ "$refresh" == "0" ];
-then
-    echo INFO: Check if file "$pcaed_filename" exists
-    echo INFO: hdfs dfs -ls $pcaed_filename 
-    echo INFO: hdfs dfs -ls $pcaed_filename >> $logfile  2>&1
-    out_list=`hdfs dfs -ls $pcaed_filename`
-    # if not empty return, return
-    if [[ ! -z  $out_list  ]]
-    then
-        echo "INFO: PCA file="$pcaed_filename" exists!! No action taken."
-        echo "INFO: PCA file="$pcaed_filename" exists!! No action taken." >> $logfile 2>&1
-        exit 0
-    fi
-fi
+#if [ "$refresh" == "0" ];
+#then
+#    echo INFO: Check if file "$pcaed_filename" exists
+#    echo INFO: hdfs dfs -ls $pcaed_filename 
+#    echo INFO: hdfs dfs -ls $pcaed_filename >> $logfile  2>&1
+#    out_list=`hdfs dfs -ls $pcaed_filename`
+#    # if not empty return, return
+#    if [[ ! -z  $out_list  ]]
+#    then
+#        echo "INFO: PCA file="$pcaed_filename" exists!! No action taken."
+#        echo "INFO: PCA file="$pcaed_filename" exists!! No action taken." >> $logfile 2>&1
+#        exit 0
+#    fi
+#fi
 
 #upload feature extraction data to HDFS ========================
 echo INFO: clean folder

@@ -23,6 +23,8 @@ import collections, glob
 from pyspark import SparkContext
 from pyspark import StorageLevel
 from pyspark.sql import SQLContext
+from pyspark.sql.functions import isnan,isnull, when, count, col
+
 import ujson, json
 from pprint import pprint as pp
 from bson import json_util
@@ -32,6 +34,7 @@ from operator import add
 sys.path.append('./ml')
 from zip_preprocess_pattern import preprocess_pattern, preprocess_json
 from zip_feature_extraction_ngram import feature_extraction_ngram, tokenize_by_dict, djb2
+from zip_feature_util import list2libsvm
 #####import for mongodb ####
 sys.path.append('./db')
 import query_mongo
@@ -45,12 +48,10 @@ CUSTOM_PREFIX='cf_'
 CUSTOM_FUNC='featuring'
 MAX_FILTER_LOWER_CNT=1000
 metadata = 'metadata'
-
-#########################
 CONF_FILE='../../app.config' # at the base dir of the web
 config=ConfigParser.ConfigParser()
 config.read(CONF_FILE)
-MAX_FEATURES  = eval(config.get("machine_learning","MAX_FEATURES"))
+MAX_FEATURES  = eval(config.get("machine_learning","MAX_FEATURES")) 
 libsvm_alldata_filename = config.get("machine_learning","libsvm_alldata_filename")
 dnn_alldata_filename = config.get("machine_learning","dnn_alldata_filename")
 
@@ -122,7 +123,9 @@ def arg_parser(parser):
         , default =config.get('spark', 'spark_cores_max'))
 
     return parser.parse_args()
-
+'''
+/home/hadoop/spark_latest/bin/spark-submit ml/feature_extraction_ngram.py -d hdfs://sp15.jf.intel.com:9000/user/hadoop/upload/data_retrieved/android05/ -o /home/django/myml/media/result -r 314730 -ng 1 -w 1 -ptn "(.*)" -lba "['clean','dirty']" -ft 5
+'''
 def main():  # ============= =============  ============= =============
     # parse arguments
     parser = ArgumentParser(description=__description__)
@@ -147,7 +150,7 @@ def main():  # ============= =============  ============= =============
     if args.zipfilename:
         zip_file_name = args.zipfilename
     else:
-        zip_file_name  = 'feature_ngram.zip'
+        zip_file_name  = 'feature_custom.zip'
     if args.cust_folder:
         cust_folder = args.cust_folder
     else:
@@ -166,10 +169,12 @@ def main():  # ============= =============  ============= =============
     else:
         password  = None
 
-    if args.num_gram:
-        num_gram = eval(args.num_gram)
-    else:
-        num_gram = 2
+    #if args.num_gram:
+    #    num_gram = eval(args.num_gram)
+    #else:
+    #    num_gram = "-"
+    # force to 
+    num_gram = "-"
     if args.fromweb:
         fromweb = args.fromweb
     else:
@@ -240,7 +245,7 @@ def main():  # ============= =============  ============= =============
     # mongo info for connection
     mongo_tuples=(args.ip_address, args.port, args.db_name, args.tb_name, username, password)
 
-    return feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
+    return feat_extraction(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     , args.sp_master,config.get('spark', 'spark_rdd_compress'),config.get('spark', 'spark_driver_maxResultSize'), args.exe_memory, args.core_max
     , zipout_dir, zipcode_dir, zip_file_name
     , mongo_tuples, fromweb, label_arr, metadata_count,label_idx,data_idx, pattern_str, ln_delimitor, data_field_list, jkey_dict
@@ -252,7 +257,7 @@ def main():  # ============= =============  ============= =============
     
     
 # ================================================================================== train () ============ 
-def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
+def feat_extraction(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     , sp_master, spark_rdd_compress, spark_driver_maxResultSize, sp_exe_memory, sp_core_max
     , zipout_dir, zipcode_dir, zip_file_name 
     , mongo_tuples, fromweb, label_arr, metadata_count,label_idx,data_idx, pattern_str, ln_delimitor, data_field_list, jkey_dict
@@ -262,14 +267,17 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
 
     # zip func in other files for Spark workers ================= ================
     zip_file_path=ml_util.ml_build_zip_file(zipout_dir, zipcode_dir, zip_file_name, user_custom=cust_featuring)
+    
     # get_spark_context
-    sc=ml_util.ml_get_spark_context(sp_master
+    spark=ml_util.ml_get_spark_session(sp_master
         , spark_rdd_compress
         , spark_driver_maxResultSize
         , sp_exe_memory
         , sp_core_max
         , jobname
-        , [zip_file_path]) 
+        , zip_file_path) 
+    if spark:
+        sc=spark.sparkContext
     # log time ================================================================ ================
     t0 = time()
 
@@ -277,10 +285,11 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     input_filename="*"
     ext_type='.gz'
     gz_list=None
-    convert2dirty="N"
+
+    # single hdfs file
     if not ',' in hdfs_dir_list: # single dir having *.gz ==== =========
         # read raw data from HDFS as .gz format ========== 
-        rdd_files=os.path.join(hdfs_dir_list, input_filename+ext_type)
+        hdfs_files=os.path.join(hdfs_dir_list, input_filename+ext_type)
         # check if gz files in hdfs ============
         try:
             gz_list=hdfs.ls(hdfs_dir_list)
@@ -291,15 +300,16 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
         except:
             print "WARNING: Error at checking HDFS file:", sys.exc_info()[0]     
         # use whole folder
+        #print "gz_list",gz_list
         if gz_list is None or len(gz_list)==0:
             print "ERROR: No file found by ",input_filename+ext_type #,", use",hdfs_dir_list,"instead"    
             return -2
         elif len(gz_list)==1:
             # use dir as filename
-            rdd_files=hdfs_dir_list[0:-1]
+            hdfs_files=hdfs_dir_list[0:-1]
             
     else: # multiple dirs ==== =========
-        rdd_files=""
+        hdfs_files=""
         cnt=0
         temp_lbl_list=[]
         comma=""
@@ -314,22 +324,19 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
                 # remove space etc.
                 dr=dr.strip()
                 fdr=os.path.join(HDFS_RETR_DIR, dr)
-                #print "fdr=",fdr
                 # ls didn't like "*"
                 if '*' in fdr:
                     #gz_list=hdfs.ls(fdr.replace("*",""))
                     dn=os.path.dirname(fdr).strip()
-                    bn=os.path.basename(fdr).strip()
-                    #print "dn=",dn,",bn=",bn
+                    bn=os.path.basename(fdr).strip()                    #print "dn=",dn,",bn=",bn
                     # get all names under folder and do filtering
                     gz_list=fnmatch.filter(hdfs.ls(dn), '*'+bn)
-                    #print "gz_list=",gz_list
                 else:
                     gz_list=hdfs.ls(fdr)
                 cnt=cnt+len(gz_list)
                 
                 if len(gz_list)>0:
-                    rdd_files=rdd_files+comma+fdr
+                    hdfs_files=hdfs_files+comma+fdr
                     comma=","
             except IOError as e:
                 print "WARNING: I/O error({0}): {1}".format(e.errno, e.strerror)
@@ -337,188 +344,115 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
                 print "WARNING: Error at checking HDFS file:", sys.exc_info()[0]     
         # use whole folder
         if cnt is None or cnt==0:
-            print "ERROR: No file found at",rdd_files
+            print "ERROR: No file found at",hdfs_files
             return -2
         else:
             print "INFO: total file count=",cnt
         # set convert flag only when multiple dir and label_arr has dirty label
-        #if label_arr is None: # create label arr if None
-        #    label_arr=temp_lbl_list
+
         if not label_arr is None and len(label_arr)==2 and label_arr[1]=="dirty":
             convert2dirty="Y"
-    print "INFO: rdd_files=",rdd_files
-
-    txt_rdd=sc.textFile(rdd_files)#, use_unicode=False
-    
-    total_input_count=txt_rdd.count()
-    print "INFO: Total input sample count=",total_input_count
-    # debug only
-    #for x in txt_rdd.collect():
-    #    print "t=",x
     print "INFO: hdfs_dir_list=",hdfs_dir_list
-    print "INFO: label_arr=",label_arr
-    print "INFO: feature_count_threshold=",feature_count_threshold
-    
-    #jkey_dict={"meta_list":["label","md5","mdate"], "data_key":"logs"}
-    #   this dict depends on the format of input data
-    if not data_field_list is None:
-        jkey_dict=json.loads(jkey_dict)
-        
-        data_key=jkey_dict["data_key"]
-        meta_list=jkey_dict["meta_list"]
-        
-        metadata_count=len(meta_list)
-        data_idx=metadata_count
-        print "INFO: jkey_dict=",jkey_dict
-        print "INFO: meta_list=",meta_list
-        print "INFO: data_key=",data_key
-        print "INFO: data_field_list=",data_field_list
-        print "INFO: metadata_count=",metadata_count
+    print "INFO: hdfs_files=",hdfs_files
 
-        featured_rdd = txt_rdd \
-            .map(lambda x: preprocess_json(x,meta_list,data_key,data_field_list)) \
-            .filter(lambda x: len(x) > metadata_count) \
-            .filter(lambda x: type(x[metadata_count]) is list) \
-            .map(lambda x: feature_extraction_ngram(x, data_idx, MAX_FEATURES, num_gram)) \
-            .filter(lambda x: len(x) > metadata_count) \
-            .filter(lambda x: type(x[metadata_count]) is dict) \
-            .filter(lambda x: type(x[metadata_count+1]) is dict) \
-            .filter(lambda x: len(x[metadata_count])> int(feature_count_threshold) ) \
-            .cache()
-            
-        #print "INFO: featured_rdd="
-        #for x in featured_rdd.collect():
-        #    print "INFO: **** f=",x
-    # user custom code for featuring  ============================================= ==========
-    #   input txt_rdd format (string):  each text row for each sample 
-    #   output featured_rdd format (list):[meta-data1,meta-data2,..., hash_cnt_dic, hash_str_dic]
-    elif not cust_featuring is None and len(cust_featuring)>0:
-        user_module=None
-        user_func=None
-        user_func_dnn=None
+    cust_featuring_jparams=None
+    # custom featuring
+    if not cust_featuring is None and len(cust_featuring)>0:
         # load user module =======
-        try:
-            modules = map(__import__, [CUSTOM_PREFIX+cust_featuring])
-            user_module=modules[0]
-            user_func=getattr(user_module,CUSTOM_FUNC)
-        except Exception as e:
-            print "ERROR: module=",CUSTOM_PREFIX+cust_featuring
-            print "ERROR: user module error.", e.__doc__, e.message
-            return -101
-        try:
-            jparams=json.loads(cust_featuring_params)
-            if jparams and 'n-gram' in jparams:
-                num_gram=jparams['n-gram']
-            elif jparams and 'ngram' in jparams:
-                num_gram=jparams['ngram']
-        except Exception as e:
-            print "ERROR: user params error.", e.__doc__, e.message
-            return -200    
-            
-        # convert feast into array. output format: [ meta1,meta2,..., [feat1,feat2,...]]   
-        tmp_rdd = txt_rdd.map(lambda x: user_func(x, cust_featuring_params)) \
-            .filter(lambda x: len(x) > metadata_count) \
-            .filter(lambda x: type(x[metadata_count]) is list).cache()
-        print " tmp_rdd cnt=", tmp_rdd.count(),",ix=",data_idx,",max f=",MAX_FEATURES,"ngram=",num_gram
-        print "take(1) rdd=",tmp_rdd.take(1)
-		
-		# TBD for multivariant output format: [ meta1,meta2,..., [[feat1,feat2,...],[feat1,feat2,...],...]]
-		
-		# TBD only for num_gram available
-        # for traditional ML, feat in a dict 
-		# output format: [ meta1,meta2,..., [[feat1,feat2,...],[feat1,feat2,...],...]]
-        featured_rdd = tmp_rdd \
-            .map(lambda x: feature_extraction_ngram(x, data_idx, MAX_FEATURES, num_gram)) \
-            .filter(lambda x: len(x) > metadata_count) \
-            .filter(lambda x: type(x[metadata_count]) is dict) \
-            .filter(lambda x: type(x[metadata_count+1]) is dict) \
-            .filter(lambda x: len(x[metadata_count])> int(feature_count_threshold) ) \
-            .cache()
-                
+        user_func,cust_featuring_jparams=get_user_custom_func(cust_featuring,cust_featuring_params)   
+        # TBD apply    user_func
+
         all_hashes_cnt_dic=None
         all_hash_str_dic=None
         all_hashes_seq_dic = None
     else:
-        print "INFO: pattern_str=",pattern_str+"<--"
-        print "INFO: ln_delimitor=",ln_delimitor+"<--"
-        print "INFO: label_idx=",label_idx
-        print "INFO: data_idx=",data_idx
-        print "INFO: metadata_count=",metadata_count
-        print "INFO: filter_ratio=",filter_ratio        
-        
-        # filter top and least percentage of feature
-        if not filter_ratio is None and filter_ratio > 0 and filter_ratio <1:
-            # check total count here before continue
-            upper_cnt=total_input_count*(1-filter_ratio)
-            lower_cnt=total_input_count*filter_ratio
-            # set limit for lower bound. if total count is large, lower_cnt may exclude all features...
-            # max lower count =  min( MAX_FILTER_LOWER_CNT, total_input_count/100 ) 
-            if not MAX_FILTER_LOWER_CNT is None and lower_cnt > MAX_FILTER_LOWER_CNT:
-                if MAX_FILTER_LOWER_CNT > total_input_count/100:
-                    lower_cnt=total_input_count/100
-                else:
-                    lower_cnt=MAX_FILTER_LOWER_CNT
+        print "ERROR: custom featuring type is needed"
 
-
-            print "INFO: filtering by count, upper bound=",upper_cnt,",lower bound=",lower_cnt
-            # find unique feature, count them, remove them if in highest and lowest % and then create a dict 
-            f_feat_set = Set (txt_rdd.map(lambda x:x.split(ln_delimitor)).flatMap(lambda x:Set(x[metadata_count:])) \
-                .map(lambda x:(x,1)).reduceByKey(lambda a, b: a + b) \
-                .filter(lambda x:x[1]<= upper_cnt and x[1]>= lower_cnt) \
-                .map(lambda x:x[0]).collect() )
+    dnn_flag=False
+    has_header=None
+    label_col=None
+    # get featuring params
+    if cust_featuring_jparams:
+        if 'label_index' in cust_featuring_jparams: # idx number for label, 0 based
+            label_index=cust_featuring_jparams['label_index']
+        if 'has_header' in cust_featuring_jparams:    # True/False
+            has_header=eval(cust_featuring_jparams['has_header'])
+            if has_header == 1:
+                has_header=True
+        if 'dnn_flag' in cust_featuring_jparams:    # True/False
+            dnn_flag=cust_featuring_jparams['dnn_flag']
+            if dnn_flag == 1:
+                dnn_flag=True
+            elif dnn_flag==0:
+                dnn_flag=False
                 
-            print "INFO: f_feat_set len=",len(f_feat_set)
-            broadcast_f_set = sc.broadcast(f_feat_set)
-
-            #txt_rdd=txt_rdd.map(lambda x: filter_by_list(x, metadata_count,ln_delimitor, broadcast_f_list.value ))
-            txt_rdd=txt_rdd.map(lambda x: x.split(ln_delimitor)) \
-                        .map(lambda x: x[:metadata_count]+ [w for w in x[metadata_count:] if w and w in broadcast_f_set.value]) \
-                        .map(lambda x: ln_delimitor.join(x))
-        
-        
-        # preprocess by pattern matching and then extract n-gram features   #.encode('UTF8')
-        #   input txt_rdd format (string):  meta-data1\tmeta-data2\t...\tdataline1\tdataline2\t...datalineN\n
-        #   output featured_rdd format (list):[meta-data1,meta-data2,..., hash_cnt_dic, hash_str_dic]
-        #       hash_cnt_dic: {hash,hash:count,...}  hash_str_dic: {hash: 'str1',... }
-        tmp_rdd = txt_rdd \
-            .map(lambda x: preprocess_pattern(x, metadata_count, pattern_str, ln_delimitor \
-                                                , label_idx, label_arr, convert2dirty )) \
-            .filter(lambda x: len(x) > metadata_count) \
-            .filter(lambda x: type(x[metadata_count]) is list) #.cache() memory issue...
-        #tmp_rdd_count=tmp_rdd.count()
-        #print "INFO: After preprocessing count=",tmp_rdd_count
-        featured_rdd = tmp_rdd \
-            .map(lambda x: feature_extraction_ngram(x, data_idx, MAX_FEATURES, num_gram)) \
-            .filter(lambda x: len(x) > metadata_count) \
-            .filter(lambda x: type(x[metadata_count]) is dict) \
-            .filter(lambda x: type(x[metadata_count+1]) is dict) \
-            .filter(lambda x: len(x[metadata_count])> int(feature_count_threshold) ) \
-            .cache()
-        #feat_rdd_count=featured_rdd.count()
-        #print "INFO: After featuring count=",feat_rdd_count
-
-        all_hashes_cnt_dic=None
-        all_hash_str_dic=None
-        all_hashes_seq_dic = None
+    if label_index is None:
+        label_index=0
+    elif not isinstance(label_index, int):
+        label_index=eval(label_index)
     
+    print "INFO: label_index=",label_index,",has_header=",has_header,",dnn_flag=",dnn_flag
+    
+    # read as DataFrame ===============================================
+    df=spark.read.csv(hdfs_files,header=has_header )
+    
+    df.show()
+    print "INFO: col names=", df.columns
+    
+    # get column name for label
+    label_col=None
+    for i,v in enumerate(df.columns):
+        if i==label_index:
+            label_col=v
+            
+    # get all distinct labels into an array  =============== provided by parameter?
+    if label_arr is None and not label_col is None:
+        label_arr=sorted([rw[label_col] for rw in df.select(label_col).distinct().collect()])
+        
+    label_dic = {}
+    # convert label_arr to dict; {label:number|
+    for idx, label in enumerate(sorted(label_arr)):
+        if not label in label_dic:
+            label_dic[label] = idx      #starting from 0, value = idx, e.g., clean:0, dirty:1
+
+    # convert DataFrame to libsvm string
+    libsvm_rdd=df.rdd.map(lambda x: list2libsvm(list(x), label_index=label_index, label_dic=label_dic)) 
+    print "INFO: sample df row=",(libsvm_rdd.collect()[0])
+
+    total_input_count=df.count()
+    print "INFO: Total input sample count=",total_input_count
+    print "INFO: label_arr=",label_arr
+    #print "INFO: feature_count_threshold=",feature_count_threshold
+
     #get all hashes and total occurring count ===============
     #   all_hashes_cnt_dic: {'hash,hash': total count,... }
+    # build all_hashes_cnt_dic
+    cnt_df=df.select( [count(when(~isnull(c), c)).alias(c) for c in df.columns] )
+    #cnt_df.show()
+    cnt_arr=cnt_df.rdd.map(lambda x:list(x)).collect()
+    feat_sample_count_arr=cnt_arr[0]
+    #print "feat_sample_count_arr=",feat_sample_count_arr
+    
     if all_hashes_cnt_dic is None:
-        #all_hashes_cnt_dic = featured_rdd.map(lambda x: x[metadata_count]).reduce(lambda a, b: combine_dic_cnt(a, b))
-        all_hashes_cnt_dic = dict(featured_rdd.flatMap(lambda x: x[metadata_count].items()).reduceByKey(lambda a, b: a + b).collect())
+        all_hashes_cnt_dic={}
+        idx=1
+        for i,v in enumerate(feat_sample_count_arr):
+            if i != label_index:
+                all_hashes_cnt_dic[idx]=v
+                idx+=1
+    #print "all_hashes_cnt_dic=",all_hashes_cnt_dic
     
     #get all hashes and their extracted string  ===============
     #   all_hash_str_dic: {hash:'str1', ...
     if all_hash_str_dic is None:
-        #all_hash_str_dic = featured_rdd.map(lambda x: x[metadata_count+1]).reduce(lambda a, b: combine_dic(a, b))
-        all_hash_str_dic = dict(featured_rdd.flatMap(lambda x: x[metadata_count+1].items()).distinct().collect())
-    
-    # get all labels into an array  =============== provided by parameter?
-    if label_arr is None:
-        # will force "clean" be 0 here
-        label_arr=sorted(featured_rdd.map(lambda x: x[label_idx].lower()).distinct().collect())
-        # debug only
-        print "INFO: label_arr.=",json.dumps(sorted(label_arr))
+        # convert header to dict=index:string; excude label column
+        all_hash_str_dic={}
+        idx=1
+        for i,v in enumerate(df.schema.names):
+            if i != label_index:
+                all_hash_str_dic[idx]=v
+                idx+=1
+    #print "all_hash_str_dic=",all_hash_str_dic
     
     # save labels to hdfs as text file==================================== ============
     hdfs_folder = hdfs_feat_dir #+ "/"   # "/" is needed to create the folder correctly
@@ -545,28 +479,12 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     #     all_hashes_seq_dic: { hash : sequential_numb }
     if all_hashes_seq_dic is None:
         all_hashes_seq_dic={}
-        remap2seq(all_hashes_cnt_dic, all_hashes_seq_dic)   #all_hashes_seq_dic has continuous key number
+        # csv column index as sequentail number
+        remap2seq(all_hash_str_dic, all_hashes_seq_dic)
     #print "all_hashes_seq_dic=",all_hashes_seq_dic
     total_feature_numb=len(all_hashes_seq_dic)
     print "INFO: Total feature count=", len(all_hashes_seq_dic)
 
-    # featured_rdd (list):    [meta-data1,meta-data2,..., hash_cnt_dic, hash_str_dic]
-    # seq_featured_rdd(list): [meta-data1,meta-data2,..., hash_cnthsh_dict, hash_str_dic] (feat id in sorted sequence)
-    # hash_cnt_dic: {hash: count}  hash_str_dic: {hash: 'str1,str2...' }
-    #     set binary_flag to True, all feature:value will be 1
-    broadcast_dic = sc.broadcast(all_hashes_seq_dic)
-    seq_featured_rdd = featured_rdd.map(lambda x: convert2seq(x,label_idx,data_idx,broadcast_dic.value,binary_flag= True)).cache() 
-    
-    # get hash_cnthsh_dict then flatMap and reduce to (feat id, count)
-    ct_rdd=seq_featured_rdd.flatMap(lambda x: [(i[0],i[1]) for i in x[data_idx].iteritems()]).reduceByKey(lambda a, b: a + b)
-    # sorted by feature id as int
-    feat_sample_count_arr=ct_rdd.sortBy(lambda x:int(x[0])).map(lambda x:x[1]).collect()
-    # sort after collect may fail when rdd is huge
-    #feat_sample_count_arr=[]
-    #for i in sorted(ct_rdd.collect(), key=lambda t: int(t[0])):
-    #    feat_sample_count_arr.append(i[1])
-    print "INFO: feat_sample_count_arr len=",len(feat_sample_count_arr)
-    
     # save feat_sample_count_arr data ==================================== ============
     filter='{"rid":'+row_id_str+',"key":"feat_sample_count_arr"}'
     upsert_flag=True
@@ -587,55 +505,29 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
         print "WARNING: save feat_sample_count_arr to local"
         ml_util.ml_pickle_save(feat_sample_count_arr, fsca_hs)
    
-    # save feature data; TBD. not used. ==================================== ============
-    
-    #libsvm_rdd=seq_featured_rdd.map(lambda x: convert2libsvm(x,label_idx,data_idx,label_arr))
-    # put hash to the front of each row, assume hash is after label
-    libsvm_rdd=seq_featured_rdd.map(lambda x: x[label_idx+1]+" "+convert2libsvm(x,label_idx,data_idx,label_arr))
-    # debug only
-    #print "libsvm_rdd="
-    #for i in libsvm_rdd.collect():
-    #    print i
 
-    # get rdd statistics info
-    stats= featured_rdd.map(lambda p: len(p[metadata_count])).stats()
-    feat_count_max=stats.max()
-    feat_count_stdev=stats.stdev()
-    feat_count_mean=stats.mean()
-    sample_count=stats.count()
-    print "INFO: libsvm data: sample count=",sample_count,",Feat count mean=",feat_count_mean,",Stdev=",feat_count_stdev
-    print "INFO:   ,max feature count=",feat_count_max
-    # find sample count
-    lbl_arr=featured_rdd.map(lambda x: (x[label_idx],1)).reduceByKey(add).collect()
-    print "INFO: Sample count by label=",lbl_arr
-
-    
+    # get rdd statistics info    
     # remove duplicated libsvm string; only keep the first duplicated item, assume space following key_idx
     if remove_duplicated=="Y":
         libsvm_rdd=libsvm_rdd \
             .map(lambda x: ( ','.join(x.split(' ')[metadata_count:]), x)) \
             .groupByKey().map(lambda x: list(x[1])[0] ) \
             .cache()        
-        cnt_list= libsvm_rdd.map(lambda x: (x.split(' ')[1],1)).reduceByKey(add).collect()
-        stats= libsvm_rdd.map(lambda x: len(x.split(' ')[metadata_count:])).stats()
-        feat_count_max=stats.max()
-        feat_count_stdev=stats.stdev()
-        feat_count_mean=stats.mean()
-        sample_count=stats.count()
-        print "INFO: Non-Duplicated libsvm data: sample count=",sample_count,",Feat count mean=",feat_count_mean,",Stdev=",feat_count_stdev
-        print "INFO:   ,max feature count=",feat_count_max
-        print "INFO: Non-Duplicated Label count list=",cnt_list
+    cnt_list= libsvm_rdd.map(lambda x: (x.split(' ')[1],1)).reduceByKey(add).collect()
+    stats= libsvm_rdd.map(lambda x: len(x.split(' ')[metadata_count:])).stats()
+    feat_count_max=stats.max()
+    feat_count_stdev=stats.stdev()
+    feat_count_mean=stats.mean()
+    sample_count=stats.count()
+    print "INFO: Non-Duplicated libsvm data: sample count=",sample_count,",Feat count mean=",feat_count_mean,",Stdev=",feat_count_stdev
+    print "INFO:   ,max feature count=",feat_count_max
+    print "INFO: Non-Duplicated Label count list=",cnt_list
         
     # clean up libsvm data ==================================== ============
     libsvm_data_file = os.path.join(hdfs_folder , libsvm_alldata_filename) #"libsvm_data"
     print "INFO: libsvm_data_file=", libsvm_data_file
     try:
-        #hdfs.ls(save_dir)
-        #print "find hdfs folder"
         hdfs.rmr(libsvm_data_file)
-        #if num_gram == 1: 
-        #   hdfs.rmr(dnn_data_file)
-        #print "all files removed"
     except IOError as e:
         print "WARNING: I/O error({0}): {1} at libsvm_data_file clean up".format(e.errno, e.strerror)
     except:
@@ -656,14 +548,8 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     sc.parallelize([total_feature_numb],1).saveAsTextFile(feat_count_file)
 
 
-    label_dic = {}
-    # assign label a number
-    for idx, label in enumerate(sorted(label_arr)):
-        if not label in label_dic:
-            label_dic[label] = idx      #starting from 0, value = idx, e.g., clean:0, dirty:1
-    
-    # output text for DNN:[meta-data1,meta-data2,..., [feature tokens]] ================= DNN ===========
-    if num_gram == 1: # special flag to tokenize and keep input orders
+    # TBD ???  output text for DNN:[meta-data1,meta-data2,..., [feature tokens]] ================= DNN ===========
+    if dnn_flag: # special flag to tokenize and keep input orders
         print "INFO: processing data for DNN..."
         # create token dict
         # str_hash_dict: string to hash
@@ -675,7 +561,8 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
                 token_dict[k]=int(all_hashes_seq_dic[str(v)])
             #print "token_dict=",len(token_dict),token_dict
         
-        dnn_rdd = tmp_rdd \
+        # TBD here: need to implement non-binary feature
+        dnn_rdd=df.rdd \
             .map(lambda x: tokenize_by_dict(x, data_idx, token_dict,label_idx, label_dic)) \
             .filter(lambda x: len(x) > metadata_count) \
             .filter(lambda x: type(x[metadata_count]) is list) 
@@ -719,7 +606,7 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
             print "INFO:   ,max feature count=",feat_count_max
         except:
             print "WARNING: Unexpected error at getting stats of dnn_rdd:", sys.exc_info()[0]
-
+    
         
     
     # clean up pca data in hdfs ============ ========================
@@ -771,7 +658,7 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     
     
     # reverse key value from all_hashes_seq_dic-> all_seq_hashes_dic: { sequential_numb : hash }
-    all_seq_hashes_dic = {y:x for x,y in all_hashes_seq_dic.iteritems()}
+    all_seq_hashes_dic = {y:str(x) for x,y in all_hashes_seq_dic.iteritems()}
     
     # insert all_seq_hashes_dic into mongoDB  ================ TBD may over 16Mb limit
     filter='{"rid":'+row_id_str+',"key":"dic_seq_hashes"}'
@@ -794,13 +681,6 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
         print "WARNING: save all_seq_hashes_dic to local"
         ml_util.ml_pickle_save(all_seq_hashes_dic, fn_sh)
 
-    '''
-    label_dic = {}
-    # assign label a number
-    for idx, label in enumerate(sorted(label_arr)):
-        if not label in label_dic:
-            label_dic[label] = idx      #starting from 0, value = idx, e.g., clean:0, dirty:1
-    '''
     # insert label_dic mongoDB ================ =======
     print "INFO: label_dic=", label_dic
     filter='{"rid":'+row_id_str+',"key":"dic_name_label"}'
@@ -820,7 +700,7 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     # clean up excluded feature list from mongoDB ================ =======
     jstr_filter='{"rid":'+row_id_str+',"key":"feature_excluded"}'
     ret=query_mongo.delete_many(mongo_tuples,None, jstr_filter)
-    print "INFO: Delete feature_excluded=",ret
+    print "INFO: Delete feature_excluded ret=",ret
     
     
     # only update db for web request ================ =======
@@ -837,7 +717,7 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
             +" where id="+row_id_str
         #print "str_sql=",str_sql
         ret=exec_sqlite.exec_sql(str_sql)
-        print "INFO: Data update done! ret=", str(ret),", class_numb=",str(class_numb),json.dumps(sorted(label_arr))
+        print "INFO: Data update done! ret=", str(ret),", class_numb=",str(class_numb)
     else:
         print "INFO: class_numb = "+str(class_numb)
     
@@ -845,71 +725,32 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     t1 = time()
     print 'INFO: running time: %f' %(t1-t0)
     return 0
- 
-# filter by dict to reduce features
-def filter_by_list(x, metadata_count, delimitor, f_feat_list ):
-    #ret=""
-    arr=x.split(delimitor)
-    ret=arr[:metadata_count]
-    for s in arr[metadata_count:]:
-        if s in f_feat_list:
-            #ret=ret+sep+s
-            ret.append(s)
-    #return ret
-    return '\t'.join(ret)
- 
-# convert RDD element to libsvm format
-# label_arr: ["clean","dirty"]
-# output: 0 1:1 3:1
-def convert2libsvm(str_arr,label_idx,data_idx,label_arr=["clean","dirty"]):
-    hash_cnt_dict=str_arr[data_idx]
-    label=str_arr[label_idx].lower() # all label are lower case?
-    ret=""
-    # find label
-    max_label=str(len(label_arr))
-    for idx, val in enumerate(label_arr):
-        if val.lower()==label:
-            ret=str(idx)+" "
-            break
-    if ret=="":
-        ret=max_label+" " # default to len
 
-    # need to sort the key/feature id for libsvm
-    od = collections.OrderedDict(sorted(hash_cnt_dict.items(), key=lambda t: int(t[0])))
-    # convert to libsvm
-    ret = ret+ json.dumps(od).replace(" ","").replace("{","").replace("}","").replace("\"","").replace(","," ")
-    
-    return ret
-    
-# convert RDD element to sequential key/feature id output {seq:cnt}
-#   str_arr: [meta-data1,meta-data2,...,meta-dataN, hash_cnthsh_dic, hash_str_dic]
-def convert2seq(str_arr, label_idx, data_idx, all_hashes_seq_dic, binary_flag):
-    hash_cnthsh_dict=str_arr[data_idx]
-    out={}
-    
-    # set new feature id
-    for key in hash_cnthsh_dict:
-        if binary_flag:
-            out[all_hashes_seq_dic[key]]=1  #force to 1; #
-        else:
-            out[all_hashes_seq_dic[key]]=hash_cnthsh_dict[key]
-    str_arr[data_idx]=out
-    return str_arr
-    
-# combine two dictionaries into one dictionary; for Spark Reduce()   
-def combine_dic(dic_1, dic_2):
-    return dict(dic_1.items()+dic_2.items())
+# get custom python module
+def get_user_custom_func(cust_featuring,cust_featuring_params=None):
+    user_module=None
+    user_func=None
+    jparams=None
 
-    # combine two dictionaries into one dictionary and add count; for Spark Reduce()   
-def combine_dic_cnt(dic_1, dic_2):
-    combine_dic = dic_1.copy()
-    for key in dic_2:
-        if key in combine_dic:
-            combine_dic[key]=dic_2[key]+combine_dic[key] # 
-        else:
-            combine_dic[key]=dic_2[key]
-    return combine_dic
+    # load user module =======
+    try:
+        modules = map(__import__, [CUSTOM_PREFIX+cust_featuring])
+        user_module=modules[0]
+        user_func=getattr(user_module,CUSTOM_FUNC)
+    except Exception as e:
+        print "ERROR: module=",CUSTOM_PREFIX+cust_featuring
+        print "ERROR: user module error.", e.__doc__, e.message
+        return user_func, jparams
+    try:
+        if cust_featuring_params:
+            jparams=json.loads(cust_featuring_params)
 
+    except Exception as e:
+        print "ERROR: user params error.", e.__doc__, e.message
+        return user_func, jparams    
+
+    return user_func, jparams
+    
 
 # map hash/key to continuous number for input_dic ================          
 def remap2seq(input_dic, output_dic):

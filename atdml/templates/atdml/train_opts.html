@@ -204,17 +204,17 @@ Predefined: Feature extraction by N-gram for traditional ML or Deep Neural Netwo
 Customized: User provided custom featuring module
 ">
         <ul class="nav nav-tabs" style="margin-top: 5px;" id="_ul_fea">
-            <li class="tab_bgc _ml_tbs " id="_li_fea">
+            <li class="tab_bgc _ml_tbs active" id="_li_fea">
                 <a href="#_fea_pre"  data-toggle="tab" id="_a_fea_pre" tag="predefined" class="tab_packed_bold"
                 >Predefined</a></li>
-            <li class="tab_bgc _ml_tbs "  id="_li_fea_cus">
+            <li class="tab_bgc _ml_tbs"  id="_li_fea_cus">
                 <a href="#_fea_cus" data-toggle="tab" id="_a_fea_cus" tag="customized"  class="tab_packed_bold"
                 >Custom</a></li>
         </ul>
         </div><!--end feat method tabs-->
        <div id="_fea_methods" class="tab-content" >
        <!--=== feat pre ===-->
-       <div id="_fea_pre" class="tab-pane ">
+       <div id="_fea_pre" class="tab-pane active">
         <div class="row" id="_n_gram_row"> 
           <div class="col-md-2"  style="margin-top: 5px;">
            <div class="input-group" data-placement="bottom" data-toggle="tooltip"
@@ -329,8 +329,8 @@ Customized: User provided custom featuring module
                   </button>
                   <ul id="_ul_cust_feat" class="dropdown-menu">
                      <li><a href="#">csv</li>
-                     <li><a href="#">fsw</li>
-                     <li><a href="#">procmon</a></li>
+                     <!-- li><a href="#">fsw</li>
+                     <li><a href="#">procmon</a></li -->
                   </ul>
             </div><!-- input-group-btn -->
            </div><!-- input-group -->
@@ -348,7 +348,12 @@ Customized: User provided custom featuring module
                         style="min-width: 500px; margin-right: 5px; font-family: 'Lucida Console';" 
                         placeholder='Optional parameters in JSON format: e.g. {"n-gram":2}' 
                         data-placement="bottom" data-toggle="tooltip" value="{{ custom_jstr }}"
-                        title='Optional parameters in JSON format: e.g. {"n-gram":2}' ></input>
+                        title='Sample params for 
+csv: {"label_index": "4", "has_header": "True", "custom": "csv"}
+fsw: {"type": "evt_entropy", "n-gram": 2, "custom": "fsw"} 
+procmon: {"type": "evt_ext", "n-gram": 2, "custom": "procmon"}' 
+
+></input>
                 </div><!-- /input-group -->    
             </div>              
         </div><!--end row-->
@@ -957,10 +962,10 @@ Kmeans: Train a clustering model for non-labelled dataset (ignoring label)
                         <a href="#_tp_ls" id="_skl_def" >Linear SVM</a></li>
                     <li id="_li_skl_lr">
                         <a href="#_tp_lr" >Logistic Regression</a></li>
-                    <li id="_li_skl_svm">
+                    <!--li id="_li_skl_svm">
                         <a href="#_tp_svm" >SVM</a></li>
                     <li id="_li_skl_nsvm">
-                        <a href="#_tp_nsvm" >nu-SVM</a></li>
+                        <a href="#_tp_nsvm" >nu-SVM</a></li-->
                     <li id="_li_skl_ls_sgd" >
                         <a href="#_tp_ls_sgd" >Linear SVM with SGD</a></li>
                     <li id="_li_skl_pac" >

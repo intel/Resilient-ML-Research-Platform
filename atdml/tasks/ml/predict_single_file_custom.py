@@ -54,6 +54,10 @@ KERAS_LIB_DIR=config.get('env', 'KERAS_LIB_DIR')
 sys.path.append(KERAS_LIB_DIR)
 from keras.models import load_model
 BATCH_SIZE=128
+CUSTOM_PREFIX='cf_'
+CUSTOM_FUNC='featuring'
+CUSTOM_FUNC_ONE_LINE='to_one_line'
+
 
 def main():
 
@@ -105,7 +109,16 @@ def main():
                 , default =config.get('spark', 'spark_executor_memory'))
     parser.add_argument('-cm','--core_max', type=str, dest='core_max', help='spark.cores.max'
                 , default =config.get('spark', 'spark_cores_max'))
-    
+
+    # custom    
+    parser.add_argument("-cf", "--cust_featuring", type=str, metavar="custom featuring"
+        , help="custom featuring", required=False)
+    parser.add_argument("-cfp", "--cust_featuring_params", type=str, metavar="parameters for custom featuring"
+        , help="parameters for custom featuring", required=False)
+    parser.add_argument("-cfd", "--cust_folder", type=str, metavar="folder for user custom code of featuring"
+        , help="folder for user custom code of featuring", required=False)
+
+                
     #### database for output
     parser.add_argument('-ip','--ip_address', type=str, dest='ip_address', help='mongodb ip address'
                 , default =config.get('mongo', 'out_ip_address'))
@@ -228,9 +241,20 @@ def main():
     else:
         password  = None     
     
+    if args.cust_featuring:
+        cust_featuring = args.cust_featuring
+    else:
+        cust_featuring  = None
+    if args.cust_featuring_params:
+        cust_featuring_params = args.cust_featuring_params
+    else:
+        cust_featuring_params  = None
+    if args.cust_folder:
+        cust_folder = args.cust_folder
+    else:
+        cust_folder  = './user_custom'
     #
     binary_flag=True # TBD for param
-
     
     return predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
         , j_str, lib_mode
@@ -240,17 +264,10 @@ def main():
         , feat_cnt_threshold=args.feat_cnt_threshold
         , ip_address=args.ip_address, port=args.port, db_name=args.db_name, tb_name=args.tb_name
         , username=username, password=password
+        , cust_featuring=cust_featuring, cust_featuring_params=cust_featuring_params, cust_folder=cust_folder
         )
         
-    '''
-    ret=predict_single_file_pattern.predict(
-     row_id_str="314729",ds_id="314729",cid_str="315273"
-    ,input_gz="/home/django/myml/media/result/314729/an_00acd0d9c55559d0a26469b67a23c2142b59e18f208109a20dfec68c1e756c37.only.log.dirty.gz"
-    ,local_out_dir="/home/django/myml/media/result/314729"
-    ,num_gram=2,j_str='{"c":"1","learning_algorithm":"linear_svm"}'
-    ,lib_mode='scikit',fromweb='2'
-    ,verbose=0,label_idx=0,data_idx=3,metadata_count=3,pattern_str='(.*)')    
-    '''
+
     
 #  Used by massive prediction too ================================= =======================
 def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
@@ -265,9 +282,11 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
         , db_name=config.get('mongo', 'out_db'), tb_name=config.get('mongo', 'out_tb')
         , username=config.get('mongo', 'out_username'), password=config.get('mongo', 'out_password')
         , sc=None
+        , cust_featuring=None, cust_featuring_params=None, cust_folder  = './user_custom'
         ):
+    sys.path.append(cust_folder)
 
-    print "in"
+    #print "in"
     t0 = time()
     coef_arr=None
     dic_hash_str=None
@@ -281,38 +300,8 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
 
     ml_opts=None
 
-    # load model from strings ============ for offline IN, liner model ==============
-    if not str_model_json is None and len(str_model_json)>10:
-        try:
-            model_json=json.loads(str_model_json)
-        except Exception as e:
-            print "ERROR: model json load error." , e
-            return -1
-      
-        #print "model_json=",model_json
-        if "coef_arr" in model_json:
-            coef_arr=model_json["coef_arr"]
-            col_num = len(coef_arr)   
-        if "coef_intercept" in model_json:
-            coef_intercept=model_json["coef_intercept"]
-        if "dic_hash_str" in model_json:
-            dic_hash_str=model_json["dic_hash_str"]
-        if "dic_seq_hashes" in model_json:
-            dic_seq_hashes=model_json["dic_seq_hashes"]    
-        if "pca_param" in model_json:
-            pca_param=model_json["pca_param"]
-        if "feat_sample_count_arr" in model_json:
-            feat_sample_count_arr=model_json["feat_sample_count_arr"]
-        if dic_name_label is None:
-            dic_name_label=model_json["dic_name_label"]
-        if j_str is None:
-            j_str=model_json["ml_opts"]
-        ml_opts=json.loads(j_str)
-        #print "j_str=",j_str
-        num_gram=eval(model_json["ml_n_gram"])
-        lib_mode="offline"
-    # load model from a file ======
-    elif not model_filename is None: 
+    # load model from strings ==========================
+    if not model_filename is None: 
         if os.path.exists(model_filename):
             print "INFO: model from file=",model_filename
             try:
@@ -358,43 +347,63 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
         print "WARNING: load learning_algorithm failed.",e
     print "INFO: learning_algorithm=",learning_algorithm
     
+    # featuring optinos ===================== input ml_opts ==============
+    
+    feat_opt={}
+    try:
+        if cust_featuring_params and len(cust_featuring_params)>5:
+            feat_opt = json.loads(cust_featuring_params)
+        if num_gram is None and 'n-gram' in feat_opt:
+            num_gram = feat_opt['gram'] 
+    except Exception as e:
+        print "WARNING: load cust_featuring_params failed.",e
+    print "INFO: feat_opt=",feat_opt
+    
     
     # read raw data from .gz file ===================== input .gz ==============
-    #if json_str is None:
-    # TBD by faster convert_to_line_by_bash()
-    try:
-        f = gzip.open(input_gz, 'rb')
-        sample_txt = convert_to_line(f, metadata_count) # check if one line, if raw file then convert to 1 line
-        #print "sample_txt=",sample_txt[:100].replace('\t',',')
-        #print "sample_txt=",sample_txt.replace('\t',',')
-        f.close()
-    except Exception as e:
-        print "ERROR: load data file ["+input_gz+"] failed.",e
-        return -5
 
-    #f = gzip.open(input_gz, 'rb')
-    #file_content = f.readline() # assume only one line
-    #file_content=convert_to_line(f, metadata_count) # check if one line, if raw file then convert to 1 line
-    #f.close()
-
-    # input: assume one line of ngram pattern format string ===========
-    #       return an array [meta-data1,meta-data2,...,str_arr]
     raw_arr=None
     coef_arr=None
     feat_arr=None
 
-    # Pattern matching
-    # input:  one line text & RE pattern str
-    #       return array: [meta-data1,meta-data2,..., str array]
-    raw_arr=preprocess_pattern(sample_txt, metadata_count, pattern_str, ln_delimitor, label_idx, label_arr=None )
-    #print "*****************raw_arr=",raw_arr
+    # get custom preprocess func
+    # load user module =======
+    user_module=None
+    user_featuring_func=None
+    user_1line_func=None
+    try:
+        modules = map(__import__, [CUSTOM_PREFIX+cust_featuring])
+        user_module=modules[0]
+        user_featuring_func=getattr(user_module,CUSTOM_FUNC)
+        user_1line_func=getattr(user_module,CUSTOM_FUNC_ONE_LINE)
+    except Exception as e:
+        #print "ERROR: module=",CUSTOM_PREFIX+str(cust_featuring)
+        print "ERROR: user module error.", e.__doc__, e.message
+        return -101
     
-    # N-gram extraction
-    # input:  array: [meta-data1,meta-data2,..., str array]
+    # Custom function to convert a file to one line; <custom_module>.to_one_line()
+    #   input: file name
+    #   output: string; meta-data1\tmeta-data2\t...\tfeature1\tfeature2\t...
+    str_raw=user_1line_func(row_id_str,fname=input_gz)
+    #print "*****************str_raw=",str_raw
+    
+    # Custom function to extraction: <custom_module>.featuring(line, featuring_params, delimitor='\t', data_idx=3):
+    #   input: string; meta-data1\tmeta-data2\t...\tfeature1\tfeature2\t...
+    #   output: array: [<meta-data1>,<meta-data2>,...,[feature1,feature2,...]]
+    raw_arr=user_featuring_func(str_raw,featuring_params=cust_featuring_params, data_idx=data_idx, delimitor=ln_delimitor)
+    print "**************raw_arr=",raw_arr
+
+    # check if n-gram
+    # Return:
+    #   array: [meta-data1,meta-data2,..., hash_cnt_dic, hash_str_dic]
+    #       hash_cnt_dic: {hash,hash:count),...}  hash_str_dic: {hash: 'str1',... }
+    
+    
+    # return:  array=[meta-data1,meta-data2,..., hash_cnt_dic, hash_str_dic]
     #       return hashes_cnt_dic: {hash,hash:count),...}  hash_str_dic: {hash: 'str1',... }
     feat_arr=feature_extraction_ngram(raw_arr, data_idx, MAX_FEATURES, num_gram)
-    #print "**************feat_arr=",feat_arr
-
+    print "**************feat_arr=",feat_arr
+    
     #
     if feat_arr is None or len(feat_arr)==0:
         print "ERROR: Raw data format error or no feature found at predict_single_file_pattern."
@@ -595,7 +604,7 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
         
         
     s_feat_count=len(curr_dic) 
-    print "INFO: sample feature count=",s_feat_count
+    print "INFO: distinct feature count=",s_feat_count
     
     # save feature list file ================================== ============
     if verbose=="1" and not out_f is None:
@@ -911,7 +920,7 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
     print 'INFO: total running time: %f' %(t1-t0)
     return 0
 
-#  return spark context
+#  return spark context ==============================================================================
 def get_sc(row_id_str,sp_master, exe_memory, core_max):
     
     from pyspark import SparkContext

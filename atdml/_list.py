@@ -127,7 +127,6 @@ def insert_empty_record(request,perm,action):
     newdoc.submitted_by=request.user.username
     newdoc.desc=request.POST.get('hf_desc')
 
-
     folder=""
     if action == "query":
         newdoc.filename='q_'+random_string_generator()
@@ -157,8 +156,6 @@ def insert_empty_record(request,perm,action):
         newdoc.docfile=folder
         newdoc.status_code=settings.STS_100_RETRIEVE
         newdoc.status="new hdfs data"
- 
-
         print "newdoc.file_type=",newdoc.file_type
         print "request.POST.get('label_arr')=",request.POST.get("label_arr")
         
@@ -324,16 +321,17 @@ def uploadFile(request,form,perm):
         newdoc.acl_list=perm
         newdoc.file_type=uploadtype
         newdoc.desc=desc
-        
         # no n_gram for static data and 
         if "static" in uploadtype or "Libsvm" in uploadtype:
             newdoc.ml_n_gram="-1"
+        elif 'custom' in uploadtype.lower():
+            newdoc.ml_n_gram="-"
         else:
             newdoc.ml_n_gram="2"
                 
         # for featured data ============
         if 'libsvm' in uploadtype.lower():
-            print '++++++++++++ in featured upload'
+            #print '++++++++++++ in featured upload'
             newdoc.status='featured'
             newdoc.status_code=settings.STS_400_FEATURE
         elif not 'List' in uploadtype:
@@ -350,7 +348,7 @@ def uploadFile(request,form,perm):
             if "pattern" in uploadtype:
                 print "ptn_str=",request.POST.get("ptn_str")
                 newdoc.pattern=request.POST.get("ptn_str")
-            else: #?
+            else:
                 print "json_keys_arr=",request.POST.get("json_keys_arr")
                 newdoc.json_keys_arr=request.POST.get("json_keys_arr")
 
@@ -450,7 +448,6 @@ def train_opts(request, rid, perm,disabled4reader):
             ,'disabled4reader':disabled4reader, 'perm':perm
             ,"jopts":jopts, "has_pca":has_pca
             ,"options":options
-
         }, 
     ) 
 # train opts page's action handler======================================= Learn&Predict ==================
@@ -573,7 +570,7 @@ def ml_opts(request,perm,disabled4reader):
                     odoc.json_keys_arr=json_keys_str
                     odoc.label_arr=lbl
                     odoc.ml_feat_threshold=feat_threshold
-                    odoc.ml_feat_opts=feat_threshold
+                    odoc.ml_feat_opts=cust_params
                     odoc.save()
                     
             # FEATURING here  ===================   
@@ -864,7 +861,6 @@ def featuring(document, n_gram, pattern, label_arr,json_keys_str, feat_threshold
         n_gram="-1"
     #print "n_gram=",n_gram
     
-        
     #update db 
     document.status='processing feature'
     document.processed_date=datetime.datetime.now()

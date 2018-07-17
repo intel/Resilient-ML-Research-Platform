@@ -119,9 +119,11 @@ def ml_build_zip_file(out_dir, code_dir, zip_file_name, user_custom=None, prefix
         # add user code; set to same ./ml folder in zip file
         if not user_custom is None and len(user_custom)>0:
             for path, dirs, files in os.walk(cust_dir):
-                print path
+                #print path
                 for f in files:
-                    if f==cust_prefix+user_custom+suffix:
+                    # include all cf_ files
+                    if f.endswith(suffix) and f.startswith(cust_prefix):
+                    #if f==cust_prefix+user_custom+suffix:
                         pyz.write(os.path.join(path, f), os.path.join(os.path.relpath(rel_dir, code_dir), f))
             
     #print "INFO: zip_file_path=",zip_file_path    
@@ -921,9 +923,11 @@ def calculate_hypothesis(curr_dic, col_num, coef_arr, intercept, model_classname
     
 # calculate_hypothesis for prediction; sparse array version =================
 def calculate_hypothesis_arr(v_array, coef_arr, intercept, model_classname):
-    hypothesis_val=np.dot(v_array,coef_arr) + intercept
-    if model_classname and "logistic" in model_classname.lower():
-        hypothesis_val=sigmoid(hypothesis_val) 
+    hypothesis_val=None
+    if not coef_arr is None and not v_array is None:
+        hypothesis_val=np.dot(v_array,coef_arr) + intercept
+        if model_classname and "logistic" in model_classname.lower():
+            hypothesis_val=sigmoid(hypothesis_val) 
     return hypothesis_val
     
 # for logistic regression to calculate hypothesis output =================
@@ -1335,7 +1339,27 @@ def ml_get_spark_context(sp_master, p_compress, p_maxResultSize, p_exe_memory, p
     
     return sc    
 
-# build false prediction table; for sklearn only
+# return Spark session
+def ml_get_spark_session(sp_master, p_compress, p_maxResultSize, p_exe_memory, p_core_max, sp_jobname="NoName"
+        , zip_file_path=None, p_driver_memory="2g"):   
+    from pyspark.sql import SparkSession
+    spark=SparkSession.builder \
+        .master(sp_master) \
+        .appName(sp_jobname) \
+        .config('spark.rdd.compress', p_compress) \
+        .config('spark.driver.maxResultSize', p_maxResultSize) \
+        .config('spark.executor.memory', p_exe_memory) \
+        .config('spark.cores.max', p_core_max) \
+        .config('spark.ui.consoleProgress.update.interval', '60000') \
+        .getOrCreate()
+
+    if not zip_file_path is None:
+        spark.sparkContext.addPyFile(zip_file_path)
+
+    return spark    
+    
+    
+# build false prediction table; for sklearn linear model only
 def ml_build_false_pred(X_test_sparse,coef,intercept,labels_test,labels_pred,test_hash_list,model_name
         ,jfeat_coef_dict, false_pred_fname, row_id_str=None, ds_id=None
         , feat_sample_count_arr=None, mongo_tuples=None):
@@ -1392,7 +1416,7 @@ def ml_build_false_pred(X_test_sparse,coef,intercept,labels_test,labels_pred,tes
             # get info for each feature
             for fid, v in enumerate(arr[tl_idx,:]):
                 farr=[]
-                if v > 0:
+                if v > 0 and len(jfeat_coef_dict)>0:
                     farr=[jfeat_coef_dict[str(fid+1)][0],jfeat_coef_dict[str(fid+1)][1]]
                     if has_sample_count:
                         farr.append(feat_sample_count_arr[fid])
@@ -1597,7 +1621,8 @@ def ml_get_n_components(var_arr,threshold):
         sum_ratio=sum_ratio+val
         if sum_ratio >= threshold:
             break
-    return n_components    
+    # index is zero based need to add 1
+    return n_components+1    
 if __name__ == '__main__':
     __description__ = "utilties for ml"
     main()

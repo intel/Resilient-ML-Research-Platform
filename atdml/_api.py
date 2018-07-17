@@ -176,6 +176,8 @@ def get_model(request, rid, perm, disabled4reader):
     ret["accuracy"]=document.accuracy    
     ret["train_id"]=document.train_id
     ret["option_state"]=document.option_state  
+    ret["ml_feat_opts"]=document.ml_feat_opts  
+    ret["pattern"]=document.pattern  
 
     # get other info from mongo
     ret=ml_util.ml_get_model(ret)
@@ -312,6 +314,7 @@ def get_post_predict(request, rid, hash, perm,disabled4reader):
             newdoc.ml_n_gram=document.ml_n_gram
             newdoc.ml_opts=document.ml_opts
             newdoc.ml_lib=document.ml_lib
+            newdoc.ml_feat_opts=document.ml_feat_opts  
                 
             newdoc.db_host=host
             newdoc.db_db=db

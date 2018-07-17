@@ -176,11 +176,21 @@ def convert_to_line_by_bash(gzfilename,metadata_count,ln_delimitor):
     # remove tailing \n
     ret=os.popen("zcat '"+gzfilename+"' "+to_one_line).read().strip()
 
-    # add meta data
+    # add empty meta data
     for i in range(0,metadata_count):
         ret=ln_delimitor+ret
     #print "out_line=",ret.replace('\t',',')
     return ret
+
+# convert text file to one line
+def convert_to_line_custom(gzfilename,metadata_count,ln_delimitor):
+
+    # add empty meta data
+    for i in range(0,metadata_count):
+        ret=ln_delimitor+ret
+    #print "out_line=",ret.replace('\t',',')
+    return ret
+
     
 # test only
 def main():

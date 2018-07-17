@@ -264,21 +264,21 @@ IN-static: IN static data format
 				    <button class="btn btn-default dropdown-toggle form-control " type="button" 
                      title="
 Type of Data:                     
-Featured format: pre-featured data in LIBSVM format
+Featured Libsvm format: pre-featured data in LIBSVM format
 N-gram pattern in HDFS: time sequence data for N-gram in text
-N-gram JSON in HDFS: time sequence data for N-gram in JSON
-Custom in HDFS: Custom preprocessing by user defined plug-in module
+Custom in HDFS: data for Custom featuring by user defined plug-in module
 Ensemble Classifier: a collection of classifier for ensemble prediction
-IN-dynamic: behaviour log from MongoDB 
-IN-static: static data from MongoDB 
+Raw Data: upload through web for N-gram pattern or Custom format
 "
                      data-toggle="dropdown" aria-expanded="true" >		
 					<span id="uploadtype">Libsvm Format</span>
 					<span class="caret"></span>
 				  </button>
-				  <ul class="dropdown-menu multi-level dropdown-menu-right" id="uploadtype_dropdown" role="menu" aria-labelledby="dropdownMenu1">
+				  <ul class="dropdown-menu multi-level dropdown-menu-right" id="uploadtype_dropdown" role="menu" aria-labelledby="dropdownMenu1"
+                    data-placement="right" data-toggle="tooltip" title='
+                        gzip for Raw Data upload is optional '>
 					<li role="presentation" class="drowdown-header"><strong>&nbsp;&nbsp;Featured Data</strong>:(for upload)</li>
-					<li role="presentation" ><a role="menuitem" tabindex="-1" href="#" class="_upload_">Libsvm Format</a></li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_upload_">Libsvm Format</a></li>
 					<li role="presentation" class="divider"></li>
 					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;<strong>Raw Data in HDFS:</strong>(preloaded)</li>
 					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_ptn_ _hdfs_">N-gram pattern</a></li>
@@ -291,13 +291,13 @@ IN-static: static data from MongoDB
 					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;<strong>Ensemble Classifier:</strong></li>
 					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_ensemble_">Ensemble</a></li>
 					<li role="presentation" class="divider"></li>
-					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;Raw Data:(for upload)</li>
+					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;Raw Data:(for upload) </li>
 					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_ptn_ _gz_" >N-gram pattern gz</a></li>
 					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_customgz_ _gz_" >Custom gz</a></li>
-					<li role="presentation" class="divider"></li>
+					<!-- li role="presentation" class="divider"></li>
 					<li role="presentation" class="drowdown-header">&nbsp;&nbsp;Hash List:(for data retrieval)</li>
 					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_upload_">MD5 List IN-dynamic</a></li>
-					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_upload_">MD5 List IN-static</a></li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_upload_">MD5 List IN-static</a></li -->
 				  </ul>
 				</div> <!--input-group -->
                 </div> <!--col -->
@@ -313,8 +313,9 @@ IN-static: static data from MongoDB
 					<span class="caret"></span>
 				  </button>
 				  <ul class="dropdown-menu dropdown-menu-right" id="ul_custom_type" role="menu" aria-labelledby="dropdownMenu1">
-					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_dnn_text_">fsw</a></li>
-					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_dnn_assembly_">procmon</a></li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_csv_">csv</a></li>
+					<!-- li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_fsw_">fsw</a></li>
+					<li role="presentation"><a role="menuitem" tabindex="-1" href="#" class="_procmon_">procmon</a></li -->
 				  </ul>
 				</div> <!--input-group -->
                 </div> <!--col -->
@@ -330,7 +331,7 @@ IN-static: static data from MongoDB
                             style="min-width: 500px; margin-right: 5px;font-weight: bold; cursor: pointer"
                             placeholder="Click to select a file for upload" readonly
                             data-placement="bottom" data-toggle="tooltip"
-                            title="Upload hash list, raw data or featured data with libsvm format."
+                            title="Upload raw or featured data with supported format: text, libsvm, csv etc."
                         ></input>
                     </div><!-- /input-group -->    
                 </div>       

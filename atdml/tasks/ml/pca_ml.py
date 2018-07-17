@@ -344,15 +344,12 @@ def PCA_transform(sc, samples_df,feature_count, threshold, k):
         print "RESULT: PCA ratio_vec=",var_arr
         
         n_components=ml_util.ml_get_n_components(var_arr,threshold)
-        '''
-        for n_components,val in enumerate(var_arr):
-            sum_ratio=sum_ratio+val
-            if sum_ratio >= threshold:
-                break
-        '''
+        # set mini to 3
+        if n_components <3:
+            print "WARNING: set n_components to 3 for 3D graph"
+            n_components=3
         k=n_components
-        #print sum_ratio, n_components  
-
+            
         df_pcaed_all = pca_model.transform(samples_df).select("hash","label","pcaFeatures")
         # get k column only
         sqlCtx = SQLContext(sc)

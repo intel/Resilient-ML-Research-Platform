@@ -83,6 +83,9 @@ def predict(request, rid, cid, msg_id, perm,disabled4reader):
         db_proj=document.db_proj if document.db_proj else ""
         pattern=document.pattern
         pca_opts=document.ml_pca_opts
+        cust_featuring_params=document.ml_feat_opts
+        cust_featuring=None
+        
         ml_feat_threshold=request.POST.get('_feat_threshold')
         if ml_feat_threshold is None or ml_feat_threshold=="":
             ml_feat_threshold=document.ml_feat_threshold
@@ -137,6 +140,11 @@ def predict(request, rid, cid, msg_id, perm,disabled4reader):
                     # special type for ensemble
                     action_type="ensemble";
                     newdoc.file_type="ensemble_predict"
+                elif cust_featuring_params and len(cust_featuring_params)>0:
+                    # user custom featuring code
+                    j_feat_opts=json.loads(cust_featuring_params)
+                    if j_feat_opts and 'custom' in j_feat_opts:
+                        cust_featuring=j_feat_opts['custom']
             else: # form not valid ========== ====
                 print 'invalid form'
                 form = DocumentForm()
@@ -196,7 +204,9 @@ def predict(request, rid, cid, msg_id, perm,disabled4reader):
         verbose="1" # default to generate feature list
         (ret, msg_id, msg)=invoke_pred_script(rid, ds_id, cid, tlabel, upload_fname, filename, fnumb, action_type, ds_ftype \
               , dns, port, db, tbl, usr, pwd, db_proj, hash, n_gram, opt_str, lib, pattern, verbose, pca_opts, exe_type, emulater_config \
-              , ml_feat_threshold, ds_list=ds_list, pert_flag=pert_flag)   
+              , ml_feat_threshold, ds_list=ds_list, pert_flag=pert_flag
+              , cust_featuring=cust_featuring, cust_featuring_params=cust_featuring_params
+        )   
         
 
         print "msg_id=",msg_id, ", msg="+msg
@@ -210,6 +220,7 @@ def predict(request, rid, cid, msg_id, perm,disabled4reader):
                 , "by": newdoc.submitted_by, "filename": newdoc.filename, "true_label": newdoc.true_label
                 , "msg": msg, "prediction":newdoc.prediction, "msg_id": msg_id
                 ,"predict_val":newdoc.predict_val,"train_id":newdoc.train_id,"feat_list":""
+                ,"cust_featuring":cust_featuring,"cust_featuring_params":cust_featuring_params
             }
             return Response([wdoc]) # keep same format as regular pred output
         
@@ -313,23 +324,33 @@ def invoke_pred_script_by_docs(model_doc, pred_doc, action_type, ml_feat_thresho
         ml_feat_threshold=model_doc.ml_feat_threshold
     ds_list=model_doc.ds_list
     verbose="1" # default to generate feature list
+    cust_featuring_params=model_doc.ml_feat_opts
+    cust_featuring=None
+    if cust_featuring_params and len(cust_featuring_params)>0:
+        j_feat_opts=json.loads(cust_featuring_params)
+        if j_feat_opts and 'custom' in j_feat_opts:
+            cust_featuring=j_feat_opts['custom']
 
     return invoke_pred_script(rid, ds_id, cid, tlabel, upload_fname, filename, fnumb, action_type
         , uploadtype, dns, port, db, tbl, usr, pwd, db_proj, hash, n_gram, opt_str, lib, pattern
-        , verbose, pca_opts, exe_type, emulater_config,  ml_feat_threshold, ds_list)   
+        , verbose, pca_opts, exe_type, emulater_config,  ml_feat_threshold, ds_list
+        , cust_featuring=cust_featuring, cust_featuring_params=cust_featuring_params
+    )   
     
 #============================================================= predict_massive ==================
 # for RESTful API only. Massive prediction without trace
 def invoke_pred_script(rid, ds_id, cid, tlabel, upload_fname, filename, fnumb, action_type, ds_ftype
               , dns, port, db, tbl, usr, pwd, db_proj, hash, n_gram, opt_str, lib, pattern, verbose, pca_opts, exe_type
               , emulater_config="", ml_feat_threshold=0, ds_list=None
-              , pert_flag=None):    
+              , pert_flag=None, cust_featuring=None, cust_featuring_params=None
+    ):    
     print "In invoke_pred_script: rid=",rid,",ds_id=",ds_id,",cid=",cid,",upload_fname=",upload_fname,",filename=",filename
     print ",TASK_EXE=",settings.TASK_EXE,",PREDICT_SCRIPT=",settings.PREDICT_SCRIPT
     print ",fnumb=",fnumb,",tlabel="+tlabel+"<====, verbose=",verbose,",action_type=",action_type,",ds_ftype=",ds_ftype
     print ",dns=",dns,"port=",port,"db=",db,"tbl=",tbl,"db_proj=",db_proj
     print ",hash=",hash,"n_gram=",n_gram,"lib=",lib,"opt_str=",opt_str
     print ",pattern=",pattern,',pca_opts=',pca_opts,"exe_type=",exe_type , ",ds_list=",ds_list
+    print ",cust_featuring=",cust_featuring,',cust_featuring_params=',cust_featuring_params
     ret=-1   
     
     # predict single
@@ -365,6 +386,9 @@ def invoke_pred_script(rid, ds_id, cid, tlabel, upload_fname, filename, fnumb, a
         ,str(ml_feat_threshold) if ml_feat_threshold else "0"
         ,ds_list if ds_list else ""
         ,pert_flag if pert_flag else ""
+        ,cust_featuring if cust_featuring else ""
+        ,cust_featuring_params if cust_featuring_params else ""
+        
     ])
     print 'End predict script: ret=', ret, '; id=', rid,', fname=', upload_fname 
     if ret==0:
@@ -467,11 +491,22 @@ def predict_hash(document, newdoc, hash, tlabel, action_type, host,port,db,tbl,u
     print "newdoc.train_id=",newdoc.train_id, ", document.train_id=",document.train_id
     if ds_id is None or ds_id=="None" or document.option_state=="new_featuring":
         ds_id=str(rid)  # use self's feature list, if is a feature option
-    ds_id=str(ds_id)    
+    ds_id=str(ds_id)   
+
+    # for custom featuring
+    cust_featuring_params=document.ml_feat_opts 
+    cust_featuring=None
+    if cust_featuring_params and len(cust_featuring_params)>0:
+        j_feat_opts=json.loads(cust_featuring_params)
+        if j_feat_opts and 'custom' in j_feat_opts:
+            cust_featuring=j_feat_opts['custom']
+            verbose=1
+
     
     (ret, msg_id, msg)=invoke_pred_script(rid, ds_id, cid, tlabel, upload_fname, filename, fnumb, action_type, ds_ftype \
       , host, port, db, tbl, usr, pwd, db_proj, hash, n_gram, opt_str, lib, pattern, verbose, pca_opts=None, exe_type=None \
-      , ml_feat_threshold=ml_feat_threshold, ds_list=ds_list)   
+      , ml_feat_threshold=ml_feat_threshold, ds_list=ds_list \
+      , cust_featuring=cust_featuring, cust_featuring_params=cust_featuring_params )   
     print '* end predict_hash: rc=', ret, '; id=', str(rid),', fname=', upload_fname ,', verbose=',verbose
     newdoc=Document.objects.get(id=cid)
     if ret==0:

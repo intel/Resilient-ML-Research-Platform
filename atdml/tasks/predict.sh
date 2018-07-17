@@ -1,3 +1,4 @@
+#!/bin/bash
 #Copyright (C) 2018 Intel Corporation
 #
 #SPDX-License-Identifier: Apache-2.0
@@ -60,6 +61,9 @@ emulater_config=${25}
 feat_threshold=${26}
 ds_list=${27}
 pert_flag=${28}
+feat_cust=${29}
+feat_cust_params=${30}
+
 
 if [ -z "$usr"  ]; then
     usr=$username
@@ -119,6 +123,8 @@ function get_script_name {
         UF_SINGLE_PREDICT_SCRIPT=$PREDICT_ENSEMBLE_PATTERN
     elif [[ $utype == *"image"*  ]]; then
         UF_SINGLE_PREDICT_SCRIPT=$PREDICT_IMAGE
+    elif [[ $utype == *"Custom"*  ]]; then
+        UF_SINGLE_PREDICT_SCRIPT=$PREDICT_SINGLE_FILE_CUSTOM 
     fi
     echo UF_SINGLE_PREDICT_SCRIPT=$UF_SINGLE_PREDICT_SCRIPT
     
@@ -149,6 +155,7 @@ if [ "$action_type" == "upload_predict" ];
 then
     echo "INFO: In upload prediction:" $upload_filename
     echo "INFO: In upload prediction:" $upload_filename >> $logfile 2>&1
+
     # TBD static not implemented. format md2.label; label is for internal usage only
     if [[ $exe_type == "apk-dynamic"  ]]; then 
         tgt_filename=$src_dir/$upload_filename
@@ -194,7 +201,7 @@ then
             echo "$0 done! ret=${ret}"
             exit 205
         fi
-    fi   # end dynamic
+    fi   # end apk dynamic
     
     if [[ $exe_type == "apk-static"  ]]; then 
         src_filename=$src_dir/$upload_filename
@@ -239,7 +246,7 @@ then
             echo "$0 done! ret=${ret}"
             exit 205
         fi
-    fi # end static
+    fi # end apk static
 
     if [[ $uploadtype == *"in-"* || $uploadtype == *"Format"*  || $uploadtype == *"pattern"*  ]]; then
         tgt_filename=$out_dir/$upload_filename
@@ -270,22 +277,43 @@ then
             echo "ERROR!! $UF_SINGLE_PREDICT_SCRIPT failed. Please check log for details ret=${ret}" >> $logfile 2>&1
             exit $ret
         fi
-    #elif [[ $uploadtype == *"Android-"* ]]; then
-    #    tgt_filename=$UPLOAD_FULL_DIR/$upload_filename
-    #    echo "INFO: upload_filename="$tgt_filename
-    #    echo "INFO: upload_filename="$tgt_filename  >> $logfile 2>&1
-        
-    #    chk_gz $tgt_filename
+    elif [[ $uploadtype == *"Custom"* ]]; then
+        tgt_filename=$out_dir/$upload_filename
+        #tgt_filename=$UPLOAD_FULL_DIR/$upload_filename
+        src_dir=
+        echo "INFO: "$uploadtype":upload_filename="$upload_filename
+        echo "INFO: "$uploadtype":upload_filename="$upload_filename  >> $logfile 2>&1
 
-    #    echo Invoke: Spark $spark_cmd $PREDICT_SINGLE_FILE_ANDROID -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id"
-    #    echo Invoke: Spark $spark_cmd $PREDICT_SINGLE_FILE_ANDROID -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id"  >> $logfile 2>&1
-    #    $spark_cmd $PREDICT_SINGLE_FILE_ANDROID -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id" >> $logfile 2>&1
-    #    ret=$?
-    #    if [ $ret -ne 0 ]; then
-    #        echo "ERROR: $PREDICT_SINGLE_FILE_ANDROID failed. Please check log for details ret=${ret}" 
-    #        echo "ERROR: $PREDICT_SINGLE_FILE_ANDROID failed. Please check log for details ret=${ret}" >> $logfile 2>&1
-    #        exit $ret
-    #    fi
+        
+        # move file over
+        echo "Invoke: mv -f $UPLOAD_FULL_DIR/$upload_filename $tgt_filename"
+        mv -f "$UPLOAD_FULL_DIR/$upload_filename" "$tgt_filename"
+
+        chk_gz "$tgt_filename"
+        
+        get_script_name "$uploadtype"
+
+        echo "INFO: In Custom lib="$ml_lib", tgt_filename="$tgt_filename
+        # invoke predict 
+        if [ "$ml_lib" == "mllib" ]; then
+            echo Invoke Spark: $spark_cmd $UF_SINGLE_PREDICT_SCRIPT -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id" -ptn "$pattern" -pp "$pca_opts" -vb $verbose -ft $feat_threshold -cf "$feat_cust" -cfp "$feat_cust_params"
+            echo Invoke Spark: $spark_cmd $UF_SINGLE_PREDICT_SCRIPT -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id" -ptn "$pattern" -pp "$pca_opts" -vb $verbose -ft $feat_threshold -cf "$feat_cust" -cfp "$feat_cust_params" >> $logfile 2>&1
+            $spark_cmd $UF_SINGLE_PREDICT_SCRIPT -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb  -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id" -ptn "$pattern" -pp "$pca_opts" -vb $verbose -ft $feat_threshold -cf "$feat_cust" -cfp "$feat_cust_params" >> $logfile 2>&1
+       elif [ "$ml_lib" == "dnn" ]; then
+            echo Invoke dnn: python $UF_SINGLE_PREDICT_SCRIPT -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id" -ptn "$pattern" -pp "$pca_opts" -vb $verbose -ft $feat_threshold -cf "$feat_cust" -cfp "$feat_cust_params"
+            echo Invoke dnn: python $UF_SINGLE_PREDICT_SCRIPT -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id" -ptn "$pattern" -pp "$pca_opts" -vb $verbose -ft $feat_threshold -cf "$feat_cust" -cfp "$feat_cust_params" >> $logfile 2>&1
+            python $UF_SINGLE_PREDICT_SCRIPT -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id" -ptn "$pattern" -pp "$pca_opts" -vb $verbose -ft $feat_threshold -cf "$feat_cust" -cfp "$feat_cust_params" >> $logfile 2>&1
+       else
+            echo Invoke: python $UF_SINGLE_PREDICT_SCRIPT -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id" -ptn "$pattern" -pp "$pca_opts" -vb $verbose -ft $feat_threshold -cf "$feat_cust" -cfp "$feat_cust_params"
+            echo Invoke: python $UF_SINGLE_PREDICT_SCRIPT -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id" -ptn "$pattern" -pp "$pca_opts" -vb $verbose -ft $feat_threshold -cf "$feat_cust" -cfp "$feat_cust_params" >> $logfile 2>&1
+            python $UF_SINGLE_PREDICT_SCRIPT -d $tgt_filename -r $rid -o $out_dir -i $cid -fw $fromweb -nb $n_gram -lb $ml_lib -sl $showlab -pm "$opt_str" -dsid "$ds_id" -ptn "$pattern" -pp "$pca_opts" -vb $verbose -ft $feat_threshold -cf "$feat_cust" -cfp "$feat_cust_params" >> $logfile 2>&1
+        fi
+        ret=$?
+        if [ $ret -ne 0 ]; then
+            echo "ERROR!! $UF_SINGLE_PREDICT_SCRIPT failed. Please check log for details ret=${ret}" 
+            echo "ERROR!! $UF_SINGLE_PREDICT_SCRIPT failed. Please check log for details ret=${ret}" >> $logfile 2>&1
+            exit $ret
+        fi
     elif [[ $uploadtype == "ATD"  ]]; then
         tgt_filename=$UPLOAD_FULL_DIR/$upload_filename
 
@@ -305,6 +333,7 @@ then
             exit $ret
         fi
     fi
+# END upload_predict #########
 # ensemble predict ############################
 elif [[ "$action_type" == *"ensemble"*  ]];
 then
@@ -337,7 +366,7 @@ then
         exit $ret
     fi
 
-
+# image predict ############################
 elif [[ "$action_type" == *"image"*  ]];
 then 
     echo "INFO: In image" 
@@ -400,7 +429,7 @@ then
         echo "ERROR: $H_SINGLE_PREDICT_SCRIPT failed. Please check log for details ret=${ret}" >> $logfile 2>&1
         exit $ret
     fi
-# sample_predict ############################
+# sample_predict? ############################
 else
     echo "INFO: In sample prediction: uf=" $upload_filename
     echo "INFO: In sample prediction: uf=" $upload_filename >> $logfile 2>&1

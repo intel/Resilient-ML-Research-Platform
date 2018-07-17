@@ -62,7 +62,7 @@ config.read(CONF_FILE)
 def main():
     
     parser = ArgumentParser(description=__description__)
-    parser.add_argument("-f", "--folder", type=str, metavar="folder of features", help="hdfs folder contains features", required=False)
+    parser.add_argument("-f", "--folder", type=str, metavar="folder of features", help="folder contains features, hdfs://xxx.com:9000/user/...", required=False)
     parser.add_argument("-n", "--name", type=str, metavar="file name", help="file name for sample folder", required=False)
     parser.add_argument("-o", "--out", type=str, metavar="out figure folder", help="folder contains output", required=False)
     parser.add_argument("-r", "--row_id", type=str, metavar="row id", help="row_id number in the db", required=False)
@@ -402,10 +402,18 @@ def sklearn_PCA_transform(X, threshold, k):
         for i in range(len(ratio_vec)):
             sum_ratio = sum_ratio + ratio_vec[i]
             if sum_ratio >= threshold:
-                n_components = i 
+                n_components = i+1 
                 break
         X_tr = pca.transform(X)
         print "INFO: X_tr.shape=",X_tr.shape
+        
+        if len(X_tr[0])<3:
+            print "ERROR: Dataset has dimension less than 3"
+            
+        elif n_components <3:
+            print "WARNING: set n_components to 3 for 3D graph"
+            n_components=3
+        
         X_reduced = X_tr[:,0:n_components]
         k=n_components
         print "INFO: sklearn_PCA_transform: n_components =",n_components, ", threshold=",threshold

@@ -113,7 +113,8 @@ then
         echo "ERROR: Featuring failed. Please check log for details ret=${ret}" >> $logfile 2>&1
         exit $ret
     fi
-elif [[ "$uploadtype" == *"pattern"* ]] 
+# For N-gram; custom feature will start here if n-gram was set in params
+elif [[ "$uploadtype" == *"pattern"* ]] || [[ "$feat_cust_params" == *"n-gram"* ]]
 then
     #N-gram pattern text, get data from HDFS
     # filename may be a list
@@ -138,7 +139,7 @@ then
         echo "ERROR: $FEATURE_NG_PATTERN failed. Please check log for details ret=${ret}" >> $logfile 2>&1
         exit $ret
     fi
-
+# For custom without n-gram; eg for csv dataset
 elif [[ "$uploadtype" == "Custom"* ]] 
 then
     #N-gram pattern text, TBD
@@ -154,14 +155,14 @@ then
     # clean up pca data at /result/
     PCA_DIR=$TRAIN_DES_DIR
     OUT_DIR=""
-    echo Invoke Spark: $spark_cmd $FEATURE_NG_PATTERN -d "$IN_DIR" -o $PCA_DIR -r $rid -ng $n_gram -w $fromweb -ptn "$pattern" -lba "$label_arr" -ft "$feat_threshold" -cf "$feat_cust" -cfp "$feat_cust_params" -fr "$filter_ratio"
-    echo Invoke Spark: $spark_cmd $FEATURE_NG_PATTERN -d "$IN_DIR" -o $PCA_DIR -r $rid -ng $n_gram -w $fromweb -ptn "$pattern" -lba "$label_arr" -ft "$feat_threshold" -cf "$feat_cust" -cfp "$feat_cust_params" -fr "$filter_ratio" >> $logfile 2>&1
+    echo Invoke Spark: $spark_cmd $FEATURE_CUSTOM -d "$IN_DIR" -o $PCA_DIR -r $rid -ng $n_gram -w $fromweb -ptn "$pattern" -lba "$label_arr" -ft "$feat_threshold" -cf "$feat_cust" -cfp "$feat_cust_params" -fr "$filter_ratio"
+    echo Invoke Spark: $spark_cmd $FEATURE_CUSTOM -d "$IN_DIR" -o $PCA_DIR -r $rid -ng $n_gram -w $fromweb -ptn "$pattern" -lba "$label_arr" -ft "$feat_threshold" -cf "$feat_cust" -cfp "$feat_cust_params" -fr "$filter_ratio" >> $logfile 2>&1
 
-    $spark_cmd $FEATURE_NG_PATTERN -d "$IN_DIR" -o $PCA_DIR -r $rid -ng $n_gram -w $fromweb -ptn "$pattern" -lba "$label_arr" -ft "$feat_threshold" -cf "$feat_cust" -cfp "$feat_cust_params" -fr "$filter_ratio" >> $logfile  2>&1
+    $spark_cmd $FEATURE_CUSTOM -d "$IN_DIR" -o $PCA_DIR -r $rid -ng $n_gram -w $fromweb -ptn "$pattern" -lba "$label_arr" -ft "$feat_threshold" -cf "$feat_cust" -cfp "$feat_cust_params" -fr "$filter_ratio" >> $logfile  2>&1
     ret=$?
     if [ $ret -ne 0 ]; then
-        echo "ERROR: $FEATURE_NG_PATTERN failed. Please check log for details ret=${ret}" 
-        echo "ERROR: $FEATURE_NG_PATTERN failed. Please check log for details ret=${ret}" >> $logfile 2>&1
+        echo "ERROR: $FEATURE_CUSTOM failed. Please check log for details ret=${ret}" 
+        echo "ERROR: $FEATURE_CUSTOM failed. Please check log for details ret=${ret}" >> $logfile 2>&1
         exit $ret
     fi
 elif [[ "$uploadtype" == *"JSON"* ]] 

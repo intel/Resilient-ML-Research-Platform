@@ -749,7 +749,7 @@
                     ,"order": [[ 1, "asc" ]]//Initial order (sort) to apply to the table
                     ,paging: true
                     ,bInfo: false
-                    ,scrollY: 300
+                    ,scrollY: 330
                     ,scrollX: false
                     ,"columnDefs": [
                          { "width": "5%", "targets": [0] }
@@ -1249,7 +1249,8 @@
             var f_count={}
             if (x_arr.length>1999){
                 reduce=Math.floor(x_arr.length/1000);
-            }
+            } // sample may be overlapped...
+        
             // convert to json
             for (var i in x_arr) {
                 if (reduce>1){
@@ -1269,7 +1270,8 @@
                 data["y"]=y_arr[i];
                 data["z"]=z_arr[i];
                 data["style"]=style_arr[i];
-                if (id_arr[i]<=0){
+                
+                if (id_arr[i]<=0){// center
                     data["filter"]=id_arr[i]*-1;
                 } else{
                     data["filter"]=style_arr[i];
@@ -1498,7 +1500,7 @@
             } // end ajax
             ,paging: false
             ,searching: false
-            ,scrollY: 300
+            ,scrollY: 500
             ,scrollX: false
             //,bscrollcollapse : false
             ,select: 'single'

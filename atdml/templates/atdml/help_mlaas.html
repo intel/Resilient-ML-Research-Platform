@@ -79,7 +79,7 @@
                     </ul> </li>
                     <li id="model">Download a ML model:
                         <ul> <li style='font-family: "Courier New";'>
-                        curl -X POST http://{{ request.get_host }}{% url "api" %}model/&lt;dataset_id&gt;/  -u &lt;yourid&gt;:&lt;yourpwd&gt; -o &lt;your_output_fname&gt; </li> 
+                        curl -X GET http://{{ request.get_host }}{% url "api" %}model/&lt;dataset_id&gt;/  -u &lt;yourid&gt;:&lt;yourpwd&gt; -o &lt;your_output_fname&gt; </li> 
                           <li>Field description:</li> <ul>
                           <li>id, filename, type, status, processed_date</li>
                           <li>ml_n_gram: n gram number</li>

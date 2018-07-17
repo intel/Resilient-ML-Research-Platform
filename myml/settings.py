@@ -119,8 +119,9 @@ STS_1000_FEATURE_IMPO=1000
 HDFS_STATUS_URL="http://localhost:50070/explorer.html#/path2/dir"
 SPARK_STATUS_URL="http://localhost:8080/"
 # for HDFS
-FEATURE_DES_DIR='/user/hadoop/upload2'
-HDFS_RETR_DIR='/user/hadoop/upload2/data_retrieved'
+FEATURE_DES_DIR='/user/hadoop/upload'
+HDFS_RETR_DIR='/user/hadoop/upload/data_retrieved'
+
 # for input dataset; for web only
 #  optional data source
 MONGO_DNS="mongodb"

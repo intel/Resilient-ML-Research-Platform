@@ -75,7 +75,7 @@ mtx_stat = config.get("machine_learning","mtx_stat")
 def main():
     
     parser = ArgumentParser(description=__description__)
-    parser.add_argument("-f", "--folder", type=str, metavar="folder of features", help="hdfs folder contains features", required=False)
+    parser.add_argument("-f", "--folder", type=str, metavar="folder of features", help="folder contains features, hdfs://xxx.com:9000/user/fea", required=False)
     parser.add_argument("-n", "--name", type=str, metavar="file name", help="file name for sample folder", required=False)
     parser.add_argument("-o", "--out", type=str, metavar="out figure folder", help="folder contains output", required=False)
     parser.add_argument("-r", "--row_id", type=str, metavar="row id", help="row_id number in the db", required=False)
@@ -365,10 +365,16 @@ def train(row_id_str, ds_id, hdfs_feat_dir, local_out_dir, ml_opts_jstr, exclude
     # filename for false prediction samples  ===============
     false_pred_fname=os.path.join(local_out_dir,row_id_str+"_false_pred.json")
     print "INFO: false_pred_fname=", false_pred_fname
-    # build files for false pred & score graph
-    (score_arr_0, score_arr_1, max_score,min_score)=ml_build_false_pred(X_test_sparse,coef,intercept
-        , labels_test, labels_pred, test_hash_list, model_name, jfeat_coef_dict, false_pred_fname
-        , row_id_str=row_id_str, ds_id=ds_id, mongo_tuples=mongo_tuples)
+    
+    score_arr_0=None
+    score_arr_1=None
+    max_score=None
+    min_score=None
+    if not coef is None:
+        # build files for false pred & score graph
+        (score_arr_0, score_arr_1, max_score,min_score)=ml_build_false_pred(X_test_sparse,coef,intercept
+            , labels_test, labels_pred, test_hash_list, model_name, jfeat_coef_dict, false_pred_fname
+            , row_id_str=row_id_str, ds_id=ds_id, mongo_tuples=mongo_tuples)
         
     # save pred output
     pred_out_arr=[]
@@ -423,7 +429,8 @@ def train(row_id_str, ds_id, hdfs_feat_dir, local_out_dir, ml_opts_jstr, exclude
         # build data file for score graph
         score_graph_fname=os.path.join(local_out_dir,row_id_str+"_score_graph.json")
         print "INFO: score_graph_fname=", score_graph_fname
-        ml_build_pred_score_graph(score_arr_0,score_arr_1,model_name, score_graph_fname,max_score,min_score)
+        if not score_arr_0 is None and not score_arr_1 is None:
+            ml_build_pred_score_graph(score_arr_0,score_arr_1,model_name, score_graph_fname,max_score,min_score)
     
         do_ROC=True
         # clean is 0; dirty is 1
