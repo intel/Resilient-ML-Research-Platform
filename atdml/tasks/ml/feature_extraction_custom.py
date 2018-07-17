@@ -124,7 +124,6 @@ def arg_parser(parser):
 
     return parser.parse_args()
 '''
-/home/hadoop/spark_latest/bin/spark-submit ml/feature_extraction_ngram.py -d hdfs://sp15.jf.intel.com:9000/user/hadoop/upload/data_retrieved/android05/ -o /home/django/myml/media/result -r 314730 -ng 1 -w 1 -ptn "(.*)" -lba "['clean','dirty']" -ft 5
 '''
 def main():  # ============= =============  ============= =============
     # parse arguments
