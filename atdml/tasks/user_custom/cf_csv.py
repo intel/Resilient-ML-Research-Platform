@@ -31,15 +31,7 @@ def arg_parser(parser):
     return parser.parse_args()
   
 '''
-python bin/cf_csv.py -fn user_custom/ffced0c0633e27df733953dac115140cf08cc81632e45bf11fe55c4396cdd9fc.fw_date_.r03w81.dirty \
-    -pm '{"type":"fsw","meta_data":["dirty","abc","date"]}' \
-    -sf '0' > out.txt
-python bin/cf_csv.py -fn /mnt/32t/etl/vipermonitor_dirty/0423_kaspersky_p20s3/00b4d8bf603522c86b572819beac6d7c55ded1800368071fe74ed3a280e2ca45.procmon_date_.r02w81.gz  \
-    -pm '{"type":"procmon","meta_data":["dirty","abc","date"]}' \
-    -sf '0' > out.txt 
-python cf_fsw.py -fn ./ffe60d2673f10aa6564f1a8391b7410701a8cd1656b9c6e7aa3caf37b56ec6b7.fw_date_.r01w81.dirty -of ./test_ffe6.json -r 31 -md 'one_line'    
-
-python cf_csv.py -fn ./g2018-02-01t08_46_10#795.viper.fw_date_.cyang8-mobl -md csv -tl [240]
+python bin/cf_csv.py 
 '''  
 def main():  # ============= =============  ============= =============
     # parse arguments
