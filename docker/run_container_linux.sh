@@ -1,5 +1,8 @@
 #!/bin/bash
+#Copyright (C) 2018 Intel Corporation
 #
+#SPDX-License-Identifier: Apache-2.0
+
 export HADOOP_USER=hadoop
 export DJANGO_USER=django
 export HADOOP_UID=$(id -u $HADOOP_USER)

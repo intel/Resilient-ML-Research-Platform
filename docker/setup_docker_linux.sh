@@ -1,4 +1,7 @@
 #!/bin/bash
+#Copyright (C) 2018 Intel Corporation
+#
+#SPDX-License-Identifier: Apache-2.0
 
 # this file is for Docker host
 export HADOOP_USER=hadoop
