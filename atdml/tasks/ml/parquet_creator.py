@@ -37,7 +37,7 @@ def read_args(args):
     parser.add_argument('-hd', '--hd_master', type=str, dest='hd_master', help='hadoop master url'
                 , default = config.get('app', 'HADOOP_MASTER'))
     parser.add_argument('-d', '--src_dir', type=str, dest='src_dir', help='source dir'
-                , default = '/user/hadoop/cyang8/data_pdf_min')
+                , default = '/user/hadoop/test')
     parser.add_argument('-fe','--src_files', type=str, dest='src_files', help='source data filename with wildcard'
                 , default ='*.gz')
     parser.add_argument('-o','--out_dir', type=str, dest='out_dir', help='path to output parquet file'

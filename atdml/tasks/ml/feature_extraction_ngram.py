@@ -131,7 +131,7 @@ def main():  # ============= =============  ============= =============
     if args.dir_list:
         hdfs_dir_list = args.dir_list
     else:
-        hdfs_dir_list  = config.get('app', 'HADOOP_MASTER')+'/user/hadoop/cyang8/data_pdf/'
+        hdfs_dir_list  = config.get('app', 'HADOOP_MASTER')+'/user/hadoop/test/'
     if args.local_out_dir:
         local_out_dir = args.local_out_dir
     else:
