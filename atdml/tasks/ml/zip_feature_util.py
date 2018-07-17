@@ -370,34 +370,8 @@ def dv2libsvm(dv_arr):
     return ret
 
 
-# convert list to libsvm, index starting by 1, ignore None/Null value
-def list2libsvm(in_list, label_index=0, add_meta=True, label_dic=None):
-    out=""
-    delm=""
-    meta=""
-    idx=1
-    for i,v in enumerate(in_list):
-        if v:
-            if label_index == i: #label
-                if label_dic:
-                    meta=str(label_dic[v])+" "
-                else:
-                    meta=str(v)+" "
-            else:
-                out=out+delm+str(idx)+":"+str(v)
-                delm=" "
-                idx+=1
-    # calculate hash for all data
-    meta=str(djb2_(out))+" "+meta
-    return meta+out
 
-# string hash function   ============= =============
-def djb2_(key, max_feat_cnt=1442968193):
-    hash = 5381 
-    for k in key:
-        hash = ((hash << 5) + hash) + ord(k) 
-    hash_ret = hash % max_feat_cnt
-    return hash_ret
+
     
 # test only   ============= =============
 def main():

@@ -123,23 +123,35 @@ def featuring(line, featuring_params):
     return None
 
 # convert list to libsvm, index starting by 1, ignore None/Null value
-#def list2libsvm(in_list, label_index=0, add_meta=True, label_dic=None):
-def list2libsvm(in_list, jparams, add_meta=True):
+#def list2libsvm(in_list, label_index=0, add_meta=True, label_dict=None):
+def list2libsvm(line, jparams, add_meta=True):
     out=""
     delm=""
     meta=""
     idx=1
+    separator=','
+    
+    if line is None or len(line)==0:
+        return None
     
     if 'label_index' in jparams:
         label_index=jparams['label_index']
-    if 'label_dic' in jparams:
-        label_dic=jparams['label_dic']
-    
+    if 'label_dict' in jparams:
+        label_dict=jparams['label_dict']
+    if 'separator' in jparams:
+        separator=jparams['separator']
+        
+    # get as list
+    if isinstance(line, list):
+        in_list=line
+    else:
+        in_list=line.split(separator)
+        
     for i,v in enumerate(in_list):
         if v:
             if label_index == i: #label
-                if label_dic:
-                    meta=str(label_dic[v])+" "
+                if label_dict:
+                    meta=str(label_dict[v])+" "
                 else:
                     meta=str(v)+" "
             else:

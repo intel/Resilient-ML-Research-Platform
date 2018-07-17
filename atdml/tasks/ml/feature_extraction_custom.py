@@ -34,7 +34,7 @@ from operator import add
 sys.path.append('./ml')
 from zip_preprocess_pattern import preprocess_pattern, preprocess_json
 from zip_feature_extraction_ngram import feature_extraction_ngram, tokenize_by_dict, djb2
-from zip_feature_util import list2libsvm
+
 #####import for mongodb ####
 sys.path.append('./db')
 import query_mongo
@@ -415,8 +415,13 @@ def feat_extraction(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
         if not label in label_dic:
             label_dic[label] = idx      #starting from 0, value = idx, e.g., clean:0, dirty:1
 
-    # convert DataFrame to libsvm string
-    libsvm_rdd=df.rdd.map(lambda x: list2libsvm(list(x), label_index=label_index, label_dic=label_dic)) 
+    # add params for dataframe conversion
+    cust_featuring_jparams["label_dict"]=label_dic
+    # convert to int
+    cust_featuring_jparams["label_index"]=label_index
+    featuring_params=json.dumps(cust_featuring_jparams)
+    # convert DataFrame row to libsvm string
+    libsvm_rdd=df.rdd.map(lambda x: user_func(list(x), featuring_params)) 
     print "INFO: sample df row=",(libsvm_rdd.collect()[0])
 
     total_input_count=df.count()
@@ -425,7 +430,7 @@ def feat_extraction(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     #print "INFO: feature_count_threshold=",feature_count_threshold
 
     #get all hashes and total occurring count ===============
-    #   all_hashes_cnt_dic: {'hash,hash': total count,... }
+    #   all_hashes_cnt_dic: {'col index': total count,... }
     # build all_hashes_cnt_dic
     cnt_df=df.select( [count(when(~isnull(c), c)).alias(c) for c in df.columns] )
     #cnt_df.show()
