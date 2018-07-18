@@ -9,37 +9,38 @@ export HADOOP_UID=$(id -u $HADOOP_USER)
 export DJANGO_UID=$(id -u $DJANGO_USER)
 export HADOOP_DIR=/home/$HADOOP_USER/docker
 export WEB_DIR=/home/$DJANGO_USER/myml
+
 export mlversion=0.1.1 
 export mongoversion=3.6.4 
-export DOCKER_REPO=$DOCKER_REG/myml
-export MLAAS_IMG=$DOCKER_REPO/mlservice
-export MONGO_IMG=$DOCKER_REPO/mongo
+# default repo from Docker
+export DOCKER_REPO=eyyang
+export logged_in=0
 
-container=$1
-
-# check if $DOCKER_REG set
-if [ -z $DOCKER_REG ]; then
-    echo "INFO: Set DOCKER_REG='hub.docker.com'"
-    export DOCKER_REG='hub.docker.com'
+# check if setup script completed
+if [ $( ls /home | grep -w 'django\|hadoop' | wc -l) -lt 2 ]; then
+    echo "ERROR: Please execute setup script first!"        
+    exit -1
 fi
 
-# check if web folder exits
-#if ! [ -d $WEB_DIR/atdml ]; then
-#    echo "ERROR: '$WEB_DIR/atdml' not found. Please execute setup script first!"        
-#    exit -1
-#fi
-#if ! [ -d $HADOOP_DIR ]; then
-#    echo "ERROR: '$HADOOP_DIR' not found. Please execute setup script first!"        
-#    exit -2
-#fi
-
-# login docker reg
-logged_in=$(cat ~/.docker/config.json | grep $DOCKER_REG  | wc -l)
-if [ $logged_in -eq 1 ]; then
-    echo "INFO: Login already to $DOCKER_REG ****"
+# DOCKER_REPO for internal server inside proxy
+if ! [ -z $DOCKER_REG ]; then
+    export DOCKER_REPO=$DOCKER_REG/myml
+    logged_in=$(cat ~/.docker/config.json | grep  "$DOCKER_REG"  | wc -l)
 else
-    echo "INFO: Login to $DOCKER_REG..."
-    docker login $DOCKER_REG
+    # for Docker hub
+    logged_in=$(cat ~/.docker/config.json | grep  'https://index.docker.io'  | wc -l)
+fi
+export MLAAS_IMG=$DOCKER_REPO/mlservice
+export MONGO_IMG=$DOCKER_REPO/mongo
+container=$1
+
+# Check login docker reg
+if [ $logged_in -ge 1 ]; then
+    echo "INFO: Docker login/auth Found!" 
+else
+    echo "ERROR: Login to Docker hub is required!! ret="$logged_in
+    echo '       Please run "docker login" or "docker login <your Docker registry server>"'
+    exit -1    
 fi
 
 # network bridge
