@@ -1,0 +1,65 @@
+INFO: 07/18/2018 10:03:06 web
+INFO: Invoke Spark: /home/hadoop/spark_latest/bin/spark-submit ml/train_MLlib_clustering.py -f hdfs://master:9000/user/hadoop/upload/data_out/15 -n libsvm_data_pca_0.999999 -o /home/django/myml/media/result/16 -r 16 -sp spark://master:7077 -w 1 -pm {"iterations":"300","k":"2","learning_algorithm":"kmeans","pca":"Y"} -sl 1 -dsid 15
+Picked up _JAVA_OPTIONS: -Xmx1g
+Picked up _JAVA_OPTIONS: -Xmx1g
+18/07/18 10:03:08 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/usr/local/lib/python2.7/dist-packages/sklearn/cross_validation.py:41: DeprecationWarning: This module was deprecated in version 0.18 in favor of the model_selection module into which all the refactored classes and functions are moved. Also note that the interface of the new CV iterators are different from that of this module. This module will be removed in 0.20.
+  "This module will be removed in 0.20.", DeprecationWarning)
+/usr/local/lib/python2.7/dist-packages/sklearn/grid_search.py:42: DeprecationWarning: This module was deprecated in version 0.18 in favor of the model_selection module into which all the refactored classes and functions are moved. This module will be removed in 0.20.
+  DeprecationWarning)
+INFO: zip_file_path= ./ml/train_ml_clustering.zip
+INFO: libsvm_data_file= hdfs://master:9000/user/hadoop/upload/data_out/15/libsvm_data_pca_0.999999
+INFO: feature_count= 5 --
+INFO: running time: 5.810191
+INFO: ============Learning Algorithm and Parameters=============
+INFO: Learning Algorithm: kmeans
+INFO: iterations= 300
+INFO: label_dic: {0: '0', 1: '1'}
+INFO: labels_list= ['0', '1']
+=================== Kmeans ============
+INFO: cost for training set = 5723608466.63
+INFO: clusterCenters t= <type 'list'>
+Picked up _JAVA_OPTIONS: -Xmx1g
+ERROR: I/O error(2): No such file or directory
+INFO: model saved at hdfs= hdfs://master:9000/user/hadoop/upload/model/16
+INFO: model type= <class 'pyspark.mllib.clustering.KMeansModel'>  model= <pyspark.mllib.clustering.KMeansModel object at 0x7faa06f63ad0>
+INFO: all_data len= 690 all_data t= <type 'list'>
+INFO: true_label_arr.shape= (690,) labels_kmeans.shape= (690,)
+INFO: true_label_arr t= <type 'numpy.ndarray'> labels_kmeans t= <type 'numpy.ndarray'>
+INFO: mtx_center t= <type 'numpy.ndarray'> mtx_center.shape= (2, 5)
+INFO: features_array_reduced t= <type 'numpy.ndarray'> features_array_reduced.shape (690, 5)
+INFO: Adjusted_mutual_info_score= -0.0012187537164472875
+INFO: Adjusted_rand_score= 0.001782902923420713
+INFO: training run time: 10.093298
+INFO: n_clusters= 2 ,label_dic= {0: '0', 1: '1'}
+INFO: plot_col_num= 2 ,figsize= (8, 3) ,local_out_dir= /home/django/myml/media/result/16
+WARNING: n_clusters < num_names_to_show, so set num_names_to_show =  2
+INFO: Figure saved:  /home/django/myml/media/result/16/16_histogram_true_labels.png
+WARNING: n_clusters < num_names_to_show, so set num_names_to_show =  2
+INFO: Figure saved:  /home/django/myml/media/result/16/16_histogram_true_labels_normalized.png
+WARNING: n_clusters < num_names_to_show, so set num_names_to_show =  2
+INFO: Figure saved:  /home/django/myml/media/result/16/16_histogram_predicted_labels.png
+INFO: mtx_feat.shape= (690, 5) , mtx_feat t= <type 'numpy.ndarray'>
+INFO: mtx_label.shape= (690,) , mtx_label t= <type 'numpy.ndarray'>
+INFO: mtx_center.shape= (2, 5) , mtx_center t= <type 'numpy.ndarray'>
+INFO:  **zip(range(n_clusters), colors)= [(0, (1.0, 0.0, 0.0, 1.0)), (1, (0.0, 1.0, 0.9647031631761764, 1.0))]
+INFO: mtx_feat[my_members, 0].shape= (685,)
+INFO: k= 0 ,cluster_center[0]= -370.8396367455358 , cluster_center[1]= -0.3238925222608041
+INFO: mtx_feat[my_members, 0].shape= (5,)
+INFO: k= 1 ,cluster_center[0]= 50805.03023413841 , cluster_center[1]= 44.373275549730444
+INFO: 2D Figure saved= /home/django/myml/media/result/16/16_cluster.png
+INFO: filename_3d= /home/django/myml/media/result/16/16_cluster_3d.json
+INFO: mtx_feat.shape= (690, 5) , mtx_feat t= <type 'numpy.ndarray'>
+INFO: mtx_label.shape= (690,) , mtx_label t= <type 'numpy.ndarray'>
+INFO: mtx_center.shape= (2, 5) , mtx_center t= <type 'numpy.ndarray'>
+INFO:  **zip(range(n_clusters), colors)= [(0, (1.0, 0.0, 0.0, 1.0)), (1, (0.0, 1.0, 0.9647031631761764, 1.0))]
+INFO: mtx_feat[my_members, 0].shape= (222,)
+INFO: k= 0 ,cluster_center[0]= -370.8396367455358 , cluster_center[1]= -0.3238925222608041
+INFO: mtx_feat[my_members, 0].shape= (468,)
+INFO: k= 1 ,cluster_center[0]= 50805.03023413841 , cluster_center[1]= 44.373275549730444
+INFO: 2D Figure saved= /home/django/myml/media/result/16/16_cluster_tl.png
+INFO: filename_3d= /home/django/myml/media/result/16/16_cluster_3d_tl.json
+INFO: Data update done! ret= 1
+INFO: Finished!
+INFO: Invoke python: db/exec_sqlite.py -s delete from atdml_document where file_type='predict' and train_id=16
+INFO: 07/18/2018 10:03:28 web

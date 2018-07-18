@@ -1,5 +1,0 @@
-INFO: 06/09/2018 03:17:36 web Libsvm Format
-INFO: python ml/ml_util.py -md save_libsvm_metadata -fn /tmp/2feature/libsvm_data -r 2 -ky dic_name_label
-INFO: save_dict id=2, key=dic_name_label, rc= 1
-rm: `/user/hadoop/upload/data_out/2': No such file or directory
-INFO: 06/09/2018 03:17:40 web

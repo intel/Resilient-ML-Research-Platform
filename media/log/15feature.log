@@ -1,0 +1,62 @@
+INFO: 07/18/2018 09:50:54 web
+Invoke Spark: /home/hadoop/spark_latest/bin/spark-submit ml/feature_extraction_custom.py -d /user/hadoop/upload/data_retrieved/australian.csv/ -o /home/django/myml/media/result -r 15 -ng - -w 1 -ptn  -lba  -ft 5 -cf csv -cfp {"label_index": "0", "has_header": "True", "custom": "csv"} -fr 0
+Picked up _JAVA_OPTIONS: -Xmx1g
+Picked up _JAVA_OPTIONS: -Xmx1g
+18/07/18 09:50:56 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Picked up _JAVA_OPTIONS: -Xmx1g
+INFO: check hdfs folder= /user/hadoop/upload/data_retrieved/australian.csv/
+INFO: hdfs_dir_list= /user/hadoop/upload/data_retrieved/australian.csv/
+INFO: hdfs_files= /user/hadoop/upload/data_retrieved/australian.csv
+INFO: label_index= 0 ,has_header= True ,dnn_flag= False
++-----+-----+-----+---+---+---+-------+---+---+---+---+---+---+----+---+
+|label|   c1|   c2| a3| a4| a5|     c6| a7| a8| c9|a10|a11|c12| c13|a14|
++-----+-----+-----+---+---+---+-------+---+---+---+---+---+---+----+---+
+|    0|15.75|0.375|  2|  8|  4|      1|  0|  0|  0|  0|  2|120|  19|  0|
+|    0|15.83|0.585|  2|  8|  8|    1.5|  1|  1|  2|  0|  2|100|   1|  1|
+|    0|15.83|7.625|  2| 11|  4|  0.125|  0|  1|  1|  1|  2|  0| 161|  0|
+|    0|15.92|2.875|  2| 11|  4|0.08500|  0|  0|  0|  0|  2|120|   1|  0|
+|    0|   16|0.165|  2|  6|  4|      1|  0|  1|  2|  1|  2|320|   2|  0|
+|    0|16.08|0.335|  2|  1|  1|      0|  0|  1|  1|  0|  2|160| 127|  0|
+|    0|16.33| 0.21|  2|  6|  4|  0.125|  0|  0|  0|  0|  2|200|   2|  0|
+|    0| 16.5| 1.25|  2| 11|  4|   0.25|  0|  1|  1|  0|  2|108|  99|  0|
+|    0|16.92|  0.5|  2|  3|  4|  0.165|  0|  1|  6|  1|  2|240|  36|  0|
+|    0|17.33|  9.5|  2|  6|  4|   1.75|  0|  1| 10|  1|  2|  0|  11|  0|
+|    0|17.58|    9|  2|  6|  4|  1.375|  1|  0|  0|  1|  2|  0|   1|  1|
+|    0|17.67|    0|  1|  5|  1|      0|  0|  0|  0|  0|  2| 86|   1|  0|
+|    0|17.83|   11|  2| 14|  8|      1|  1|  1| 11|  0|  2|  0|3001|  1|
+|    0|17.92| 0.54|  2|  8|  4|   1.75|  0|  1|  1|  1|  2| 80|   6|  0|
+|    0|17.92|10.21|  2|  1|  1|      0|  0|  0|  0|  0|  2|  0|  51|  0|
+|    0|18.08|0.375|  3| 13|  1|     10|  0|  0|  0|  1|  1|300|   1|  1|
+|    0|18.17|   10|  1| 11|  8|  0.165|  0|  0|  0|  0|  2|340|   1|  0|
+|    0|18.25|   10|  2|  9|  4|      1|  0|  1|  1|  0|  2|120|   2|  0|
+|    0|18.42| 9.25|  2| 11|  4|   1.21|  1|  1|  4|  0|  2| 60| 541|  1|
+|    0|18.58|   10|  2|  2|  4|  0.415|  0|  0|  0|  0|  2| 80|  43|  0|
++-----+-----+-----+---+---+---+-------+---+---+---+---+---+---+----+---+
+only showing top 20 rows
+
+INFO: col names= ['label', 'c1', 'c2', 'a3', 'a4', 'a5', 'c6', 'a7', 'a8', 'c9', 'a10', 'a11', 'c12', 'c13', 'a14']
+INFO: sample df row= 175246503 0 1:15.75 2:0.375 3:2 4:8 5:4 6:1 7:0 8:0 9:0 10:0 11:2 12:120 13:19 14:0
+INFO: Total input sample count= 690
+INFO: label_arr= [u'0', u'1']
+INFO: hdfs_folder= hdfs://master:9000/user/hadoop/upload/data_out/15
+INFO: metadata_file= hdfs://master:9000/user/hadoop/upload/data_out/15/metadata
+WARNING: I/O error(5): Input/output error
+INFO: Total feature count= 14
+INFO: Upsert count for feat_sample_count_arr= 1
+INFO: Non-Duplicated libsvm data: sample count= 690 ,Feat count mean= 13.0 ,Stdev= 0.0
+INFO:   ,max feature count= 13.0
+INFO: Non-Duplicated Label count list= [('1', 468), ('0', 222)]
+INFO: libsvm_data_file= hdfs://master:9000/user/hadoop/upload/data_out/15/libsvm_data
+WARNING: I/O error(5): Input/output error at libsvm_data_file clean up
+INFO: feat_count_file= hdfs://master:9000/user/hadoop/upload/data_out/15/libsvm_data_feat_count
+WARNING: I/O error(5): Input/output error at feat_count clean up
+INFO: pca_fname= /home/django/myml/media/result/15/15_model/15_pca_*.pkl*
+INFO: Upsert count for hash_str_dic= 1
+INFO: Upsert count for seq_hashes_dic= 1
+INFO: label_dic= {u'1': 1, u'0': 0}
+INFO: Upsert count for name mapping= 1
+INFO: Delete feature_excluded ret= <pymongo.results.DeleteResult object at 0x7fdeb1ddfd40>
+INFO: Data update done! ret= 1 , class_numb= 2
+INFO: running time: 18.411436
+INFO: Featuring done!  ret=0
+INFO: 07/18/2018 09:51:19 web

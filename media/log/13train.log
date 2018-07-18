@@ -1,0 +1,61 @@
+INFO: 07/18/2018 09:31:37 web
+INFO: Invoke Spark: /home/hadoop/spark_latest/bin/spark-submit ml/train_skLearn_clustering.py -f hdfs://master:9000/user/hadoop/upload/data_out/12 -n libsvm_data_pca_0.9999 -o /home/django/myml/media/result/13 -r 13 -sp spark://master:7077 -w 1 -pm {"iteration":"300","k":"3","init":"k-means++","learning_algorithm":"kmeans","pca":"Y"} -sl 1 -dsid 12
+Picked up _JAVA_OPTIONS: -Xmx1g
+Picked up _JAVA_OPTIONS: -Xmx1g
+18/07/18 09:31:39 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+INFO: zip_file_path= ./ml/train_sklearn_clustering.zip
+INFO: model_data_folder= /home/django/myml/media/result/13/13_model/
+INFO: libsvm_data_file= hdfs://master:9000/user/hadoop/upload/data_out/12/libsvm_data_pca_0.9999
+INFO: feature_count= 4 --
+INFO: total_sample_count= 150
+INFO: features_array_reduced.shape= (150, 4)
+INFO: labels_list_all.shape= (150,)
+INFO: true_label_array.shape= (150,)
+INFO: data generating time: 5.907606
+INFO: ============Learning Algorithm and Parameters=============
+INFO: Learning Algorithm:  kmeans
+INFO: k =  3
+INFO: init =  k-means++
+INFO: ==================== Kmeans =============
+INFO: model type= <class 'sklearn.cluster.k_means_.KMeans'>  model= KMeans(algorithm='auto', copy_x=True, init=u'k-means++', max_iter=300,
+    n_clusters=3, n_init=10, n_jobs=1, precompute_distances='auto',
+    random_state=None, tol=0.0001, verbose=0)
+INFO: label_dic: {0: 'Iris-setosa', 1: 'Iris-versicolor', 2: 'Iris-virginica'}
+INFO: labels_list= ['Iris-setosa', 'Iris-versicolor', 'Iris-virginica']
+INFO: Adjusted_mutual_info_score= 0.7810212489960968
+INFO: Adjusted_rand_score= 0.7864599449538296
+INFO: labels_list_all.shape= (150,) labels_kmeans.shape= (150,)
+INFO: labels_list_all t= <type 'numpy.ndarray'> labels_kmeans t= <type 'numpy.ndarray'>
+INFO: n_clusters= 3 ,label_dic= {0: 'Iris-setosa', 1: 'Iris-versicolor', 2: 'Iris-virginica'}
+INFO: plot_col_num= 2 ,figsize= (8, 6) ,local_out_dir= /home/django/myml/media/result/13
+INFO: Figure saved:  /home/django/myml/media/result/13/13_histogram_true_labels.png
+INFO: Figure saved:  /home/django/myml/media/result/13/13_histogram_true_labels_normalized.png
+INFO: Figure saved:  /home/django/myml/media/result/13/13_histogram_predicted_labels.png
+INFO: mtx_feat.shape= (150, 4) , mtx_feat t= <type 'numpy.ndarray'>
+INFO: mtx_label.shape= (150,) , mtx_label t= <type 'numpy.ndarray'>
+INFO: mtx_center.shape= (3, 4) , mtx_center t= <type 'numpy.ndarray'>
+INFO:  **zip(range(n_clusters), colors)= [(0, (1.0, 0.0, 0.0, 1.0)), (1, (0.03124934374934376, 1.0, 1.3125013124790507e-06, 1.0)), (2, (0.0, 0.062501968751969, 1.0, 1.0))]
+INFO: mtx_feat[my_members, 0].shape= (56,)
+INFO: k= 0 ,cluster_center[0]= 0.5744305536918346 , cluster_center[1]= 0.33039288679354417
+INFO: mtx_feat[my_members, 0].shape= (50,)
+INFO: k= 1 ,cluster_center[0]= -2.607645011193529 , cluster_center[1]= -0.18432033149482047
+INFO: mtx_feat[my_members, 0].shape= (44,)
+INFO: k= 2 ,cluster_center[0]= 2.2321395352939466 , cluster_center[1]= -0.21104511558403313
+INFO: 2D Figure saved= /home/django/myml/media/result/13/13_cluster.png
+INFO: filename_3d= /home/django/myml/media/result/13/13_cluster_3d.json
+INFO: mtx_feat.shape= (150, 4) , mtx_feat t= <type 'numpy.ndarray'>
+INFO: mtx_label.shape= (150,) , mtx_label t= <type 'numpy.ndarray'>
+INFO: mtx_center.shape= (3, 4) , mtx_center t= <type 'numpy.ndarray'>
+INFO:  **zip(range(n_clusters), colors)= [(0, (1.0, 0.0, 0.0, 1.0)), (1, (0.03124934374934376, 1.0, 1.3125013124790507e-06, 1.0)), (2, (0.0, 0.062501968751969, 1.0, 1.0))]
+INFO: mtx_feat[my_members, 0].shape= (50,)
+INFO: k= 0 ,cluster_center[0]= 0.5744305536918346 , cluster_center[1]= 0.33039288679354417
+INFO: mtx_feat[my_members, 0].shape= (50,)
+INFO: k= 1 ,cluster_center[0]= -2.607645011193529 , cluster_center[1]= -0.18432033149482047
+INFO: mtx_feat[my_members, 0].shape= (50,)
+INFO: k= 2 ,cluster_center[0]= 2.2321395352939466 , cluster_center[1]= -0.21104511558403313
+INFO: 2D Figure saved= /home/django/myml/media/result/13/13_cluster_tl.png
+INFO: filename_3d= /home/django/myml/media/result/13/13_cluster_3d_tl.json
+INFO: Data update done! ret= 1
+INFO: running time: 7.614346
+INFO: Invoke python: db/exec_sqlite.py -s delete from atdml_document where file_type='predict' and train_id=13
+INFO: 07/18/2018 09:31:50 web

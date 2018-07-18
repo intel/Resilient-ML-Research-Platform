@@ -1,3 +1,0 @@
-INFO: 06/10/2018 06:22:22 web Custom gz
-INFO: hdfs dfs -mkdir /user/hadoop/upload/data_retrieved/australian.csv
-mkdir: `/user/hadoop/upload/data_retrieved/australian.csv': File exists

@@ -1,6 +1,0 @@
-Picked up _JAVA_OPTIONS: -Xmx1g
-Spark Command: /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -cp /home/hadoop/spark_latest/conf/:/home/hadoop/spark_latest/jars/* -Xmx1g org.apache.spark.deploy.worker.Worker --webui-port 8081 spark://master:7077
-========================================
-Picked up _JAVA_OPTIONS: -Xmx1g
-18/06/10 06:52:51 ERROR Worker: Connection to master failed! Waiting for master to reconnect...
-18/06/10 06:52:51 ERROR Worker: Connection to master failed! Waiting for master to reconnect...

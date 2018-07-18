@@ -34,59 +34,57 @@
                 <div class="panel-body">
                     <h3>
                     <ul  >
-                    <li >A scalable <strong>M</strong>achine <strong>L</strong>earning <strong>a</strong>s <strong>a S</strong>ervice (MLaaS) with Apache Spark and Hadoop.
+                    <li >A scalable <strong>M</strong>achine <strong>L</strong>earning <strong>a</strong>s <strong>a S</strong>ervice
+                        (<strong>MLaaS</strong>) with Apache Spark and Hadoop.
                     <ul>
-                        <li>Enable data owner of all skill levels to apply machine learning technology</li>
-                        <li>Allow flexible data sources: "LIBSVM" or "n-gram pattern" formats</li>
-                        <li>Visualized ML pipeline UI that guides user to generate model(s), optimize the performance and predict unknown samples</li>
+                        <li>Enable data owner to apply machine learning technology with few clicks</li>
+                        <li>Allow flexible data sources: "LIBSVM", "CSV" or "n-gram pattern" text formats</li>
+                        <li>Visualized ML pipeline UI that guides user to generate model(s), optimize the performance and predict/inference unknown samples</li>
                         <li><strong>RESTful APIs</strong> enable ML pipeline automation and integration with external applications or services</li>
+                        <li>Enabled plugin-able ML pipline for custom feature engineering</li>
                     </ul>
                     </li>                        
-                    <li >Machine Learning Libraries and Algorithms:
+                    <li ><strong>Machine Learning Libraries and Algorithms:</strong>
                         <ul>
-                        <li> Supervised and Unsupervised learnings: classification and clustering</li>
-                        <li>Customizable ML parameter user interface with grid search and cross validation</li>
+                        <li>Supervised and Unsupervised learnings: classification and clustering</li>
+                        <li>Web UI to tune hyperparameters with grid search and cross validation</li>
                         <li>Allow one dataset to exploit multiple training options</li>
-                        <li><strong>Deep Neural Network:</strong><ul>
+                        <li>Deep Neural Network:<ul>
                             <li>Supported Theano or Tensorflow backend by Keras</li>
-                            <li>CNN/FFNN, Convolution Neural Network/FeedForward Neural Network: for image or LIBSVM data</li>
+                            <li>CNN/DC, Convolution Neural Network/Dense Connected Neural Network: for image or LIBSVM data</li>
                             <li>LSTM/RNN, Long Short-Term Memory/Recurrent Neural Network: for time series/sequential data</li> 
                         </ul></li>
 
-                        <li ><strong>Spark MLlib: </strong><ul>
-                            <li>Classification: Linear SVM and Logistic Regression with Grid Search and Cross Validation. </li>
+                        <li >Spark MLlib: <ul>
+                            <li>Classification: Linear SVM and Logistic Regression etc. </li>
                             <li>Clustering: Kmeans</li> 
                         </ul></li>
-                        <li ><strong>SciKit-Learn: </strong><ul>
-                            <li>Classification: Linear SVM, Logistic Regression, SVM, Passive Aggressive Classifier and Perception </li>
+                        <li >SciKit-Learn: <ul>
+                            <li>Classification: Linear SVM, Logistic Regression and Perception etc.</li>
                             <li>Clustering: Kmeans</li> 
                         </ul></li>
                         
-                        <li><strong>Ensemble classifier</strong>: <ul>
+                        <li>Ensemble classifier</strong>: <ul>
                             <li>Allow selectable multiple classifiers from different datasets</li>
                             <li>Fast parallel processing</li>
                         </ul></li>
                         
                         </ul>                    
                     </li>
-                    <li><strong>Adversarial Machine Learning Research:</strong><ul>
-                        <li>Support pre-trained classifier/model for prediction: ImageNet/Inception or DarkNet/Yolo</li>
-                        <li>Adversarial image generation by predefined universal perturbation filter</li>
-                        <li>Fast processing: optimized by Intel KML or by GPU </li>
-                        </ul>
+                    <li ><strong>Featuring Tool for Linear Model:</strong>
+                        <ul>
+                        <li>Feature list: for model and samples</li>
+                        <li>Feature exclusion: to exclusion selected feature for re-training</li>
+                        
+                        </ul>                    
                     </li>
-                    <li><strong>Android Malware Research:</strong><ul>
-                        <li>Dynamic study: link with Android Emulator Farm for APK execution and prediction</li>
-                        <li>Static study: extract static data from APK for prediction</li>
-                        </ul>
-                    </li>
-                    <li ><strong>Data format option 1:</strong> <ul>
+                    <li ><strong>Data format "LIBSVM":</strong> <ul>
                         <li>Input pre-featured data as "<a href="https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/">LIBSVM</a>" format: (not for LSTM/RNN) 
                         </li>
                         <li>Each row for a sample</li>
-                        <li>Format for a data row:<span style='font-family: "Courier New";'>&lt;label&gt; &lt;index1&gt;:&lt;value1&gt; &lt;index2&gt;:&lt;value2&gt; …\n
+                        <li>Format for a data row:<span style='font-family: "Courier New";'>&lt;hash/text&gt; &lt;label&gt; &lt;index1&gt;:&lt;value1&gt; &lt;index2&gt;:&lt;value2&gt; …\n
                             </span></li>
-                        <li>All data is numerical</li>
+                        <li>All data is numerical, except the first column "hash/text"</li>
                         <li>Each feature represented by <span style='font-family: "Courier New";'>&lt;indexN&gt;:&lt;valueN&gt;</span></li>
                         <li>Meta Data: (optional)</li>
                         <ul>
@@ -94,11 +92,11 @@
                             <li>Feature list:<span style='font-family: "Courier New";'>&lt;feature description(string)&gt; : &lt;indexN(number)&gt;</span></li>
                         </ul></ul> 
                     </li>                            
-                    <li ><strong>Data format option 2:</strong> <ul>
-                        <li>Input raw data as "N-gram pattern" format with the Regular Expression pattern string specified
+                    <li ><strong>Data format "N-gram pattern":</strong> e.g. for API call log file<ul>
+                        <li>Input raw data as "N-gram pattern" text format with the Regular Expression pattern string specified
                         </li>
-                        <li>Each data row for a sample. Allow "time sequence" data. e.g. execution log etc</li>
-                        <li>Each feature string for pattern matching separated by a "tab" char, <span style='font-family: "Courier New";'>"\t"</span></li>
+                        <li>Each data row for one sample. Allow "time sequence" data. e.g. execution log etc</li>
+                        <li>Each observation (string) separated by a "tab" char, <span style='font-family: "Courier New";'>"\t"</span></li>
                         <li>Format for a data row example:<span style='font-family: "Courier New";'>&lt;label&gt;\t&lt;md5&gt;\t&lt;date&gt;\t
                             &lt;string1 for pattern match&gt;\t&lt;string2 for pattern match&gt;\t …\n</span></li>
                         <li>Pattern string example: <span style='font-family: "Courier New";'>'^I/AndroidATD\([ ]*[\d]+\): \[API\] <strong>(.*)</strong> \[.*'</span></li>
@@ -109,6 +107,38 @@
                             <li>Label list:<span style='font-family: "Courier New";'>&lt;label name(string)&gt;:&lt;label(number)&gt; </span></li>
                             <li>Feature list:<span style='font-family: "Courier New";'>&lt;indexN(number)&gt; : &lt;feature description(string)&gt;</span></li>
                         </ul>                        
+                        </ul>
+                    </li>
+                    <li ><strong>Data format "CSV":</strong> i.e. Comma separated text file<ul>
+                        <li>Each data row for one sample</li>
+                        <li>Header/Column title at first row is required</li>
+                        <li>Each observation (string) separated by a comma char, 
+                        <span style='font-family: "Courier New";'>","</span>; Each column will become one feature</li>
+                        <li>Format for header+data rows example:<span style='font-family: "Courier New";'>
+                        "label","h1","h2"…,"hN"\n
+                        "l1","o1","o2"…,"oN"\n
+                        ...
+                        "ln","on1","on2"…,"onN"\n
+                        </span></li>
+                        <li>For web UI, custom "Parameter JSON" example input: <span style='font-family: "Courier New";'>
+                        {"label_index": "0", "has_header": "True", "custom": "csv"}</span></li>
+                        <li>A hash will be generated for each data row/sample; Data will be converted to LIBSVM and saved in HDFS</li>
+                        <li>Meta Data: (generated)</li>
+                        <ul>
+                            <li>Label list:<span style='font-family: "Courier New";'>&lt;label name(string)&gt;:&lt;label(number)&gt; </span></li>
+                            <li>Feature list:<span style='font-family: "Courier New";'>&lt;indexN(number)&gt; : &lt;feature description(string)&gt;</span></li>
+                        </ul>                        
+                        </ul>
+                    </li>
+                    <li><strong>Adversarial Machine Learning Research Demo: </strong>(extra setup needed)<ul>
+                        <li>Support pre-trained classifier/model for prediction: ImageNet/Inception or DarkNet/Yolo</li>
+                        <li>Adversarial image generation by predefined universal perturbation filter</li>
+                        <li>Fast processing: optimized by Intel KML or by GPU </li>
+                        </ul>
+                    </li>
+                    <li><strong>Android Malware Research: </strong>(extra setup needed)<ul>
+                        <li>Dynamic study: link with Android Emulator Farm for APK execution and prediction</li>
+                        <li>Static study: extract static data from APK for prediction</li>
                         </ul>
                     </li>
 

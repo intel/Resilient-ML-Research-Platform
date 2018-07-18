@@ -1,0 +1,59 @@
+INFO: 07/18/2018 09:51:45 web
+INFO: Invoke Spark: /home/hadoop/spark_latest/bin/spark-submit ml/train_MLlib.py -f hdfs://master:9000/user/hadoop/upload/data_out/15 -n libsvm_data -o /home/django/myml/media/result/15 -r 15 -sp spark://master:7077 -w 1 -pm {"c":"1","iterations":"300","regularization":"l2","learning_algorithm":"logistic_regression_with_lbfgs"} -sl 1 -dsid 15
+Picked up _JAVA_OPTIONS: -Xmx1g
+Picked up _JAVA_OPTIONS: -Xmx1g
+18/07/18 09:51:46 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/usr/local/lib/python2.7/dist-packages/sklearn/cross_validation.py:41: DeprecationWarning: This module was deprecated in version 0.18 in favor of the model_selection module into which all the refactored classes and functions are moved. Also note that the interface of the new CV iterators are different from that of this module. This module will be removed in 0.20.
+  "This module will be removed in 0.20.", DeprecationWarning)
+/usr/local/lib/python2.7/dist-packages/sklearn/grid_search.py:42: DeprecationWarning: This module was deprecated in version 0.18 in favor of the model_selection module into which all the refactored classes and functions are moved. This module will be removed in 0.20.
+  DeprecationWarning)
+INFO: zip_file_path= ./ml/train_MLlib.zip
+INFO: excluded_feat_cslist= None
+INFO: libsvm_data_file: hdfs://master:9000/user/hadoop/upload/data_out/15/libsvm_data
+INFO: feature_count= 14
+1004971347
+1013175255
+1016934635
+1061049752
+INFO: training sample count= 552 , testing sample count= 138
+INFO: training label list= [(0.0, 178), (1.0, 374)] , testing label list= [(0.0, 44), (1.0, 94)]
+INFO: labels_list_all= [0.0, 1.0]
+INFO: training and testing samples generated!
+INFO: running time: 7.060592
+INFO: ======Learning Algorithm and Parameters=============
+INFO: Learning Algorithm:  logistic_regression_with_lbfgs
+INFO: C =  1
+INFO: iterations =  300
+INFO: regType =  l2
+INFO: Calculated: regParam =  0.0018115942029
+INFO: label_dic: {0: '0', 1: '1'}
+INFO: labels: ['0', '1']
+INFO: ====================2: LogisticRegressionWithLBFGS=============
+INFO: model type= <class 'pyspark.mllib.classification.LogisticRegressionModel'>
+INFO: save_dict id=15, key=coef_arr, rc= 1
+INFO: save_dict id=15, key=coef_intercept, rc= 1
+INFO: feat_filename= /home/django/myml/media/result/15/15_feat_coef.json
+INFO: coef_arr len= 14 , feature_count= 14
+INFO: intercept= 0.0
+INFO: coef_arr len= 14 <type 'list'>
+INFO: jfeat_coef_dict len= 14
+INFO: false_pred_fname= /home/django/myml/media/result/15/15_false_pred.json
+INFO: false predicted count= 47
+INFO: pred_ofname= /home/django/myml/media/result/15/15_pred_output.pkl
+INFO: Accuracy =  0.659420289855
+Picked up _JAVA_OPTIONS: -Xmx1g
+WARNING: I/O error(2): No such file or directory . At HDFS= /user/hadoop/upload/model/15
+INFO: training run time: 16.355772
+INFO: Number of samples in each label is= {0: 44, 1: 94}
+INFO: figure files:  /home/django/myml/media/result/15/15_1.png /home/django/myml/media/result/15/15_2.png
+INFO: score_graph_fname= /home/django/myml/media/result/15/15_score_graph.json
+RESULT: perf_measures= {'tn': 0, 'fp': 44, 'phi': -0.10198966248083716, 'tp': 91, 'fn': 3, 'recall': 0.9680851063829787, 'precision': 0.674074074074074, 'fscore': 0.7947598253275109, 'accuracy': 0.6594202898550725}
+INFO: ROC_AUC =  0.5331237911025146
+INFO: ROC_DOT_MAX_CNT= 7100
+INFO: mod count= 0.0
+INFO: ROC_jfile= /home/django/myml/media/result/15/15_roc.json
+INFO: Figure created!
+INFO: Data update done! ret= 1
+INFO: Finished!
+INFO: Invoke python: db/exec_sqlite.py -s delete from atdml_document where file_type='predict' and train_id=15
+INFO: 07/18/2018 09:52:14 web

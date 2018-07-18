@@ -1,0 +1,62 @@
+INFO: 07/18/2018 09:27:56 web
+Invoke Spark: /home/hadoop/spark_latest/bin/spark-submit ml/feature_extraction_custom.py -d /user/hadoop/upload/data_retrieved/iris.csv/ -o /home/django/myml/media/result -r 12 -ng - -w 1 -ptn  -lba  -ft 5 -cf csv -cfp {"label_index": "4", "has_header": "True", "custom": "csv"} -fr 0
+Picked up _JAVA_OPTIONS: -Xmx1g
+Picked up _JAVA_OPTIONS: -Xmx1g
+18/07/18 09:27:57 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Picked up _JAVA_OPTIONS: -Xmx1g
+INFO: check hdfs folder= /user/hadoop/upload/data_retrieved/iris.csv/
+INFO: hdfs_dir_list= /user/hadoop/upload/data_retrieved/iris.csv/
+INFO: hdfs_files= /user/hadoop/upload/data_retrieved/iris.csv
+INFO: label_index= 4 ,has_header= True ,dnn_flag= False
++------------+-----------+------------+-----------+-----------+
+|sepal_length|sepal_width|petal_length|petal_width|      label|
++------------+-----------+------------+-----------+-----------+
+|         5.1|        3.5|         1.4|        0.2|Iris-setosa|
+|         4.9|        3.0|         1.4|        0.2|Iris-setosa|
+|         4.7|        3.2|         1.3|        0.2|Iris-setosa|
+|         4.6|        3.1|         1.5|        0.2|Iris-setosa|
+|         5.0|        3.6|         1.4|        0.2|Iris-setosa|
+|         5.4|        3.9|         1.7|        0.4|Iris-setosa|
+|         4.6|        3.4|         1.4|        0.3|Iris-setosa|
+|         5.0|        3.4|         1.5|        0.2|Iris-setosa|
+|         4.4|        2.9|         1.4|        0.2|Iris-setosa|
+|         4.9|        3.1|         1.5|        0.1|Iris-setosa|
+|         5.4|        3.7|         1.5|        0.2|Iris-setosa|
+|         4.8|        3.4|         1.6|        0.2|Iris-setosa|
+|         4.8|        3.0|         1.4|        0.1|Iris-setosa|
+|         4.3|        3.0|         1.1|        0.1|Iris-setosa|
+|         5.8|        4.0|         1.2|        0.2|Iris-setosa|
+|         5.7|        4.4|         1.5|        0.4|Iris-setosa|
+|         5.4|        3.9|         1.3|        0.4|Iris-setosa|
+|         5.1|        3.5|         1.4|        0.3|Iris-setosa|
+|         5.7|        3.8|         1.7|        0.3|Iris-setosa|
+|         5.1|        3.8|         1.5|        0.3|Iris-setosa|
++------------+-----------+------------+-----------+-----------+
+only showing top 20 rows
+
+INFO: col names= ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'label']
+INFO: sample df row= 585106390 0 1:5.1 2:3.5 3:1.4 4:0.2
+INFO: Total input sample count= 150
+INFO: label_arr= [u'Iris-setosa', u'Iris-versicolor', u'Iris-virginica']
+INFO: hdfs_folder= hdfs://master:9000/user/hadoop/upload/data_out/12
+INFO: metadata_file= hdfs://master:9000/user/hadoop/upload/data_out/12/metadata
+WARNING: I/O error(5): Input/output error
+INFO: Total feature count= 4
+INFO: Upsert count for feat_sample_count_arr= 1
+INFO: Non-Duplicated libsvm data: sample count= 150 ,Feat count mean= 3.0 ,Stdev= 0.0
+INFO:   ,max feature count= 3.0
+INFO: Non-Duplicated Label count list= [('1', 50), ('0', 50), ('2', 50)]
+INFO: libsvm_data_file= hdfs://master:9000/user/hadoop/upload/data_out/12/libsvm_data
+WARNING: I/O error(5): Input/output error at libsvm_data_file clean up
+INFO: feat_count_file= hdfs://master:9000/user/hadoop/upload/data_out/12/libsvm_data_feat_count
+WARNING: I/O error(5): Input/output error at feat_count clean up
+INFO: pca_fname= /home/django/myml/media/result/12/12_model/12_pca_*.pkl*
+INFO: Upsert count for hash_str_dic= 1
+INFO: Upsert count for seq_hashes_dic= 1
+INFO: label_dic= {u'Iris-virginica': 2, u'Iris-setosa': 0, u'Iris-versicolor': 1}
+INFO: Upsert count for name mapping= 1
+INFO: Delete feature_excluded ret= <pymongo.results.DeleteResult object at 0x7fcb08984878>
+INFO: Data update done! ret= 1 , class_numb= 3
+INFO: running time: 18.891297
+INFO: Featuring done!  ret=0
+INFO: 07/18/2018 09:28:21 web
