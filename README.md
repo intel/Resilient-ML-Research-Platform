@@ -15,13 +15,17 @@ It demos adversarial ML and countermeasures.
 * Django & SQLite
 * for Python 2.7
 
-### Installing
-* One-click installation by Docker containers
-** docker login
-** cd ./docker..
-** chmod 
-* Please follow the [Setup_Guide_CentOS7.pdf](Setup_Guide_CentOS7.pdf) for full installation on cluster
-* Modify web files app.config, myml/settings.py, atdml/settings.py for Hadoop/Spark/web/MongoDB hostnames
+### Installation
+* Big data platform on one machine demo by Docker containers
+```
+docker login                    # login to Docker Hub
+cd ./docker..                   # cd to docker after git clone
+chmod 755 *.sh                  # change script to executable
+sudo ./setup_docker_linux.sh    # create users and copy files
+./run_container_linux.sh        # run containers
+```
+* For full installation, follow the [Setup_Guide_CentOS7.pdf](Setup_Guide_CentOS7.pdf) 
+  - Modify web files app.config, myml/settings.py, atdml/settings.py for Hadoop/Spark/web/MongoDB hostnames
 
 ## Design Diagrams
 ### Architecture:
