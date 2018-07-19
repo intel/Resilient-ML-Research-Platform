@@ -47,8 +47,8 @@ Note: DNN worker to be released...
 
 ## Related Links
 
-### <a href="../master/atdml/templates/atdml/about_mlaas.html" title="About MLaaS">About MLaaS</a>
-### <a href="../master/atdml/templates/atdml/help_mlaas.html" title="RESTful API">Help for RESTful API</a>
+#### <a href="https//cyang8.github.io/intel/Resilient-ML-Research-Platform/atdml/templates/atdml/about_mlaas.html" title="About MLaaS">About MLaaS</a>
+#### <a href="https//cyang8.github.io/intel/Resilient-ML-Research-Platform/master/atdml/templates/atdml/help_mlaas.html" title="RESTful API">Help for RESTful API</a>
 
 ## License
 This project is licensed under the Apache 2.0 
