@@ -3,7 +3,7 @@
 # MLsploit: Resilient-ML-Research-Platform 
 
 This is a web platform to demo Machine Learning as a Service (MLaaS) on security researches. 
-It has a machine learning (ML) pipeline to build and tune models. It also has a portal to demos adversarial ML and countermeasures.
+It has a machine learning (ML) pipeline to build and tune models. It also has a portal to demo adversarial ML and countermeasures.
 
 * MLaaS:
   - ML classifier creation and inference 
@@ -13,11 +13,10 @@ It has a machine learning (ML) pipeline to build and tune models. It also has a 
 ## Getting Started
 ### Dependancies
 * CentOS or Ubuntu
-* Apache Hadoop & Spark
-* MongoDB
-* Python 2.7, Scikit-Learn, Numpy, Keras and related Python packages
+* Apache Hadoop, Spark & MongoDB
+* Python 2.7 and related Python packages, e.g. Scikit-Learn, Numpy, Keras etc 
 * Django & SQLite
-* Docker (optional)
+* Docker (optional for demo containers)
 
 ### Installation
 * Demo cluster by Docker containers - tiny bigdata platform on your Linux laptop:
