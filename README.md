@@ -1,19 +1,22 @@
 [![Black Hat Arsenal](https://raw.githubusercontent.com/toolswatch/badges/master/arsenal/usa/2018.svg?sanitize=true)](http://www.toolswatch.org/2018/05/black-hat-arsenal-usa-2018-the-w0w-lineup/)
 
-# Resilient-ML-Research-Platform 
+# MLsploit: Resilient-ML-Research-Platform 
 
 This is a web platform to demo Machine Learning as a Service (MLaaS) on security researches. 
-It has a machine learning (ML) pipeline to analyze data and also is a portal for backend user to emulate uploaded binaries.
-It demos adversarial ML and countermeasures.
+It has a machine learning (ML) pipeline to build and tune models. It also has a portal to demos adversarial ML and countermeasures.
+
+* MLaaS:
+  - ML classifier creation and inference 
+* MLsploit:
+  - Adversarial ML and demos
 
 ## Getting Started
 ### Dependancies
 * CentOS or Ubuntu
 * Apache Hadoop & Spark
 * MongoDB
-* Scikit-Learn, Numpy, Keras and related Python packages
+* Python 2.7, Scikit-Learn, Numpy, Keras and related Python packages
 * Django & SQLite
-* Python 2.7
 * Docker (optional)
 
 ### Installation
