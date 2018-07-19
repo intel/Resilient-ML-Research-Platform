@@ -34,11 +34,14 @@ sudo ./setup_docker_linux.sh    # Create users on Linux and copy related files
 
 ## Design Diagrams
 ### Data Flow:
-<img src="../master/atdml/static/atdml/img/mlaas_arch_gpu.png" height="320" align="center">
+<p align="center">
+  <img src="../master/atdml/static/atdml/img/mlaas_arch_gpu.png" height="320">
+</p>
 
 ### Software Stack:
-<img src="../master/atdml/static/atdml/img/sw_stack.png" height="200" align="center">
-
+<p align="center">
+  <img src="../master/atdml/static/atdml/img/sw_stack.png" height="200">
+</p>
 Note: DNN worker to be released...
 
 ## License
