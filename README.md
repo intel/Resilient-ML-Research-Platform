@@ -16,7 +16,7 @@ It demos adversarial ML and countermeasures.
 * for Python 2.7
 
 ### Installation
-* Demo tiny cluster by Docker containers, big data platform in one machine
+* Demo cluster by Docker containers, demo big data platform in one machine:
 ```
 docker login                    # Login to Docker Hub by your id & password
 cd ./docker                     # cd to folder "docker" in git cloned project
@@ -33,15 +33,13 @@ sudo ./setup_docker_linux.sh    # Create users on Linux and copy related files
     * atdml/settings.py etc.
 
 ## Design Diagrams
-### Data Flow Diagram:
-<p align="center">
-<img src="../master/atdml/static/atdml/img/mlaas_arch_gpu.png" height="320">
-</p>
+### Data Flow:
+<img src="../master/atdml/static/atdml/img/mlaas_arch_gpu.png" height="320" align="center">
+
 ### Software Stack:
-<p align="center">
-<img src="../master/atdml/static/atdml/img/sw_stack.png" height="200">
-</p>
-Note: backend robots and DNN worker are not included in this project.
+<img src="../master/atdml/static/atdml/img/sw_stack.png" height="200" align="center">
+
+Note: DNN worker to be released...
 
 ## License
 This project is licensed under the Apache 2.0 
