@@ -16,24 +16,27 @@ It demos adversarial ML and countermeasures.
 * for Python 2.7
 
 ### Installation
-* Big data platform on one machine demo by Docker containers
+* Big data platform on one machine; for demo by Docker containers
 ```
-docker login                    # login to Docker Hub
-cd ./docker..                   # cd to docker after git clone
-chmod 755 *.sh                  # change script to executable
-sudo ./setup_docker_linux.sh    # create users and copy files
-./run_container_linux.sh        # run containers
+docker login                    # login to Docker Hub by your id & password
+cd ./docker                     # cd to folder "docker" in git cloned project
+chmod 755 *.sh                  # change scripts to be executable
+sudo ./setup_docker_linux.sh    # create users on Linux and copy related files
+./run_container_linux.sh        # pull images from Docker Hub and run 4 containers
+                                #   master, slave1, mongo & web containers
 ```
 * For full installation, follow the [Setup_Guide_CentOS7.pdf](Setup_Guide_CentOS7.pdf) 
   - Modify web files app.config, myml/settings.py, atdml/settings.py for Hadoop/Spark/web/MongoDB hostnames
 
 ## Design Diagrams
-### Architecture:
+### Data Flow Diagram:
+<p align="center">
 <img src="../master/atdml/static/atdml/img/mlaas_arch_gpu.png" height="320">
-
+</p>
 ### Software Stack:
+<p align="center">
 <img src="../master/atdml/static/atdml/img/sw_stack.png" height="200">
-
+</p>
 Note: backend robots and DNN worker are not included in this project.
 
 ## License
