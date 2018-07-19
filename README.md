@@ -2,23 +2,25 @@
 
 # Resilient-ML-Research-Platform 
 
-(This doc is under construction)
-
 This is a web platform to demo Machine Learning as a Service (MLaaS) on security researches. 
 It has a machine learning (ML) pipeline to analyze data and also is a portal for backend user to emulate uploaded binaries.
 It demos adversarial ML and countermeasures.
 
 ## Getting Started
-### Prerequisites
+### Dependancies
+* CentOS or Ubuntu
 * Apache Hadoop & Spark
 * MongoDB
 * Scikit-Learn, Numpy, Keras and related Python packages
 * Django & SQLite
-* for Python 2.7 only
+* for Python 2.7
 
 ### Installing
-* (TBD) One-click installation by Docker containers...
-* Please follow the [Setup_Guide_CentOS7.pdf](Setup_Guide_CentOS7.pdf) for installation
+* One-click installation by Docker containers
+** docker login
+** cd ./docker..
+** chmod 
+* Please follow the [Setup_Guide_CentOS7.pdf](Setup_Guide_CentOS7.pdf) for full installation on cluster
 * Modify web files app.config, myml/settings.py, atdml/settings.py for Hadoop/Spark/web/MongoDB hostnames
 
 ## Design Diagrams
