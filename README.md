@@ -13,18 +13,18 @@ It demos adversarial ML and countermeasures.
 * MongoDB
 * Scikit-Learn, Numpy, Keras and related Python packages
 * Django & SQLite
-* for Python 2.7
+* Python 2.7
 
 ### Installation
-* Demo cluster by Docker containers, demo big data platform in one machine:
+* Demo cluster by Docker containers - tiny bigdata platform on your laptop:
 ```
 docker login                    # Login to Docker Hub by your id & password
 cd ./docker                     # cd to folder "docker" in git cloned project
 chmod 755 *.sh                  # Change scripts to be executable
 sudo ./setup_docker_linux.sh    # Create users on Linux and copy related files
 ./run_container_linux.sh        # Pull images from Docker Hub and run 4 containers:
-                                #   master, slave1, mongo & web containers
-                                # Access web at <your machine dns>:8000/ id=demo password=demo123
+                                #   HDFS/Spark master & slave1, mongo & Django web 
+                                # Access web at <your machine dns>:8000/ id=demo pwd=demo123
 ```
 * For full installation, follow the [Setup_Guide_CentOS7.pdf](Setup_Guide_CentOS7.pdf) 
   - Modify web configuation files for setting Hadoop/Spark/web/MongoDB hostnames
