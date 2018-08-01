@@ -262,6 +262,7 @@ def feat_extraction(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     , mongo_tuples, fromweb, label_arr, metadata_count,label_idx,data_idx, pattern_str, ln_delimitor, data_field_list, jkey_dict
     , jobname, num_gram, feature_count_threshold, token_dict=None, HDFS_RETR_DIR=None, remove_duplicated="N"
     , cust_featuring=None, cust_featuring_params=None, local_out_dir=None, filter_ratio=None
+    , binary_flag= False
     ): 
 
     # zip func in other files for Spark workers ================= ================
