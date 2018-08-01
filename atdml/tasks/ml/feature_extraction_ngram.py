@@ -258,6 +258,7 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     , mongo_tuples, fromweb, label_arr, metadata_count,label_idx,data_idx, pattern_str, ln_delimitor, data_field_list, jkey_dict
     , jobname, num_gram, feature_count_threshold, token_dict=None, HDFS_RETR_DIR=None, remove_duplicated="N"
     , cust_featuring=None, cust_featuring_params=None, local_out_dir=None, filter_ratio=None
+    , binary_flag= True
     ): 
 
     # zip func in other files for Spark workers ================= ================
@@ -411,6 +412,8 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
                 num_gram=jparams['n-gram']
             elif jparams and 'ngram' in jparams:
                 num_gram=jparams['ngram']
+            if jparams and 'binary_flag' in jparams:
+                binary_flag=eval(jparams['binary_flag'])
         except Exception as e:
             print "ERROR: user params error.", e.__doc__, e.message
             return -200    
@@ -555,7 +558,7 @@ def feat_extr_ngram(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     # hash_cnt_dic: {hash: count}  hash_str_dic: {hash: 'str1,str2...' }
     #     set binary_flag to True, all feature:value will be 1
     broadcast_dic = sc.broadcast(all_hashes_seq_dic)
-    seq_featured_rdd = featured_rdd.map(lambda x: convert2seq(x,label_idx,data_idx,broadcast_dic.value,binary_flag= True)).cache() 
+    seq_featured_rdd = featured_rdd.map(lambda x: convert2seq(x,label_idx,data_idx,broadcast_dic.value,binary_flag= binary_flag)).cache() 
     
     # get hash_cnthsh_dict then flatMap and reduce to (feat id, count)
     ct_rdd=seq_featured_rdd.flatMap(lambda x: [(i[0],i[1]) for i in x[data_idx].iteritems()]).reduceByKey(lambda a, b: a + b)
