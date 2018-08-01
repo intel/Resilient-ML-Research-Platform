@@ -229,7 +229,7 @@ def main():
         password  = None     
     
     #
-    binary_flag=True # TBD for param
+    binary_flag=True # default to True for n-gram pattern
 
     
     return predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
@@ -255,7 +255,8 @@ def main():
 #  Used by massive prediction too ================================= =======================
 def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
         , j_str, lib_mode
-        , fromweb, verbose,label_idx=0, data_idx=3, metadata_count=3, pattern_str='(.*)', ln_delimitor = '\t', binary_flag=True, labelnameflag=1
+        , fromweb, verbose,label_idx=0, data_idx=3, metadata_count=3, pattern_str='(.*)', ln_delimitor = '\t'
+        , binary_flag=True, labelnameflag=1
         , model_filename=None, str_model_json=None, sample_txt=None ,pca_filename=None, pca_param=None
         , sp_master=config.get('spark', 'spark_master'), exe_memory=config.get('spark', 'spark_executor_memory')
         , core_max=config.get('spark', 'spark_cores_max')
@@ -565,7 +566,10 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
                 description_str = ml_util.feats2strs(hashes,dic_hash_str)
                 feat_out["fid"]=int(dic_hashes_seq[hashes])
                 feat_out["ngram"]=hashes
-                feat_out["desc"]=description_str
+                if binary_flag:
+                    feat_out["desc"]=description_str
+                else:
+                    feat_out["desc"]=description_str+" "+str(hashes_cnt_dic[hashes])
                 if not dic_hashes_seq is None and not dic_hashes_seq[hashes] is None and not coef_arr is None:
                     feat_out["coef"]=coef_arr[int(dic_hashes_seq[hashes])-1]
                 else:
@@ -577,7 +581,7 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
                 fout_arr.append(feat_out)
                 #out_f.write('%s\t%s\t%s\n' % (dic_hashes_seq[hashes],hashes,description_str))
                 
-                print "INFO: f=",int(dic_hashes_seq[hashes])-1,hashes,description_str
+                print "INFO: f=",int(dic_hashes_seq[hashes])-1,hashes,feat_out["desc"]
         else:
             if verbose=="1" and not learning_algorithm in ('kmeans','lstm'):
                 # not in dataset; use local dict
