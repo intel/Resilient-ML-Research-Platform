@@ -257,7 +257,7 @@ def main():
     else:
         cust_folder  = './user_custom'
     #
-    binary_flag=True # TBD for param
+    binary_flag=True # default for custom
     
     return predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
         , j_str, lib_mode
@@ -275,7 +275,8 @@ def main():
 #  Used by massive prediction too ================================= =======================
 def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
         , j_str, lib_mode
-        , fromweb, verbose,label_idx=0, data_idx=3, metadata_count=3, pattern_str='(.*)', ln_delimitor = '\t', binary_flag=True, labelnameflag=1
+        , fromweb, verbose,label_idx=0, data_idx=3, metadata_count=3, pattern_str='(.*)', ln_delimitor = '\t'
+        , binary_flag=True, labelnameflag=1
         , model_filename=None, str_model_json=None, sample_txt=None ,pca_filename=None, pca_param=None
         , sp_master=config.get('spark', 'spark_master'), exe_memory=config.get('spark', 'spark_executor_memory')
         , core_max=config.get('spark', 'spark_cores_max')
@@ -360,9 +361,19 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
         if num_gram is None and 'n-gram' in feat_opt:
             num_gram = feat_opt['n-gram']
         elif num_gram=='-':
-            num_gram=None          
+            num_gram=None   
+
         if custom is None and 'custom' in feat_opt:
             custom = feat_opt['custom'] 
+            
+        if 'binary_flag' in feat_opt:
+            try:
+                binary_flag=eval(feat_opt['binary_flag'])
+            except:
+                pass
+        elif custom =='csv':
+            binary_flag=False
+            
     except Exception as e:
         print "WARNING: load cust_featuring_params failed.",e
     print "INFO: feat_opt=",feat_opt
@@ -597,7 +608,10 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
                 description_str = ml_util.feats2strs(hashes,dic_hash_str)
                 feat_out["fid"]=int(dic_hashes_seq[hashes])
                 feat_out["ngram"]=hashes
-                feat_out["desc"]=description_str
+                if binary_flag:
+                    feat_out["desc"]=description_str
+                else:
+                    feat_out["desc"]=description_str+" "+str(hashes_cnt_dic[hashes])
                 if not dic_hashes_seq is None and not dic_hashes_seq[hashes] is None and not coef_arr is None:
                     feat_out["coef"]=coef_arr[int(dic_hashes_seq[hashes])-1]
                 else:
@@ -609,7 +623,7 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
                 fout_arr.append(feat_out)
                 #out_f.write('%s\t%s\t%s\n' % (dic_hashes_seq[hashes],hashes,description_str))
                 
-                print "INFO: f=",int(dic_hashes_seq[hashes])-1,hashes,description_str
+                print "INFO: f=",int(dic_hashes_seq[hashes])-1,hashes,feat_out["desc"]
         else:
             if verbose=="1" and not learning_algorithm in ('kmeans','lstm'):
                 # not in dataset; use local dict
@@ -701,6 +715,7 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
             labels_pred = sk_model.predict(sparse_test)
             
         sing_label_pred = labels_pred[0]
+        #print "sparse_test=",sparse_test
         #print "--type(labels_pred)=",type(labels_pred),",len=",len(labels_pred.tolist()),",labels_pred="
         #for i in labels_pred.tolist():
         #    print i
@@ -730,16 +745,6 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
         
         if sc is None:
             sc=get_sc(row_id_str,sp_master, exe_memory, core_max)
-
-            
-            '''
-            SparkContext.setSystemProperty('spark.rdd.compress', config.get('spark', 'spark_rdd_compress'))
-            SparkContext.setSystemProperty('spark.driver.maxResultSize', config.get('spark', 'spark_driver_maxResultSize'))
-            SparkContext.setSystemProperty('spark.executor.memory', exe_memory)
-            SparkContext.setSystemProperty('spark.cores.max', core_max)
-
-            sc = SparkContext(sp_master, 'single_predict:'+row_id_str)
-            '''
             
         model_name = learning_algorithm       
         save_dir = config.get('app', 'HADOOP_MASTER')+config.get('app', 'HDFS_MODEL_DIR')+'/'+row_id_str
