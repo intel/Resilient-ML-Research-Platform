@@ -366,10 +366,12 @@ def feat_extraction(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
         all_hashes_seq_dic = None
     else:
         print "ERROR: custom featuring type is needed"
+    print "INFO: cust_featuring=",cust_featuring,"cust_featuring_jparams=",cust_featuring_jparams
 
     dnn_flag=False
     has_header=None
     label_col=None
+    label_index=None
     # get featuring params
     if cust_featuring_jparams:
         if 'label_index' in cust_featuring_jparams: # idx number for label, 0 based
@@ -407,6 +409,7 @@ def feat_extraction(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     # get all distinct labels into an array  =============== provided by parameter?
     if label_arr is None and not label_col is None:
         label_arr=sorted([rw[label_col] for rw in df.select(label_col).distinct().collect()])
+    print "INFO: label_arr=",label_arr
         
     label_dic = {}
     # convert label_arr to dict; {label:number|
@@ -422,10 +425,10 @@ def feat_extraction(row_id_str, hdfs_dir_list, hdfs_feat_dir, model_data_folder
     # convert DataFrame row to libsvm string
     libsvm_rdd=df.rdd.map(lambda x: user_func(list(x), featuring_params)) 
     print "INFO: sample df row=",(libsvm_rdd.collect()[0])
+    print "INFO: featuring_params=",featuring_params
 
     total_input_count=df.count()
     print "INFO: Total input sample count=",total_input_count
-    print "INFO: label_arr=",label_arr
     #print "INFO: feature_count_threshold=",feature_count_threshold
 
     #get all hashes and total occurring count ===============

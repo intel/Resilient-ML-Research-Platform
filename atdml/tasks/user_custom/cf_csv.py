@@ -71,8 +71,9 @@ def main():  # ============= =============  ============= =============
     params=None
     if args.params:
         params=args.params
-        
-    if mode == 'csv':
+    
+    ## generate sub samples based on time list
+    if mode == 'csv_ts':
         df=open_df(fname,header=None,sep=",",quotechar='"')
         # find start flag
         if start_flag:
@@ -81,12 +82,12 @@ def main():  # ============= =============  ============= =============
         df=cleanup_csv(df)
         # get the first part of name as output fname
         base_name=os.path.basename(fname).split('.')[0]
-        # generate sub sample based on time list
+        # generate sub samples based on time list
         return get_time_series(df, time_field=0, time_list=time_list, out_fname=base_name)
     else:
-        #
+        # for fsw
         #print ("INFO: start_flagxx=",start_flag)
-        return to_one_line(row_id_str, params, fname, ofname, sep_snt, start_flag
+        return to_one_line_fsw(row_id_str, params, fname, ofname, sep_snt, start_flag
             , time_list=time_list)
 
 # Convert csv dataset file to libsvm directly            
@@ -97,7 +98,7 @@ def main():  # ============= =============  ============= =============
 def featuring(line, featuring_params):
     jparams={}
     ret_arr=[]
-    type=None
+    custom=None
     #
     if featuring_params and len(featuring_params)>0:
         try:
@@ -106,16 +107,16 @@ def featuring(line, featuring_params):
                 print "ERROR: user module error.", e.__doc__, e.message
                 return -200
     #
-    if 'type' in jparams:
-        type=jparams['type']
-    if type is None:
-        type='csv'
+    if 'custom' in jparams:
+        custom=jparams['custom']
+    if custom is None:
+        custom='csv'
 
     # chk empty 
     if not line or len(line)==0:
         return None
     #
-    if type == 'csv':
+    if custom == 'csv':
         return list2libsvm(line,jparams)
        
 
@@ -130,12 +131,19 @@ def list2libsvm(line, jparams, add_meta=True):
     meta=""
     idx=1
     separator=','
-    
+    label_index=None
+    label_dict=None
     if line is None or len(line)==0:
         return None
     
     if 'label_index' in jparams:
-        label_index=jparams['label_index']
+        try:
+            if isinstance(jparams['label_index'],int):
+                label_index=jparams['label_index']
+            else:
+                label_index=eval(jparams['label_index'])
+        except:
+            label_index=None
     if 'label_dict' in jparams:
         label_dict=jparams['label_dict']
     if 'separator' in jparams:
@@ -162,19 +170,19 @@ def list2libsvm(line, jparams, add_meta=True):
     meta=str(djb2_(out))+" "+meta
     return meta+out    
             
-# ================================================================================== train () ============ 
-# filter/clean data and convert a csv file to one line
+# ================================================================================== to_one_line_fsw() ============ 
+# filter/clean data and convert a csv file (a sample) to one line string
 #  filter rows by filter_list & path_filters;
 # Input: filename 
 # Return a string, to stdout or to ofname 
-def to_one_line(row_id_str, params=None, fname=None, ofname=None, sep_snt='\t', start_flag=None
+def to_one_line_fsw(fname=None, params=None,  ofname=None, sep_snt='\t', start_flag=None
         , filter_list=None, filter_field_name=None, path_filters=None
         , usecols=None, col_names=None
-        , header=None, sep=',',quotechar='*' , time_list=None, printout=True):
+        , header=None, sep=',',quotechar='"' , time_list=None, printout=True):
         
     # get default parameters
     jparams=get_params(params)
-    
+    path_field_name=None
     # set params
     #  for filter
     if 'filter_list' in jparams:
@@ -217,10 +225,10 @@ def to_one_line(row_id_str, params=None, fname=None, ofname=None, sep_snt='\t', 
     #print("fname=",fname )    
     # Load gz file to Pandas DataFrame =======================
     if fname.endswith('.gz'):
-        df = pd.read_csv(fname, compression='gzip', header=header, sep=sep, quotechar='"'
+        df = pd.read_csv(fname, compression='gzip', header=header, sep=sep, quotechar=quotechar
             , usecols=usecols, names=col_names, error_bad_lines=False)
     else: # no compression
-        df = pd.read_csv(fname, header=header, sep=sep, quotechar='"'
+        df = pd.read_csv(fname, header=header, sep=sep, quotechar=quotechar
             , usecols=usecols, names=col_names, error_bad_lines=False)
     #print("columns=",df.columns.values )
     #print("df=",df.head(2) )
@@ -268,7 +276,7 @@ def to_one_line(row_id_str, params=None, fname=None, ofname=None, sep_snt='\t', 
             ts=ts.applymap(lambda x: str(x))
             meta_data[1]=hash+"-"+str(time_list[i]).zfill(5)
             all_arr=[' '.join(ln) for ln in ts.values]
-            print sep_snt.join(meta_data)+sep_snt+sep_snt.join(all_arr)
+        #print sep_snt.join(meta_data)+sep_snt+sep_snt.join(all_arr)
         meta_data[1]=hash+"-all"
 
     # output to CSV file  =======================
@@ -276,7 +284,7 @@ def to_one_line(row_id_str, params=None, fname=None, ofname=None, sep_snt='\t', 
     if ofname and len(ofname)>0:
         # not used ...
         odf.to_csv(ofname)
-    else: # echo to stdin
+    else: # echo to stdout
         odf=odf.applymap(lambda x: str(x))
         all_arr=[' '.join(ln) for ln in odf.values]
         out=sep_snt.join(meta_data)+sep_snt+sep_snt.join(all_arr)
@@ -287,7 +295,63 @@ def to_one_line(row_id_str, params=None, fname=None, ofname=None, sep_snt='\t', 
     
     return 
 
+
+# ================================================================================== to_one_line() ============ 
+# Convert csv to 
+#  assume csv file has title with one line of data
+# Input: filename 
+# Return:
+#   
+def to_one_line(fname, params=None):
+    # get default parameters
+    jparams=json.loads(params)
+    path_field_name=None
     
+    has_header=None
+    usecols=None
+    col_names=None
+    meta_data=['','','']
+    sep=","
+    quotechar='"'
+    # for loading CSV file
+    if 'usecols' in jparams:
+        usecols=jparams['usecols']
+    if 'col_names' in jparams:
+        col_names=jparams['col_names']
+    if 'has_header' in jparams:
+        header=eval(jparams['has_header'])
+        if header:
+            header=0
+            
+    if "label_index" in jparams:
+        label_index=jparams['label_index']
+        
+    if 'sep' in jparams:
+        sep=jparams['sep']
+    if 'quotechar' in jparams:
+        quotechar=jparams['quotechar']
+
+    # Load gz file to Pandas DataFrame =======================
+    if fname.endswith('.gz'):
+        df = pd.read_csv(fname, compression='gzip', header=header, sep=sep, quotechar=quotechar
+            , usecols=usecols, names=col_names, error_bad_lines=False)
+    else: # no compression
+        df = pd.read_csv(fname, header=header, sep=sep, quotechar=quotechar
+            , usecols=usecols, names=col_names, error_bad_lines=False)    
+    
+    row_str=df.to_string(header=False,index=False,index_names=False) 
+    #print df.head() 
+    #print "row_str=",row_str
+    # remove space
+    line=sep.join(row_str.split())
+    # get 1st item
+    ret_str=list2libsvm(line, jparams)
+
+    #print "jparams=",jparams
+    #print "line=",line
+    #print "ret_str=",ret_str
+    return ret_str
+
 # ================================================================================== cleanup_csv ============ 
 # Clean up special chars for in each cell from CSV file  
 def cleanup_csv(df):    

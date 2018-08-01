@@ -159,9 +159,12 @@ def main():
 
     ###################################################
     if args.num:
-        num_gram = eval(args.num)
+        try:
+            num_gram = eval(args.num)
+        except:
+            num_gram  = None
     else:
-        num_gram  = eval(config.get("machine_learning","svm_num_gram"))
+        num_gram  = None
 
     if args.max:
         MAX_FEATURES = eval(args.max)
@@ -350,11 +353,16 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
     # featuring optinos ===================== input ml_opts ==============
     
     feat_opt={}
+    custom=None
     try:
         if cust_featuring_params and len(cust_featuring_params)>5:
             feat_opt = json.loads(cust_featuring_params)
         if num_gram is None and 'n-gram' in feat_opt:
-            num_gram = feat_opt['gram'] 
+            num_gram = feat_opt['n-gram']
+        elif num_gram=='-':
+            num_gram=None          
+        if custom is None and 'custom' in feat_opt:
+            custom = feat_opt['custom'] 
     except Exception as e:
         print "WARNING: load cust_featuring_params failed.",e
     print "INFO: feat_opt=",feat_opt
@@ -382,17 +390,29 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
         return -101
     
     # Custom function to convert a file to one line; <custom_module>.to_one_line()
-    #   input: file name
+    #   input: filename
     #   output: string; meta-data1\tmeta-data2\t...\tfeature1\tfeature2\t...
-    str_raw=user_1line_func(row_id_str,fname=input_gz)
-    #print "*****************str_raw=",str_raw
-    
-    # Custom function to extraction: <custom_module>.featuring(line, featuring_params, delimitor='\t', data_idx=3):
-    #   input: string; meta-data1\tmeta-data2\t...\tfeature1\tfeature2\t...
-    #   output: array: [<meta-data1>,<meta-data2>,...,[feature1,feature2,...]]
-    raw_arr=user_featuring_func(str_raw,featuring_params=cust_featuring_params, data_idx=data_idx, delimitor=ln_delimitor)
-    print "**************raw_arr=",raw_arr
-
+    if user_1line_func:
+        if custom == 'csv':
+            str_raw=user_1line_func(fname=input_gz,params=cust_featuring_params)
+            # feat_arr here
+            libsvm_str=user_featuring_func(str_raw,featuring_params=cust_featuring_params)
+            hashes_cnt_dic=libsvm2dict(libsvm_str)
+            print "INFO: hashes_cnt_dic=",hashes_cnt_dic
+        else:
+            str_raw=user_1line_func(fname=input_gz)
+            #print "*****************str_raw=",str_raw
+        
+            # Custom function to extraction: <custom_module>.featuring(line, featuring_params, delimitor='\t', data_idx=3):
+            #   input: string; meta-data1\tmeta-data2\t...\tfeature1\tfeature2\t...
+            #   output: array: [<meta-data1>,<meta-data2>,...,[feature1,feature2,...]]
+            #       raw_array was needed for LSTM
+            raw_arr=user_featuring_func(str_raw,featuring_params=cust_featuring_params, data_idx=data_idx, delimitor=ln_delimitor)
+            print "**************raw_arr=",raw_arr
+    else:
+        print "ERROR: user custom function not found!"
+        return -102
+        
     # check if n-gram
     # Return:
     #   array: [meta-data1,meta-data2,..., hash_cnt_dic, hash_str_dic]
@@ -401,11 +421,12 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
     
     # return:  array=[meta-data1,meta-data2,..., hash_cnt_dic, hash_str_dic]
     #       return hashes_cnt_dic: {hash,hash:count),...}  hash_str_dic: {hash: 'str1',... }
-    feat_arr=feature_extraction_ngram(raw_arr, data_idx, MAX_FEATURES, num_gram)
-    print "**************feat_arr=",feat_arr
+    if num_gram:
+        feat_arr=feature_extraction_ngram(raw_arr, data_idx, MAX_FEATURES, num_gram)
+        #print "**************feat_arr=",feat_arr
     
     #
-    if feat_arr is None or len(feat_arr)==0:
+    if not custom == 'csv' and (feat_arr is None or len(feat_arr)==0):
         print "ERROR: Raw data format error or no feature found at predict_single_file_pattern."
         return -1
 
@@ -499,10 +520,12 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
             print "INFO: feature file=",out_file
             out_f=open(out_file, 'a')
         
-        # get local dict    
-        hash_str_dic=feat_arr[data_idx+1]
+        # get local dict 
+        if feat_arr:
+            hash_str_dic=feat_arr[data_idx+1]
         # convert key to string
-        hash_str_dic={str(k): v for k, v in hash_str_dic.items()}
+        if hash_str_dic:
+            hash_str_dic={str(k): v for k, v in hash_str_dic.items()}
 
         coef_arr=None
         # get coef_arr ==================================
@@ -920,6 +943,20 @@ def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
     print 'INFO: total running time: %f' %(t1-t0)
     return 0
 
+# convert libsvm string to dict ==============================================================================
+# "hash label k:v k2:v2 ..."
+def libsvm2dict(libsvm_str,delimiter=" ",data_idx=2):
+    ret={}
+    if libsvm_str is None or len(libsvm_str)==0:
+        return ret
+    for ls in libsvm_str.split(delimiter)[data_idx:]:
+        kv=ls.split(':')
+        try:
+            ret[str(kv[0])]=eval(kv[1])
+        except:
+            pass
+    return ret
+    
 #  return spark context ==============================================================================
 def get_sc(row_id_str,sp_master, exe_memory, core_max):
     
