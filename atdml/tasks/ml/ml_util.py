@@ -940,7 +940,7 @@ def generate_vector_from_dic(curr_dic, col_num):
     for key in curr_dic:
         col = int(key)
         #print "col=",col
-        vector_test[col - 1] = 1
+        vector_test[col - 1] = curr_dic[key]
     
     return vector_test
 
@@ -954,8 +954,10 @@ def generate_matrix_from_dic(curr_dic, col_num):
         if (int(key)-1) > col_num:
             pass    #omit the new features
         else:
-            # all set to one?
-            feature_val = min(1, curr_dic[key])
+            # binary: all set to one?
+            #feature_val = min(1, curr_dic[key])
+            # use value
+            feature_val =curr_dic[key]
             row_testing.append(0)
             col_testing.append(int(key) - 1)
             features_testing.append(feature_val)
