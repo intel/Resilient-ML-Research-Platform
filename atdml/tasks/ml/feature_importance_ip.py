@@ -79,7 +79,7 @@ def data_seperation_random(names):
 def main():
     
     parser = ArgumentParser(description=__description__)
-    parser.add_argument("-f", "--folder", type=str, metavar="folder of features", help="hdfs folder contains features", required=False)
+    parser.add_argument("-f", "--folder", type=str, metavar="folder of features", help="folder contains features, hdfs://xxx.com:9000/user/fea", required=False)
     parser.add_argument("-n", "--name", type=str, metavar="file name", help="file name for sample folder", required=False)
     parser.add_argument("-c", "--column", type=str, metavar="column number", help="column number in the table", required=False)
     parser.add_argument("-r", "--row_id", type=str, metavar="row_id number", help="row_id number in the db", required=False)
