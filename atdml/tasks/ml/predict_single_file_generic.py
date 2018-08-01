@@ -63,6 +63,15 @@ def main():
     parser.add_argument("-sl", "--showlabelname", type=str, metavar="show label name", help="0: not shown; 1: show label name", required=False)
     parser.add_argument("-dsid", "--ds_id", type=str, metavar="source dataset id", help="source dataset id for training option", required=False)
 
+    parser.add_argument("-mfn", "--model_filename", type=str, metavar="filename of model in json"
+        , help="json filename; expect coef_arr and coef_intercept", required=False)
+    parser.add_argument("-mj", "--model_json", type=str, metavar="ML model in json string"
+        , help="ML model in json string", required=False)
+    parser.add_argument("-sj", "--sample_json", type=str, metavar="sample in json string"
+        , help="sample in json string", required=False)
+    parser.add_argument("-pfn", "--pca_filename", type=str, metavar="filename of PCA model in pickle"
+        , help="pickle filename for PCA model", required=False)
+    
     parser.add_argument("-ptn", "--pattern_str", type=str, metavar="regular express pattern to extract string"
         , help="regular express pattern to extract string", required=False)
     parser.add_argument("-vb", "--verbose", type=str, metavar="show detailed features", help="show detailed features", required=False)
@@ -99,9 +108,9 @@ def main():
     else:
         input_gz  = '000d9941eaf04efb55e5d0ccff3d90ee.gz'
     if args.out:
-        out_dir = args.out
+        local_out_dir = args.out
     else:
-        out_dir  = '.'
+        local_out_dir  = '.'
     if args.row_id:
         row_id_str = args.row_id
     else:
@@ -137,17 +146,38 @@ def main():
     else:
         j_str='{"c":"1","iterations":"300","regularization":"l2","learning_algorithm":"logistic_regression_with_sgd"}'
     if args.lib: # mllib or scikit
-        mode = args.lib
+        lib_mode = args.lib
     else:
-        mode='scikit'
-    if args.showlabelname: # mllib or scikit
+        lib_mode='scikit'
+    if args.showlabelname: # 
         labelnameflag = eval(args.showlabelname)
     else:
         labelnameflag = 0
     if args.verbose: 
         verbose = args.verbose
     else:
-        verbose = "1"    
+        verbose = "1"   
+    if args.model_filename and len(args.model_filename)>0:
+        model_filename = args.model_filename
+    else:
+        model_filename  = None
+    if args.pca_param:
+        pca_param = json.loads(args.pca_param)
+    else:
+        pca_param  = None
+    if args.pca_filename:
+        pca_filename = args.pca_filename
+    else:
+        pca_filename  = None
+    if args.model_json:
+        model_json = args.model_json
+    else:
+        model_json  = None
+    if args.sample_json:
+        sample_json = args.sample_json
+    else:
+        sample_json  = None        
+        
     ######database########################################
     if len(args.username)>0:
         username = args.username
@@ -159,6 +189,30 @@ def main():
         password  = None     
     
     
+    return predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
+        , j_str, lib_mode
+        , fromweb, verbose, labelnameflag
+        , model_filename, model_json, sample_json, pca_filename, pca_param
+        , args.sp_master, args.exe_memory, args.core_max, MAX_FEATURES , dic_name_label=None
+        , feat_cnt_threshold=args.feat_cnt_threshold
+        , ip_address=args.ip_address, port=args.port, db_name=args.db_name, tb_name=args.tb_name
+        , username=username, password=password
+        )
+    
+#  Used by massive prediction too ================================= =======================
+def predict(row_id_str, ds_id, cid_str, input_gz, local_out_dir, num_gram
+        , j_str, lib_mode
+        , fromweb, verbose, labelnameflag=1
+        , model_filename=None, str_model_json=None, sample_txt=None ,pca_filename=None, pca_param=None
+        , sp_master=config.get('spark', 'spark_master'), exe_memory=config.get('spark', 'spark_executor_memory')
+        , core_max=config.get('spark', 'spark_cores_max')
+        , MAX_FEATURES=eval(config.get("machine_learning","MAX_FEATURES")) , dic_name_label=None
+        , feat_cnt_threshold=config.get('machine_learning', 'feature_count_threshold')
+        , ip_address=config.get('mongo', 'out_ip_address'), port=eval(config.get('mongo', 'out_port'))
+        , db_name=config.get('mongo', 'out_db'), tb_name=config.get('mongo', 'out_tb')
+        , username=config.get('mongo', 'out_username'), password=config.get('mongo', 'out_password')
+        , sc=None
+        ):
     
     t0 = time()
     coef_arr=None
@@ -242,7 +296,7 @@ def main():
 
         #print "INFO: *** Feature list: ===================================="
         # clean up feature file
-        out_file=os.path.join(out_dir,cid_str+"_feature_list.json")
+        out_file=os.path.join(local_out_dir,cid_str+"_feature_list.json")
         print "INFO: feature file=",out_file
         if os.path.exists(out_file):
             try:
@@ -282,9 +336,9 @@ def main():
         out_f.close()
 
             
-    if mode == "scikit": #"SKlean":
+    if lib_mode == "scikit": #"SKlean":
         # get the ML model
-        model_file  = out_dir + '/' + row_id_str + '_model/' + row_id_str + '.pkl'
+        model_file  = local_out_dir + '/' + row_id_str + '_model/' + row_id_str + '.pkl'
 
         # load clf from model file
         sk_model = joblib.load(model_file)
@@ -340,14 +394,11 @@ def main():
         from pyspark.mllib.evaluation import BinaryClassificationMetrics
         from pyspark.mllib.tree import DecisionTree
         from pyspark.mllib.clustering import KMeans, KMeansModel, GaussianMixture, GaussianMixtureModel
-        from pyspark.mllib.linalg import Vectors 
+        from pyspark.mllib.linalg import Vectors   
         
-        SparkContext.setSystemProperty('spark.rdd.compress', config.get('spark', 'spark_rdd_compress'))
-        SparkContext.setSystemProperty('spark.driver.maxResultSize', config.get('spark', 'spark_driver_maxResultSize'))
-        SparkContext.setSystemProperty('spark.executor.memory', args.exe_memory)
-        SparkContext.setSystemProperty('spark.cores.max', args.core_max)
+        if sc is None:
+            sc=get_sc(row_id_str,sp_master, exe_memory, core_max)
 
-        sc = SparkContext(args.sp_master, 'single_predict:'+str(args.row_id))
         flag_model = ml_opts['learning_algorithm']        
         save_dir = config.get('app', 'HADOOP_MASTER')+config.get('app', 'HDFS_MODEL_DIR')+'/'+row_id_str
 
