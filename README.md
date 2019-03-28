@@ -1,7 +1,6 @@
 [![Black Hat Arsenal](https://raw.githubusercontent.com/toolswatch/badges/master/arsenal/usa/2018.svg?sanitize=true)](http://www.toolswatch.org/2018/05/black-hat-arsenal-usa-2018-the-w0w-lineup/)
 
-# Link to <img src="../master/atdml/static/atdml/img/mlsploit.png" height="20"> 
-[MLsploit](https://github.com/mlsploit)
+# Link to <img src="../master/atdml/static/atdml/img/mlsploit.png" height="20"></img> [MLsploit](https://github.com/mlsploit)
 
 # MLsploit Module: Resilient-ML-Research-Platform 
 
