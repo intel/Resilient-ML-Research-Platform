@@ -1,6 +1,8 @@
 [![Black Hat Arsenal](https://raw.githubusercontent.com/toolswatch/badges/master/arsenal/usa/2018.svg?sanitize=true)](http://www.toolswatch.org/2018/05/black-hat-arsenal-usa-2018-the-w0w-lineup/)
 
-# MLsploit: Resilient-ML-Research-Platform 
+# [MLsploit](https://github.com/mlsploit)
+
+# MLsploit Module: Resilient-ML-Research-Platform 
 
 This is a web platform to demo Machine Learning as a Service (MLaaS) on security researches. 
 It has a machine learning (ML) pipeline to build and tune models. It also has a portal to demo adversarial ML and countermeasures.
